@@ -9,11 +9,11 @@
 | 2003 | **GFS** | `The Google File System` | [分布式文件系统](./gfs-sosp2003.pdf) |
 | 2004 | **MapReduce** | `MapReduce: Simplified Data Processing on Large Clusters` | [分布式计算框架](./Dean%20和%20Ghemawat%20-%202008%20-%20MapReduce%20simplified%20data%20processing%20on%20large%20clu.pdf) |
 | 2006 | **Bigtable** | `Bigtable: A Distributed Storage System for Structured Data` | [分布式数据库](./Chang%20等%20-%202008%20-%20Bigtable%20A%20Distributed%20Storage%20System%20for%20Structu.pdf) |
-| 2006 | **Chubby** | `The Chubby lock service for loosely-coupled distributed system` | 分布式锁服务 |
-| 2007 | **Thrift** | `Thrift: Scalable cross-language services implementation` | RPC 框架 |
-| 2008 | **Hive** | `Hive: A warehousing solution over a map-reduce framework` | 数据仓库 |
-| 2010 | **Dremel** | `Dremel: Interactive analysis of web-scale datasets` | 交互式查询引擎 |
-| 2010 | **Spark** | `Spark: Cluster computing with working sets` | 内存计算框架 |
+| 2006 | **Chubby** | `The Chubby lock service for loosely-coupled distributed system` | [分布式锁服务](./Burrows%20-%202006%20-%20The%20Chubby%20lock%20service%20for%20loosely-coupled%20distributed%20systems.pdf) |
+| 2007 | **Thrift** | `Thrift: Scalable cross-language services implementation` | [RPC 框架](./Slee%20等%20-%20Thrift%20Scalable%20Cross-Language%20Services%20Implementation.pdf) |
+| 2008 | **Hive** | `Hive: A warehousing solution over a map-reduce framework` | [数据仓库](./Thusoo%20等%20-%202009%20-%20Hive%20a%20warehousing%20solution%20over%20a%20map-reduce%20framework.pdf) |
+| 2010 | **Dremel** | `Dremel: Interactive analysis of web-scale datasets` | [交互式查询引擎](./Melnik%20等%20-%20Dremel%20Interactive%20Analysis%20of%20Web-Scale%20Datasets.pdf) |
+| 2010 | **Spark** | `Spark: Cluster computing with working sets` | [内存计算框架](./Zaharia%20等%20-%20Spark%20Cluster%20Computing%20with%20Working%20Sets.pdf) |
 | 2010 | **S4** | `S4: Distributed stream computing platform` | 流计算平台 |
 | 2011 | **Megastore** | `Megastore: Providing scalable, highly available storage for interactive services` | 分布式存储 |
 | 2011 | **Kafka** | `Kafka: A distributed messaging system for log processing` | 消息队列系统 |
@@ -51,6 +51,14 @@
 
 - **Spark (2010)**: `Spark: Cluster computing with working sets`  
   UC Berkeley 开发的内存计算框架，通过弹性分布式数据集（RDD）实现高效的迭代计算。相比 MapReduce 提供了更好的性能和更丰富的 API，成为大数据处理的主流框架。
+  - [Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing](./Zaharia%20等%20-%20Resilient%20Distributed%20Datasets%20A%20Fault-Tolerant%20Abstraction%20for%20In-Memory%20Cluster%20Computing.pdf), NSDI 2012
+    - 定位：Spark 的奠基论文（被广泛认为是“开山鼻祖”）。
+    - 核心思想：
+      - 正式提出 RDD 抽象，定义其不可变、分区、血统（lineage）容错机制。
+      - 提供统一编程接口（transformation / action），支撑通用大规模分布式计算。
+    - 贡献：
+      - 把“working set”的愿景落地为可推广的抽象和系统设计。
+      - 解决了可靠性与可扩展性的问题，成为后续 Spark 生态的基础。
 
 - **S4 (2010)**: `S4: Distributed stream computing platform`  
   Yahoo! 开发的分布式流计算平台，采用 Actor 模型处理无界数据流。为实时数据处理提供了可扩展的解决方案，影响了后续流计算系统的设计。
