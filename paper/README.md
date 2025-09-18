@@ -9,24 +9,24 @@
 | 2003 | **GFS** | `The Google File System` | [分布式文件系统](./gfs-sosp2003.pdf) |
 | 2004 | **MapReduce** | `MapReduce: Simplified Data Processing on Large Clusters` | [分布式计算框架](./Dean%20和%20Ghemawat%20-%202008%20-%20MapReduce%20simplified%20data%20processing%20on%20large%20clu.pdf) |
 | 2006 | **Bigtable** | `Bigtable: A Distributed Storage System for Structured Data` | [分布式数据库](./Chang%20等%20-%202008%20-%20Bigtable%20A%20Distributed%20Storage%20System%20for%20Structu.pdf) |
-| 2006 | **Chubby** | `The Chubby lock service for loosely-coupled distributed system` | [分布式锁服务](./Burrows%20-%202006%20-%20The%20Chubby%20lock%20service%20for%20loosely-coupled%20distributed%20systems.pdf) |
+| 2006 | **Chubby** | `The Chubby lock service for loosely-coupled distributed systems` | [分布式锁服务](./Burrows%20-%202006%20-%20The%20Chubby%20lock%20service%20for%20loosely-coupled%20distributed%20systems.pdf) |
 | 2007 | **Thrift** | `Thrift: Scalable cross-language services implementation` | [RPC 框架](./Slee%20等%20-%20Thrift%20Scalable%20Cross-Language%20Services%20Implementation.pdf) |
 | 2008 | **Hive** | `Hive: A warehousing solution over a map-reduce framework` | [数据仓库](./Thusoo%20等%20-%202009%20-%20Hive%20a%20warehousing%20solution%20over%20a%20map-reduce%20framework.pdf) |
 | 2010 | **Dremel** | `Dremel: Interactive analysis of web-scale datasets` | [交互式查询引擎](./Melnik%20等%20-%20Dremel%20Interactive%20Analysis%20of%20Web-Scale%20Datasets.pdf) |
 | 2010 | **Spark** | `Spark: Cluster computing with working sets` | [内存计算框架](./Zaharia%20等%20-%20Spark%20Cluster%20Computing%20with%20Working%20Sets.pdf) |
-| 2010 | **S4** | `S4: Distributed stream computing platform` | 流计算平台 |
-| 2011 | **Megastore** | `Megastore: Providing scalable, highly available storage for interactive services` | 分布式存储 |
-| 2011 | **Kafka** | `Kafka: A distributed messaging system for log processing` | 消息队列系统 |
-| 2012 | **Spanner** | `Spanner: Google's globally distributed database` | 全球分布式数据库 |
-| 2014 | **Storm** | `Storm@Twitter` | 实时流处理 |
-| 2014 | **Raft** | `In search of an understandable consensus algorithm` | 分布式一致性算法 |
-| 2015 | **Dataflow** | `The dataflow model: A practical approach to balancing correctness, latency, and cost in massive-scale, unbounded, out-of-order data processing` | 流处理模型 |
-| 2018 | **PolarFS** | `PolarFS: an ultra-low latency and failure resilient distributed file system for shared storage cloud database` | 云原生文件系统 |
-| 2020 | **Delta Lake** | `Delta lake: high-performance ACID table storage over cloud object stores` | 数据湖存储 |
-| 2021 | **Lakehouse** | `Lakehouse: A New Generation of Open Platforms for AI and Data Analytics` | 湖仓一体架构 |
-| 2023 | **HTAP 综述** | `HTAP 数据库关键技术综述` | 混合事务分析处理 |
-| 2024 | **云原生数据库综述** | `云原生数据库综述` | 云原生数据库 |
-| 2024 | **Iceberg** | `Apache Iceberg: The Definitive Guide` | 表格式标准 |
+| 2010 | **S4** | `S4: Distributed stream computing platform` | [流计算平台](./Neumeyer%20等%20-%202010%20-%20S4%20Distributed%20Stream%20Computing%20Platform.pdf) |
+| 2011 | **Megastore** | `Megastore: Providing scalable, highly available storage for interactive services` | [分布式存储](./Baker%20等%20-%20Megastore%20Providing%20Scalable,%20Highly%20Available%20Storage%20for%20Interactive%20Services.pdf) |
+| 2011 | **Kafka** | `Kafka: A distributed messaging system for log processing` | [消息队列系统](./Kreps%20等%20-%20Kafka%20a%20Distributed%20Messaging%20System%20for%20Log%20Processing.pdf) |
+| 2012 | **Spanner** | `Spanner: Google's globally distributed database` | [全球分布式数据库](./Corbett%20等%20-%20Spanner%20Google’s%20Globally-Distributed%20Database.pdf) |
+| 2014 | **Storm** | `Storm@Twitter` | [实时流处理](./Toshniwal%20等%20-%202014%20-%20Storm@twitter.pdf) |
+| 2014 | **Raft** | `In search of an understandable consensus algorithm` | [分布式一致性算法](./Ongaro和Ousterhout%20-%20In%20Search%20of%20an%20Understandable%20Consensus%20Algorithm.pdf) |
+| 2015 | **Dataflow** | `The dataflow model: A practical approach to balancing correctness, latency, and cost in massive-scale, unbounded, out-of-order data processing` | [流处理模型](./Akidau%20等%20-%202015%20-%20The%20dataflow%20model%20a%20practical%20approach%20to%20balancing%20correctness,%20latency,%20and%20cost%20in%20massive-scal.pdf) |
+| 2018 | **PolarFS** | `PolarFS: an ultra-low latency and failure resilient distributed file system for shared storage cloud database` | [云原生文件系统](./Cao%20等%20-%202018%20-%20PolarFS%20an%20ultra-low%20latency%20and%20failure%20resilien.pdf) |
+| 2020 | **Delta Lake** | `Delta lake: high-performance ACID table storage over cloud object stores` | [数据湖存储](./Armbrust%20等%20-%202020%20-%20Delta%20lake%20high-performance%20ACID%20table%20storage%20ov.pdf) |
+| 2021 | **Lakehouse** | `Lakehouse: A New Generation of Open Platforms for AI and Data Analytics` | [湖仓一体架构](./Armbrust%20等%20-%202021%20-%20Lakehouse%20A%20New%20Generation%20of%20Open%20Platforms%20that.pdf) |
+| 2023 | **HTAP 综述** | `HTAP 数据库关键技术综述` | [混合事务分析处理](./张超，李国良，冯建华，张金涛%20和%20ZHANG%20Chao%20-%202022%20-%20HTAP数据库关键技术综述.pdf) |
+| 2024 | **云原生数据库综述** | `云原生数据库综述` | [云原生数据库](./云原生数据库综述.pdf) |
+| 2024 | **Iceberg** | `Apache Iceberg: The Definitive Guide` | [表格式标准](./apache-iceberg-TDG_ER1.pdf) |
 
 ## 2. 按技术领域分类
 
@@ -97,16 +97,18 @@
 - **Iceberg (2024)**: `Apache Iceberg: The Definitive Guide`
   Apache Iceberg 的权威指南，详细介绍了这一现代表格式的设计理念和实现细节。Iceberg 通过快照隔离、Schema 演进等特性，为大规模分析工作负载提供了高性能的表格式标准。
 
-### 2.5 系统基础设施
+### 2.5 消息中间件
+
+- **Kafka (2011)**: `Kafka: A distributed messaging system for log processing`  
+  LinkedIn 开发的分布式消息系统，采用发布-订阅模式处理大规模日志数据。通过分区和副本机制提供高吞吐量和容错能力，成为现代数据管道的核心组件。
+
+### 2.6 系统基础设施
 
 - **Chubby (2006)**: `The Chubby lock service for loosely-coupled distributed system`  
   Google 的分布式锁服务，为松耦合分布式系统提供粗粒度锁和可靠的小文件存储。采用 Paxos 算法保证一致性，为 GFS、Bigtable 等系统提供协调服务支持。
 
 - **Thrift (2007)**: `Thrift: Scalable cross-language services implementation`  
   Facebook 开发的跨语言服务框架，支持多种编程语言间的高效通信。通过接口定义语言（IDL）和代码生成，简化了分布式服务的开发和部署。
-
-- **Kafka (2011)**: `Kafka: A distributed messaging system for log processing`  
-  LinkedIn 开发的分布式消息系统，采用发布-订阅模式处理大规模日志数据。通过分区和副本机制提供高吞吐量和容错能力，成为现代数据管道的核心组件。
 
 - **Raft (2014)**: `In search of an understandable consensus algorithm`  
   相比 Paxos 更易理解的分布式一致性算法，通过领导者选举和日志复制保证集群一致性。其简洁的设计和清晰的状态转换使其被广泛应用于各种分布式系统中。
