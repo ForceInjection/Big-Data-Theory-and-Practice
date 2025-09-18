@@ -1,0 +1,32 @@
+# Parquet 实践练习项目依赖
+
+# 核心数据处理库
+pandas>=1.5.0
+pyarrow>=10.0.0
+
+# 数据生成和处理
+numpy>=1.21.0
+faker>=15.0.0
+
+# 可视化
+matplotlib>=3.5.0
+seaborn>=0.11.0
+
+# 性能分析
+psutil>=5.8.0
+
+# 开发和测试工具
+pytest>=7.0.0
+pytest-cov>=4.0.0
+black>=22.0.0
+flake8>=5.0.0
+mypy>=0.991
+
+# 文档生成
+sphinx>=5.0.0
+sphinx-rtd-theme>=1.0.0
+
+# 项目管理
+setuptools>=65.0.0
+wheel>=0.37.0
+twine>=4.0.0
