@@ -140,7 +140,7 @@ Chubby 提供事件通知机制，客户端可以订阅以下事件 [1]：
 
 Chubby 提供的主要 API 包括 [1]：
 
-```bash
+```text
 - Open：打开文件或目录
 - Close：关闭句柄
 - Poison：使句柄无效
