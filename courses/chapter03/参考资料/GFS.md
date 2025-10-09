@@ -40,20 +40,20 @@ POSIX (Portable Operating System Interface) 定义了标准的文件操作接口
 #### 2.2.1 基本文件操作
 
 ```c
-// 文件打开和关闭
-int open(const char *pathname, int flags, mode_t mode);
-int close(int fd);
+// 文件打开和关闭操作
+int open(const char *pathname, int flags, mode_t mode);  // 打开文件，返回文件描述符
+int close(int fd);                                       // 关闭文件，释放文件描述符
 
-// 文件读写
-ssize_t read(int fd, void *buf, size_t count);
-ssize_t write(int fd, const void *buf, size_t count);
+// 文件读写操作
+ssize_t read(int fd, void *buf, size_t count);          // 从文件读取数据到缓冲区
+ssize_t write(int fd, const void *buf, size_t count);   // 将缓冲区数据写入文件
 
-// 文件定位
-off_t lseek(int fd, off_t offset, int whence);
+// 文件定位操作
+off_t lseek(int fd, off_t offset, int whence);          // 设置文件读写位置偏移量
 
-// 文件状态
-int stat(const char *pathname, struct stat *statbuf);
-int fstat(int fd, struct stat *statbuf);
+// 文件状态查询
+int stat(const char *pathname, struct stat *statbuf);   // 通过路径获取文件状态信息
+int fstat(int fd, struct stat *statbuf);                // 通过文件描述符获取文件状态信息
 ```
 
 #### 2.2.2 POSIX 接口特点
@@ -191,7 +191,7 @@ int fstat(int fd, struct stat *statbuf);
 
 GFS 的设计目标与传统文件系统存在显著差异：
 
-| 特性         | 传统文件系统     | GFS                |
+| **特性**     | **传统文件系统** | **GFS**            |
 | ------------ | ---------------- | ------------------ |
 | **文件大小** | 以 KB、MB 为主   | 以 GB 为主         |
 | **访问模式** | 随机读写为主     | 顺序读写和追加为主 |
@@ -1595,7 +1595,7 @@ GFS 作为分布式文件系统的开创性工作，其主要贡献包括：
 
 - **简单性权衡**：单 Master 架构（简化管理）vs 可扩展性（缓存优化补偿）
 - **性能权衡**：宽松一致性（高并发）vs 数据一致性（应用层补偿）
-- **成本权衡**：三副本冗余（99.9% 可靠性）vs 存储开销（3倍成本）
+- **成本权衡**：三副本冗余（99.9% 可靠性）vs 存储开销（3 倍成本）
 
 #### 10.4.3 学习路径建议
 
