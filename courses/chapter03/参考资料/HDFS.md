@@ -1,4 +1,4 @@
-# Hadoop Distributed File System (HDFS) 深度解析
+# HDFS 分布式文件系统原理与设计
 
 ## 学习目标
 
