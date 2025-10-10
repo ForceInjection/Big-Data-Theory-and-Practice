@@ -63,7 +63,7 @@
 
 ### 1.1 架构设计哲学
 
-HDFS 在读写流程设计上采用了**控制流与数据流分离**的核心架构，这一设计理念源于分布式系统设计的经典原则：将元数据操作与数据传输解耦，以实现更好的性能、可扩展性和可靠性。
+HDFS 在读写流程设计上采用了**控制流与数据流分离**的核心架构[1]，这一设计理念源于分布式系统设计的经典原则[5]：将元数据操作与数据传输解耦，以实现更好的性能、可扩展性和可靠性。
 
 **图 1-1 HDFS 读写架构概览**：
 
@@ -120,7 +120,7 @@ HDFS 在读写流程设计上采用了**控制流与数据流分离**的核心�
 
 ### 1.3 读写流程的一致性模型
 
-HDFS 在读写流程中实现了**强一致性**的元数据操作和**最终一致性**的数据副本同步：
+HDFS 在读写流程中实现了**强一致性**的元数据操作和**最终一致性**的数据副本同步[2]：
 
 **元数据一致性**：
 
@@ -140,7 +140,7 @@ HDFS 在读写流程中实现了**强一致性**的元数据操作和**最终一
 
 #### 1.4.1 Block 拆分原理
 
-HDFS 采用**固定大小块拆分**策略，默认块大小为 128MB（可配置；Hadoop 1.x 默认 64MB）。文件被逻辑上划分为多个等大小的块，最后一个块可能小于指定大小。
+HDFS 采用**固定大小块拆分**策略，默认块大小为 128MB[1]（可配置；Hadoop 1.x 默认 64MB）。文件被逻辑上划分为多个等大小的块，最后一个块可能小于指定大小。
 
 **图 1-2 文件拆分成 Block 的可视化过程**:
 
@@ -450,7 +450,7 @@ public class LocatedBlock {
 
 #### 2.2.2 最优 DataNode 选择策略
 
-HDFS 采用**机架感知**的数据本地性优化策略选择最优的 DataNode：
+HDFS 采用**机架感知**的数据本地性优化策略[1]选择最优的 DataNode：
 
 **选择优先级**：
 
@@ -512,7 +512,7 @@ public interface DataTransferProtocol {
 
 **步骤 2：数据传输协议**:
 
-数据传输采用**基于数据包**的传输机制：
+数据传输采用**基于数据包**的传输机制[2]：
 
 **表 2-2 HDFS 数据包结构定义**:
 
@@ -593,7 +593,7 @@ public class DFSInputStream {
 
 #### 2.3.2 数据本地性优化
 
-**短路读取（Short-Circuit Read）**：
+**短路读取（Short-Circuit Read）[3]**：
 
 当客户端与 DataNode 在同一节点时，可直接读取本地文件，避免网络传输：
 
@@ -740,7 +740,7 @@ public class INodeFile {
 
 **步骤 3：文件租约机制**:
 
-HDFS 通过**租约（Lease）**机制确保单写者模型：
+HDFS 通过**租约（Lease）**机制[2]确保单写者模型：
 
 ```java
 // 租约管理器
@@ -770,7 +770,7 @@ public class LeaseManager {
 
 当客户端写入数据达到块大小时，NameNode 为新块选择存储位置：
 
-**表 3-1 HDFS 块放置策略**:
+**表 3-1 HDFS 块放置策略[1]**:
 
 | **策略层级** | **具体规则**                   | **设计目标**   |
 | ------------ | ------------------------------ | -------------- |
@@ -1379,7 +1379,7 @@ public class BatchWriter {
 
 #### 5.2.1 关键配置参数
 
-**表 5-1 HDFS 读写性能关键配置参数（版本兼容性说明）**:
+**表 5-1 HDFS 读写性能关键配置参数（版本兼容性说明）[1,3]**:
 
 | **参数**                            | **默认值**                  | **优化建议**                 | **版本差异**                                                                                 | **影响范围**                        |
 | ----------------------------------- | --------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------- |
@@ -1395,7 +1395,7 @@ public class BatchWriter {
 
 #### 5.2.2 系统级优化
 
-**JVM 参数优化**：
+**JVM 参数优化[3]**：
 
 ```bash
 # NameNode JVM 参数
@@ -1426,7 +1426,7 @@ echo never > /sys/kernel/mm/transparent_hugepage/defrag
 
 #### 5.2.3 监控与诊断
 
-**性能监控指标**：
+**性能监控指标[1]**：
 
 ```bash
 # NameNode 监控指标
@@ -1801,10 +1801,15 @@ HDFS 的读写流程体现了分布式文件系统设计的精髓：**控制流�
 
 ## 参考文献
 
-1. Apache Hadoop Documentation. [HDFS Architecture Guide](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html)
-2. Shvachko, K., et al. (2010). The Hadoop Distributed File System. _Proceedings of the 2010 IEEE 26th Symposium on Mass Storage Systems and Technologies_.
-3. Borthakur, D. (2008). HDFS Architecture Guide. _Apache Hadoop Project Documentation_.
-4. White, T. (2015). Hadoop: The Definitive Guide. _O'Reilly Media_.
-5. Ghemawat, S., Gobioff, H., & Leung, S. T. (2003). The Google file system. _ACM SIGOPS operating systems review_, 37(5), 29-43.
+1. Apache Hadoop Documentation. [HDFS Architecture Guide](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html). Apache Software Foundation.
+2. Shvachko, K., Kuang, H., Radia, S., & Chansler, R. (2010). The Hadoop Distributed File System. _Proceedings of the 2010 IEEE 26th Symposium on Mass Storage Systems and Technologies (MSST)_, 1-10.
+3. Apache Hadoop Documentation. [HDFS Commands Guide](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HDFSCommands.html). Apache Software Foundation.
+4. Apache Hadoop Documentation. [Hadoop Configuration](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/core-default.xml). Apache Software Foundation.
+5. Ghemawat, S., Gobioff, H., & Leung, S. T. (2003). The Google file system. _ACM SIGOPS Operating Systems Review_, 37(5), 29-43.
+6. Apache Hadoop Documentation. [HDFS Federation](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/Federation.html). Apache Software Foundation.
+7. Apache Hadoop Documentation. [HDFS High Availability](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HDFSHighAvailabilityWithQJM.html). Apache Software Foundation.
+8. White, T. (2015). _Hadoop: The Definitive Guide_ (4th ed.). O'Reilly Media.
+9. Apache Hadoop Documentation. [HDFS Erasure Coding](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HDFSErasureCoding.html). Apache Software Foundation.
+10. Apache Hadoop Documentation. [HDFS Short-Circuit Local Reads](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/ShortCircuitLocalReads.html). Apache Software Foundation.
 
 ---
