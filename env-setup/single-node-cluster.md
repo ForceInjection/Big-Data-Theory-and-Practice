@@ -1,14 +1,14 @@
-# Hadoop 单节点集群部署指南(Ubuntu)
+# Hadoop 单节点集群部署指南 (Ubuntu)
 
 ## 1. 概述
 
-本文档详细介绍如何在 Ubuntu 系统上搭建 Hadoop 单节点集群，采用 Pseudo-Distributed Operation（伪分布式）模式。在此模式下，每个 Hadoop 守护进程运行在独立的 Java 进程中，模拟分布式环境，适用于开发和测试场景。[1]
+本文档详细介绍如何在 Ubuntu 系统上搭建 Hadoop 单节点集群，采用 Pseudo-Distributed Operation（伪分布式）模式。在此模式下，每个 Hadoop 守护进程运行在独立的 Java 进程中，模拟分布式环境，适用于开发和测试场景。
 
 ## 2. 系统要求
 
 ### 2.1 支持的平台
 
-- **操作系统**：GNU/Linux（推荐 Ubuntu 22.04 LTS 或更高版本）
+- **操作系统**：GNU/Linux（推荐 Ubuntu 20.04 LTS 或更高版本）
 - **架构**：x86_64
 
 ### 2.2 硬件配置要求
@@ -103,6 +103,10 @@ sudo systemctl enable ssh
 
 # 验证 SSH 服务状态
 sudo systemctl status ssh
+
+# 配置 PDSH 使用 SSH（重要：避免启动 Hadoop 服务时出错）
+echo 'export PDSH_RCMD_TYPE=ssh' >> ~/.bashrc
+source ~/.bashrc
 ```
 
 ## 4. Hadoop 安装
@@ -245,8 +249,29 @@ nano $HADOOP_HOME/etc/hadoop/mapred-site.xml
         <value>yarn</value>
         <description>MapReduce 框架名称</description>
     </property>
+    <property>
+        <name>yarn.app.mapreduce.am.env</name>
+        <value>HADOOP_MAPRED_HOME=/home/hadoop/hadoop</value>
+        <description>ApplicationMaster 环境变量</description>
+    </property>
+    <property>
+        <name>mapreduce.map.env</name>
+        <value>HADOOP_MAPRED_HOME=/home/hadoop/hadoop</value>
+        <description>Map 任务环境变量</description>
+    </property>
+    <property>
+        <name>mapreduce.reduce.env</name>
+        <value>HADOOP_MAPRED_HOME=/home/hadoop/hadoop</value>
+        <description>Reduce 任务环境变量</description>
+    </property>
 </configuration>
 ```
+
+**重要提示**：
+
+- 配置文件中只能有一个 `<configuration>` 标签
+- 请根据实际的 Hadoop 安装路径调整 `HADOOP_MAPRED_HOME` 的值
+- 必须使用绝对路径
 
 #### 5.2.4 配置 yarn-site.xml
 
@@ -386,15 +411,43 @@ jps
 
 ### 8.1 Web 界面访问
 
-#### 8.1.1 HDFS Web UI
+#### 8.1.1 本地访问
 
-- **URL**：<http://localhost:9870/>
-- **功能**：查看 HDFS 状态、文件系统信息、DataNode 状态等
+如果您在本地机器上部署 Hadoop，可以直接访问以下地址：
 
-#### 8.1.2 YARN Web UI
+- **HDFS Web UI**：<http://localhost:9870/>
+- **YARN Web UI**：<http://localhost:8088/>
 
-- **URL**：<http://localhost:8088/>
-- **功能**：查看 YARN 集群状态、应用程序信息、资源使用情况等
+#### 8.1.2 阿里云 ECS 远程访问
+
+如果您在阿里云 ECS 实例上部署 Hadoop，由于网络安全限制，需要通过 SSH 隧道进行端口转发：
+
+##### 方法 1：建立 SSH 隧道连接
+
+```bash
+# 从本地机器连接到阿里云 ECS，同时建立端口转发
+ssh -L 9870:localhost:9870 -L 8088:localhost:8088 hadoop@你的阿里云ECS公网IP
+
+# 连接成功后，在本地浏览器中访问：
+# HDFS Web UI: http://localhost:9870/
+# YARN Web UI: http://localhost:8088/
+```
+
+##### 方法 2：在现有 SSH 连接基础上建立隧道
+
+```bash
+# 如果已经通过 SSH 连接到 ECS，可以新开终端建立隧道
+ssh -L 9870:localhost:9870 -L 8088:localhost:8088 hadoop@你的阿里云ECS公网IP
+```
+
+##### 方法 3：配置阿里云安全组（不推荐）
+
+虽然可以通过配置阿里云安全组开放 9870 和 8088 端口，但出于安全考虑，**强烈建议使用 SSH 隧道方式**。
+
+#### 8.1.3 Web UI 功能说明
+
+- **HDFS Web UI**：查看 HDFS 状态、文件系统信息、DataNode 状态等
+- **YARN Web UI**：查看 YARN 集群状态、应用程序信息、资源使用情况等
 
 ### 8.2 系统状态检查
 
@@ -429,6 +482,21 @@ hdfs dfs -cat /user/hadoop/input/core-site.xml
 ```
 
 ### 8.4 运行 MapReduce 示例
+
+**重要提醒**：如果您在配置 `mapred-site.xml` 时添加了 `HADOOP_MAPRED_HOME` 环境变量，需要重启 Hadoop 服务：
+
+```bash
+# 停止所有服务
+stop-all.sh
+
+# 启动所有服务
+start-all.sh
+
+# 验证服务状态
+jps
+```
+
+然后运行 MapReduce 示例：
 
 ```bash
 # 运行 grep 示例程序
@@ -485,7 +553,66 @@ hdfs dfs -df -h
 
 ### 10.1 常见问题及解决方案
 
-#### 10.1.1 Java 相关问题
+#### 10.1.1 PDSH 相关问题
+
+**问题**：启动 HDFS 服务时出现 `pdsh` 相关错误
+
+```bash
+# 错误信息示例：
+# pdsh@hostname: localhost: rcmd: socket: Permission denied
+```
+
+**解决方案**：设置 PDSH 使用 SSH
+
+```bash
+# 设置环境变量
+export PDSH_RCMD_TYPE=ssh
+
+# 永久设置（添加到 ~/.bashrc）
+echo 'export PDSH_RCMD_TYPE=ssh' >> ~/.bashrc
+source ~/.bashrc
+
+# 重新启动 Hadoop 服务
+stop-dfs.sh
+start-dfs.sh
+```
+
+#### 10.1.2 配置文件格式问题
+
+**问题**：配置文件格式错误导致服务启动失败
+
+**常见错误**：
+
+- 配置文件中有多个 `<configuration>` 标签
+- XML 格式不正确
+
+**解决方案**：
+
+```bash
+# 检查配置文件格式
+xmllint --format $HADOOP_HOME/etc/hadoop/core-site.xml
+xmllint --format $HADOOP_HOME/etc/hadoop/hdfs-site.xml
+xmllint --format $HADOOP_HOME/etc/hadoop/mapred-site.xml
+xmllint --format $HADOOP_HOME/etc/hadoop/yarn-site.xml
+
+# 确保每个配置文件只有一个 <configuration> 标签
+```
+
+#### 10.1.3 MapReduce 环境变量问题
+
+**问题**：运行 MapReduce 任务时出现 `HADOOP_MAPRED_HOME` 未设置的错误
+
+**解决方案**：在 `mapred-site.xml` 中添加环境变量配置（参见 5.2.3 节），然后重启服务：
+
+```bash
+# 停止所有服务
+stop-all.sh
+
+# 启动所有服务
+start-all.sh
+```
+
+#### 10.1.4 Java 相关问题
 
 **问题**：`JAVA_HOME` 未设置或设置错误
 
@@ -495,7 +622,7 @@ echo $JAVA_HOME
 export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 ```
 
-#### 10.1.2 SSH 连接问题
+#### 10.1.5 SSH 连接问题
 
 **问题**：无法无密码连接到 localhost
 
@@ -507,7 +634,7 @@ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 chmod 0600 ~/.ssh/authorized_keys
 ```
 
-#### 10.1.3 端口冲突问题
+#### 10.1.6 端口冲突问题
 
 **问题**：默认端口被占用
 
@@ -521,7 +648,7 @@ netstat -tulpn | grep :9870
 # 在 hdfs-site.xml 中添加 dfs.namenode.http-address 配置
 ```
 
-#### 10.1.4 权限问题
+#### 10.1.7 权限问题
 
 **问题**：Hadoop 目录权限不足
 
@@ -532,7 +659,7 @@ chmod -R 755 /mnt/hadoop/data
 sudo chown -R hadoop:hadoop $HADOOP_HOME
 ```
 
-#### 10.1.5 磁盘挂载问题
+#### 10.1.8 磁盘挂载问题
 
 **问题**：`/mnt/hadoop` 目录不存在或磁盘未挂载
 
@@ -566,25 +693,9 @@ hdfs dfsadmin -report
 hdfs dfs -rm -r /tmp/*  # 清理 HDFS 临时文件
 ```
 
-### 10.2 日志文件位置
+### 10.2 XFS 和 OpenJDK 8 特定问题
 
-```bash
-# Hadoop 日志目录
-ls $HADOOP_HOME/logs/
-
-# 查看 NameNode 日志
-tail -f $HADOOP_HOME/logs/hadoop-hadoop-namenode-*.log
-
-# 查看 DataNode 日志
-tail -f $HADOOP_HOME/logs/hadoop-hadoop-datanode-*.log
-
-# 查看 ResourceManager 日志
-tail -f $HADOOP_HOME/logs/yarn-hadoop-resourcemanager-*.log
-```
-
-### 10.3 XFS 和 OpenJDK 8 特定问题
-
-#### 10.3.1 XFS 文件系统问题
+#### 10.2.1 XFS 文件系统问题
 
 **问题**：XFS 文件系统损坏或性能问题
 
@@ -612,7 +723,7 @@ sudo umount /mnt/hadoop
 sudo mount -t xfs -o noatime,nodiratime,logbufs=8,logbsize=32k /dev/sdb1 /mnt/hadoop
 ```
 
-#### 10.3.2 OpenJDK 8 特定问题
+#### 10.2.2 OpenJDK 8 特定问题
 
 **问题**：OpenJDK 8 内存溢出
 
@@ -635,7 +746,7 @@ export HADOOP_OPTS="$HADOOP_OPTS -XX:MaxGCPauseMillis=200"
 export HADOOP_OPTS="$HADOOP_OPTS -XX:+PrintGC -XX:+PrintGCDetails"
 ```
 
-#### 10.3.3 XFS 和 OpenJDK 8 兼容性优化
+#### 10.2.3 XFS 和 OpenJDK 8 兼容性优化
 
 ```bash
 # 针对 XFS 的 Java I/O 优化
@@ -647,13 +758,143 @@ iostat -x 1 5  # 监控磁盘 I/O
 jstat -gc <hadoop_pid>  # 监控 Java GC
 ```
 
-## 11. 安全注意事项
+### 10.3 日志管理
 
-### 11.1 生产环境部署建议
+#### 10.3.1 默认日志位置
+
+```bash
+# Hadoop 默认日志目录
+ls $HADOOP_HOME/logs/
+
+# 查看 NameNode 日志
+tail -f $HADOOP_HOME/logs/hadoop-hadoop-namenode-*.log
+
+# 查看 DataNode 日志
+tail -f $HADOOP_HOME/logs/hadoop-hadoop-datanode-*.log
+
+# 查看 ResourceManager 日志
+tail -f $HADOOP_HOME/logs/yarn-hadoop-resourcemanager-*.log
+```
+
+#### 10.3.2 自定义日志目录配置
+
+建议将 Hadoop 日志配置到独立目录，便于监控和分析：
+
+```bash
+# 创建日志目录
+sudo mkdir -p /mnt/hadoop/logs
+sudo chown -R hadoop:hadoop /mnt/hadoop/logs
+
+# 在 hadoop-env.sh 中配置日志目录
+export HADOOP_LOG_DIR=/mnt/hadoop/logs
+```
+
+#### 10.3.3 日志轮转配置
+
+配置日志轮转以防止日志文件过大：
+
+```bash
+# 编辑 log4j.properties
+vim $HADOOP_HOME/etc/hadoop/log4j.properties
+
+# 添加或修改以下配置
+log4j.appender.RFA=org.apache.log4j.RollingFileAppender
+log4j.appender.RFA.File=${hadoop.log.dir}/${hadoop.log.file}
+log4j.appender.RFA.MaxFileSize=100MB
+log4j.appender.RFA.MaxBackupIndex=10
+```
+
+#### 10.3.4 日志分析工具
+
+```bash
+# 查看错误日志
+grep -i error $HADOOP_LOG_DIR/*.log
+
+# 查看警告日志
+grep -i warn $HADOOP_LOG_DIR/*.log
+
+# 实时监控日志
+tail -f $HADOOP_LOG_DIR/hadoop-hadoop-namenode-*.log
+
+# 日志统计分析
+awk '/ERROR/ {print $0}' $HADOOP_LOG_DIR/*.log | wc -l
+```
+
+---
+
+## 11. 阿里云部署特定注意事项（包括公有云）
+
+### 11.1 网络配置
+
+#### 11.1.1 SSH 隧道访问 Web UI
+
+阿里云 ECS 实例默认只开放 22 端口（SSH），Hadoop Web UI 端口（9870、8088）无法直接从外网访问。推荐使用 SSH 隧道：
+
+```bash
+# 建立 SSH 隧道（在本地机器执行）
+ssh -L 9870:localhost:9870 -L 8088:localhost:8088 hadoop@你的ECS公网IP
+
+# 然后在本地浏览器访问：
+# http://localhost:9870  (HDFS Web UI)
+# http://localhost:8088  (YARN Web UI)
+```
+
+#### 11.1.2 安全组配置
+
+如果需要直接访问 Web UI（不推荐），可以在阿里云控制台配置安全组：
+
+1. 登录阿里云控制台
+2. 进入 ECS 实例管理
+3. 点击"安全组" → "配置规则"
+4. 添加入方向规则：
+   - 端口范围：9870/9870（HDFS Web UI）
+   - 端口范围：8088/8088（YARN Web UI）
+   - 授权对象：0.0.0.0/0（或限制为特定 IP）
+
+**安全警告**：直接开放端口存在安全风险，建议仅在测试环境使用，生产环境应使用 SSH 隧道或 VPN。
+
+### 11.2 存储配置
+
+#### 11.2.1 数据盘挂载
+
+阿里云 ECS 建议使用独立的数据盘存储 Hadoop 数据。具体的磁盘挂载步骤请参考第 5.3.1 节，注意以下阿里云特定事项：
+
+- **设备名称**：阿里云数据盘通常为 `/dev/vdb`、`/dev/vdc` 等
+- **性能优化**：建议选择 SSD 云盘或 ESSD 云盘以获得更好的 I/O 性能
+- **容量规划**：根据数据量选择合适的磁盘容量，支持在线扩容
+
+#### 11.2.2 云盘性能优化
+
+- **推荐使用 SSD 云盘**：提供更好的 IOPS 性能
+- **选择合适的云盘类型**：
+  - 开发测试：高效云盘
+  - 生产环境：SSD 云盘或 ESSD 云盘
+- **合理规划容量**：考虑数据增长和备份需求
+
+### 11.3 网络优化
+
+#### 11.3.1 内网通信
+
+如果部署多节点集群，建议：
+
+- 使用阿里云内网 IP 进行节点间通信
+- 配置专有网络（VPC）提高安全性
+- 使用负载均衡器分发外部访问流量
+
+#### 11.3.2 带宽配置
+
+- **公网带宽**：根据数据传输需求选择合适带宽
+- **内网带宽**：阿里云内网带宽通常足够，无需特殊配置
+
+---
+
+## 12. 安全注意事项
+
+### 12.1 生产环境部署建议
 
 **重要说明**：本文档介绍的是开发/测试环境的单节点部署，以下安全措施仅供生产环境参考，不在当前配置中实施。
 
-#### 11.1.1 Kerberos 认证（生产环境推荐）
+#### 12.1.1 Kerberos 认证（生产环境推荐）
 
 **Kerberos 简介**：
 
@@ -670,7 +911,7 @@ jstat -gc <hadoop_pid>  # 监控 Java GC
 
 **注意**：Kerberos 配置复杂，需要专门的 KDC（Key Distribution Center）服务器，不适合开发测试环境。
 
-#### 11.1.2 其他生产环境安全措施
+#### 12.1.2 其他生产环境安全措施
 
 - **网络安全**：配置防火墙规则，限制端口访问
 - **数据加密**：启用传输层和存储层加密
@@ -678,7 +919,7 @@ jstat -gc <hadoop_pid>  # 监控 Java GC
 - **审计日志**：启用操作审计和监控
 - **定期更新**：及时更新 Hadoop 版本和安全补丁
 
-### 11.2 开发测试环境安全配置
+### 12.2 开发测试环境安全配置
 
 ```bash
 # 修改默认端口（可选，增强安全性）
@@ -699,7 +940,7 @@ chown -R $USER:$USER $HADOOP_HOME
 # </property>
 ```
 
-## 12. 总结
+## 13. 总结
 
 本文档详细介绍了在 Ubuntu 系统上部署 Hadoop 单节点集群的完整过程，包括：
 
