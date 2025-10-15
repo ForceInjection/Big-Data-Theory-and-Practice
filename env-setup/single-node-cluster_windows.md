@@ -2,31 +2,31 @@
 
 ## 1 概述
 
-本文档详细介绍如何在 **Windows 系统上的WSL环境**搭建 Hadoop 单节点集群，采用 Pseudo-Distributed Operation（伪分布式）模式。在此模式下，每个 Hadoop 守护进程运行在独立的 Java 进程中，模拟分布式环境，适用于开发和测试场景。
+本文档详细介绍如何在 **Windows 系统上的 WSL 环境**搭建 Hadoop 单节点集群，采用 Pseudo-Distributed Operation（伪分布式）模式。在此模式下，每个 Hadoop 守护进程运行在独立的 Java 进程中，模拟分布式环境，适用于开发和测试场景。
 
-WSL中操作与Ubuntu基本一致，主要区别在5.3。Ubuntu环境部署可参考[Big-Data-Theory-and-Practice/env-setup/single-node-cluster.md at main · ForceInjection/Big-Data-Theory-and-Practice · GitHub](https://github.com/ForceInjection/Big-Data-Theory-and-Practice/blob/main/env-setup/single-node-cluster.md)。
+WSL 中操作与 Ubuntu 基本一致，主要区别在 5.3。Ubuntu 环境部署可参考[Big-Data-Theory-and-Practice/env-setup/single-node-cluster.md at main · ForceInjection/Big-Data-Theory-and-Practice · GitHub](https://github.com/ForceInjection/Big-Data-Theory-and-Practice/blob/main/env-setup/single-node-cluster.md)。
 
 ## 2 系统要求
 
 ### 2.1 支持的平台
 
-- Windows 10 版本 2004 及更高版本（内部版本 19041 及更高版本）或 Windows 11 
+- Windows 10 版本 2004 及更高版本（内部版本 19041 及更高版本）或 Windows 11
 
 ### 2.2 必需软件
 
-#### 2.2.1 **Windows终端**
+#### 2.2.1 **Windows 终端**
 
-- [Windows Terminal - Windows官方下载 \| 微软应用商店 \| Microsoft Store](https://apps.microsoft.com/detail/9n0dx20hk701?hl=zh-CN&gl=CN)。
+- [Windows Terminal - Windows 官方下载 \| 微软应用商店 \| Microsoft Store](https://apps.microsoft.com/detail/9n0dx20hk701?hl=zh-CN&gl=CN)。
 
 #### 2.2.2 **WSL**
 
-##### WSL安装
+##### WSL 安装
 
-- 在Windows Terminal中以**管理员模式**打开Powershell
+- 在 Windows Terminal 中以**管理员模式**打开 Powershell
 
-````powershell
+```powershell
 
-# 需要Windows 10 版本 2004 及更高版本（内部版本 19041 及更高版本）或 Windows 11 
+# 需要Windows 10 版本 2004 及更高版本（内部版本 19041 及更高版本）或 Windows 11
 wsl --set-default-version 2 # 在安装新的 Linux 分发版时将默认版本设置为WSL 2
 wsl --list --online  # 查看可安装的发行版
 wsl --install # 安装默认的ubuntu发行版
@@ -37,9 +37,9 @@ wsl --install # 安装默认的ubuntu发行版
 # 离开WSL
 exit
 
-````
+```
 
-````powershell
+```powershell
 # 检查正在运行的WSL版本
 wsl --list --verbose
 
@@ -53,15 +53,11 @@ wsl -d Ubuntu
 # 指定用户进入WSL
 # e.g使用hadoop用户进入ubuntu环境
 wsl -d Ubuntu -u hadoop
-````
+```
 
+##### WSL 安装位置迁移（可选）
 
-
-##### WSL安装位置迁移（可选）
-
-- WSL默认安装在C盘，有需要可以迁移。
-
-
+- WSL 默认安装在 C 盘，有需要可以迁移。
 
 ```powershell
 # 找到需要迁移的WSL NAME
@@ -90,11 +86,9 @@ wsl -l -v
 
 ```
 
-
-
 ## 3 环境准备
 
-在WSL环境中执行以下操作：
+在 WSL 环境中执行以下操作：
 
 ### 3.1 更新系统包
 
@@ -156,7 +150,7 @@ source ~/.bashrc
 
 ```
 
-## 4 Hadoop安装
+## 4 Hadoop 安装
 
 ### 4.1 下载 Hadoop
 
@@ -213,9 +207,9 @@ hadoop version
 
 ## 5 Hadoop 配置
 
-### 5.1  配置 Hadoop 环境
+### 5.1   配置 Hadoop 环境
 
-编辑 `$HADOOP_HOME/etc/hadoop/hadoop-env.sh` 文件：
+编辑  `$HADOOP_HOME/etc/hadoop/hadoop-env.sh`  文件：
 
 ```bash
 # 编辑 hadoop-env.sh
@@ -316,8 +310,8 @@ nano $HADOOP_HOME/etc/hadoop/mapred-site.xml
 
 **重要提示**：
 
-- 配置文件中只能有一个 `<configuration>` 标签
-- 请根据实际的 Hadoop 安装路径调整 `HADOOP_MAPRED_HOME` 的值
+- 配置文件中只能有一个  `<configuration>`  标签
+- 请根据实际的 Hadoop 安装路径调整  `HADOOP_MAPRED_HOME`  的值
 - 必须使用绝对路径
 
 #### 5.2.4 配置 yarn-site.xml
@@ -348,7 +342,7 @@ nano $HADOOP_HOME/etc/hadoop/yarn-site.xml
 
 #### 5.3.1 挂载独立磁盘（开发测试环境）
 
-- 安装XFS工具集
+- 安装 XFS 工具集
 
 ```bash
 %% 安装XFS 文件系统的工具集 %%
@@ -369,7 +363,7 @@ lsblk
 # 发现无可用磁盘，sda、sdb为只读设备，其他磁盘都已经被挂载
 ```
 
-- 如果没有可用的独立磁盘，则在WSL 内创建loop device，并挂载到/mnt/hadoop
+- 如果没有可用的独立磁盘，则在 WSL 内创建 loop device，并挂载到/mnt/hadoop
 
 ```PowerShell
 # WSL 内创建 5GB 文件
@@ -537,7 +531,7 @@ hdfs dfs -cat /user/hadoop/input/core-site.xml
 
 ### 8.4 运行 MapReduce 示例
 
-**重要提醒**：如果您在配置 `mapred-site.xml` 时添加了 `HADOOP_MAPRED_HOME` 环境变量，需要重启 Hadoop 服务：
+**重要提醒**：如果您在配置  `mapred-site.xml`  时添加了  `HADOOP_MAPRED_HOME`  环境变量，需要重启 Hadoop 服务：
 
 ```bash
 # 停止所有服务
@@ -1014,4 +1008,4 @@ chown -R $USER:$USER $HADOOP_HOME
 
 [2] Apache Software Foundation. Apache Hadoop 3.4.2 Documentation [EB/OL]. 2024. <https://hadoop.apache.org/docs/stable/>
 
-[3] WSL安装位置迁移。[ 轻松搬迁！教你如何将WSL从C盘迁移到其他盘区，释放存储空间！ - 知乎](https://zhuanlan.zhihu.com/p/621873601)
+[3] WSL 安装位置迁移。[轻松搬迁！教你如何将 WSL 从 C 盘迁移到其他盘区，释放存储空间！ - 知乎](https://zhuanlan.zhihu.com/p/621873601)
