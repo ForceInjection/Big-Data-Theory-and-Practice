@@ -4,20 +4,22 @@
 
 ### 1.1 登录云平台
 
-a) 打开浏览器，使用校园网访问学院云平台地址：
-```
-http://172.19.240.2:5000
-```
+1. 打开浏览器，使用校园网访问学院云平台地址：
 
-b) 点击"切换到用户登录"，选择"AD/LDAP用户"
-- **账户**：您的学号（如 MF1932001）
-- **密码**：南京大学统一身份认证密码
+   ```text
+   http://172.19.240.2:5000
+   ```
 
-c) 登录后选择项目 `prj-MF1932XXX` 进入主界面
+2. 点击"切换到用户登录"，选择"AD/LDAP 用户"
+
+   - **账户**：您的学号（如 MF1932001）
+   - **密码**：南京大学统一身份认证密码
+
+3. 登录后选择项目 `prj-MF1932XXX` 进入主界面
 
 ### 1.2 资源配额说明
 
-- **CPU**：2核心
+- **CPU**：2 核心
 - **内存**：4GB
 - **存储**：100GB
 
@@ -25,9 +27,9 @@ c) 登录后选择项目 `prj-MF1932XXX` 进入主界面
 
 ### 2.1 创建步骤
 
-a) 点击"云资源池" → "云主机" → "创建云主机"
+1. 点击"云资源池" → "云主机" → "创建云主机"
+2. 配置云主机参数：
 
-b) 配置云主机参数：
 - **名称**：自定义（如 hadoop-node）
 - **计算规格**：选择 2C4G
 - **镜像**：推荐选择 Ubuntu 服务器版
@@ -45,43 +47,46 @@ b) 配置云主机参数：
 
 ### 3.1 访问云主机
 
-a) 在云主机列表中找到创建的实例，点击"打开控制台"
-b) 使用控制台密码登录系统
+1. 在云主机列表中找到创建的实例，点击"打开控制台";
+2. 使用控制台密码登录系统。
 
 #### 3.2.1 方式一：控制台访问
 
-* ![image-20251016121155877](/Users/joiffer/Library/Application Support/typora-user-images/image-20251016121155877.png)
+- ![image-20251016121155877](./img/1.png)
 
-* 初始用户名：root
-* 初始密码：password
-* ![image-20251015154707618](/Users/joiffer/Library/Application Support/typora-user-images/image-20251015154707618.png)
+- 初始用户名：root
+- 初始密码：password
+- ![image-20251015154707618](./img/2.png)
 
-#### 3.2.2 方式二：ssh访问
+#### 3.2.2 方式二：ssh 访问
 
-* 创建主机时 ssh 选择密码
-* ![image-20251015190545686](/Users/joiffer/Library/Application Support/typora-user-images/image-20251015190545686.png)
-* 方式一登录后（修改配置文件）:
-  * sudo vim /etc/ssh/sshd_config
-  * #PermitRootLogin prohibit-password 改为 PermitRootLogin yes
-  * #PasswordAuthentication yes 改为 PasswordAuthentication yes
-  * #PubkeyAuthentication yes 改为 PubkeyAuthentication yes
-  * 重启ssh服务：sudo systemctl restart ssh
-* 本地ssh连接：ssh root@云ip地址
-  * 初始名：root
-  * 初始密码：password
+- 创建主机时 ssh 选择密码
+  - ![image-20251015190545686](./img/3.png)
+- 方式一登录后（修改配置文件）:
+  - sudo vim /etc/ssh/sshd_config
+  - #PermitRootLogin prohibit-password 改为 PermitRootLogin yes
+  - #PasswordAuthentication yes 改为 PasswordAuthentication yes
+  - #PubkeyAuthentication yes 改为 PubkeyAuthentication yes
+  - 重启 ssh 服务：sudo systemctl restart ssh
+- 本地 ssh 连接：ssh root@云 ip 地址
+  - 初始名：root
+  - 初始密码：password
 
 ### 3.2 资源调整
 
-a) **CPU/内存调整**：
-- 在云主机详情页直接修改 CPU 核数和内存大小
+1. **CPU/内存调整**：
 
-b) **云盘扩容**：
-- 点击"云主机操作" → "系统扩容"
-- 输入新容量（注意：不支持缩小）
+   - 在云主机详情页直接修改 CPU 核数和内存大小
+
+2. **云盘扩容**：
+
+   - 点击"云主机操作" → "系统扩容"
+   - 输入新容量（注意：不支持缩小）
 
 ### 3.3 网络配置
 
-a) **校园网认证**：
+**校园网认证**：
+
 ```bash
 # 上网认证
 curl -d '{"username":"学号", "password":"密码", "domain":"default"}' https://p.nju.edu.cn/api/portal/v1/login
@@ -93,6 +98,7 @@ curl -d '{"domain":"default"}' https://p.nju.edu.cn/api/portal/v1/logout
 ## 4. Hadoop 环境准备
 
 ### 4.1 系统更新
+
 ```bash
 # 更新包列表
 apt update
@@ -125,6 +131,7 @@ source ~/.bashrc
 ```
 
 ### 4.3 配置 Java 环境
+
 ```bash
 # 设置环境变量
 echo 'export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64' >> /etc/environment
@@ -137,6 +144,7 @@ java -version
 ## 5. Hadoop 安装与配置
 
 ### 5.1 创建 Hadoop 用户
+
 ```bash
 # 创建 hadoop 用户
 adduser hadoop
@@ -147,6 +155,7 @@ su - hadoop
 ```
 
 ### 5.2 下载和安装 Hadoop
+
 ```bash
 # 切换到用户目录
 cd /home/hadoop
@@ -164,6 +173,7 @@ sudo chown -R hadoop:hadoop ~/hadoop
 ```
 
 ### 5.3 配置环境变量
+
 ```bash
 # 编辑 .bashrc
 sudo nano ~/.bashrc
@@ -182,22 +192,21 @@ source ~/.bashrc
 ### 5.4 配置 Hadoop
 
 #### 5.4.1 配置 hadoop-env.sh
+
 ```bash
 echo 'export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64' >> $HADOOP_HOME/etc/hadoop/hadoop-env.sh
 ```
 
 #### 5.4.2 配置 core-site.xml
 
-```
+```bash
 # 编辑 core-site.xml
 nano $HADOOP_HOME/etc/hadoop/core-site.xml
 ```
 
-
-
 添加以下配置内容：
 
-```
+```xml
 <configuration>
     <property>
         <name>fs.defaultFS</name>
@@ -212,20 +221,16 @@ nano $HADOOP_HOME/etc/hadoop/core-site.xml
 </configuration>
 ```
 
-
-
 #### 5.4.3 配置 hdfs-site.xml
 
-```
+```bash
 # 编辑 hdfs-site.xml
 nano $HADOOP_HOME/etc/hadoop/hdfs-site.xml
 ```
 
-
-
 添加以下配置内容：
 
-```
+```xml
 <configuration>
     <property>
         <name>dfs.replication</name>
@@ -245,20 +250,16 @@ nano $HADOOP_HOME/etc/hadoop/hdfs-site.xml
 </configuration>
 ```
 
-#### 5.4.4配置 mapred-site.xml
+#### 5.4.4 配置 mapred-site.xml
 
-
-
-```
+```bash
 # 编辑 mapred-site.xml
 nano $HADOOP_HOME/etc/hadoop/mapred-site.xml
 ```
 
-
-
 添加以下配置内容：
 
-```
+```xml
 <configuration>
     <property>
         <name>mapreduce.framework.name</name>
@@ -283,8 +284,6 @@ nano $HADOOP_HOME/etc/hadoop/mapred-site.xml
 </configuration>
 ```
 
-
-
 **重要提示**：
 
 - 配置文件中只能有一个 `<configuration>` 标签
@@ -293,18 +292,14 @@ nano $HADOOP_HOME/etc/hadoop/mapred-site.xml
 
 #### 5.4.5 配置 yarn-site.xml
 
-
-
-```
+```bash
 # 编辑 yarn-site.xml
 nano $HADOOP_HOME/etc/hadoop/yarn-site.xml
 ```
 
-
-
 添加以下配置内容：
 
-```
+```xml
 <configuration>
     <property>
         <name>yarn.nodemanager.aux-services</name>
@@ -356,15 +351,17 @@ exit
 ## 7. 启动 Hadoop 集群
 
 ### 7.1 格式化 HDFS
+
 ```bash
 sudo hostnamectl set-hostname hadoop-node
-sudo nano /etc/hosts 
+sudo nano /etc/hosts
 # 确保有 127.0.0.1 localhost 和 127.0.1.1 hadoop-node（没有就加进去）
 
 hdfs namenode -format
 ```
 
 ### 7.2 启动服务
+
 ```bash
 # 启动 HDFS
 start-dfs.sh
@@ -377,6 +374,7 @@ jps
 ```
 
 预期输出应包含：
+
 - NameNode
 - DataNode
 - SecondaryNameNode
@@ -395,10 +393,12 @@ ssh -L 9870:localhost:9870 -L 8088:localhost:8088 hadoop@云主机IP
 ```
 
 访问地址：
-- **HDFS Web UI**：http://localhost:9870
-- **YARN Web UI**：http://localhost:8088
+
+- **HDFS Web UI**：<http://localhost:9870/>
+- **YARN Web UI**：<http://localhost:8088/>
 
 ### 8.2 基本功能测试
+
 ```bash
 # 创建 HDFS 目录
 hdfs dfs -mkdir -p /user/hadoop/input
@@ -417,17 +417,20 @@ hdfs dfs -cat /user/hadoop/output/*
 ## 9. 资源管理建议
 
 ### 9.1 节约资源措施
+
 - **关机释放资源**：不使用时关闭云主机，释放 CPU 和内存
 - **及时清理**：删除不需要的云主机和快照
 - **合理使用存储**：100GB 存储需合理规划
 
 ### 9.2 快照管理
+
 - 创建重要节点快照备份
 - 及时删除不必要的快照释放存储空间
 
 ## 10. 故障排除
 
 ### 10.1 常见问题
+
 ```bash
 # 检查服务状态
 jps
@@ -443,6 +446,7 @@ ping localhost
 ```
 
 ### 10.2 服务管理命令
+
 ```bash
 # 停止所有服务
 stop-all.sh
@@ -466,4 +470,4 @@ stop-yarn.sh
 
 ---
 
-**注意**：学院资源有限，请合理使用，避免恶意占用资源。如有问题，请及时联系管理员。
+> **注意**：学院资源有限，请合理使用，避免恶意占用资源。如有问题，请及时联系管理员。
