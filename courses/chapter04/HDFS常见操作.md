@@ -1,6 +1,6 @@
 # HDFS 常见操作教学指南
 
-## 1. 教学目标与学习成果
+## 1. 引言
 
 ### 1.1 教学目标
 
@@ -23,7 +23,7 @@
 - [ ] 分析和解决 HDFS 操作中的常见问题
 - [ ] 应用 HDFS 最佳实践进行实际项目开发
 
-## 2. 课程内容概览
+### 1.3 课程内容概览
 
 本课程内容分为以下几个模块：
 
@@ -35,28 +35,28 @@
 
 ---
 
-## 3. 环境准备与配置
+## 2. 环境准备与配置
 
-### 3.1 学习目标
+### 2.1 学习目标
 
 - 验证 HDFS 环境配置
 - 掌握环境变量设置
 - 学会检查服务状态
 
-### 3.2 环境要求
+### 2.2 环境要求
 
-#### 3.2.1 基础环境配置
+#### 2.2.1 基础环境配置
 
 确保您的环境满足以下要求：
 
 | 组件     | 版本要求          | 说明                     |
 | -------- | ----------------- | ------------------------ |
-| 操作系统 | Ubuntu 20.04 LTS+ | 推荐使用 Linux 环境      |
+| 操作系统 | Ubuntu 22.04 LTS+ | 推荐使用 Linux 环境      |
 | Java     | OpenJDK 8         | HDFS 运行的基础环境      |
 | Hadoop   | 3.4.2             | 本课程使用的 Hadoop 版本 |
 | 运行模式 | 伪分布式          | 单节点模拟分布式环境     |
 
-#### 3.2.2 环境变量验证
+#### 2.2.2 环境变量验证
 
 ```bash
 # 验证关键环境变量（必须正确配置）
@@ -72,7 +72,7 @@ echo "PATH: $PATH"
 # PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/hadoop/hadoop/bin:/home/hadoop/hadoop/sbin
 ```
 
-#### 3.2.3 服务状态检查
+#### 2.2.3 服务状态检查
 
 ```bash
 # 检查 Hadoop 相关进程（关键步骤）
@@ -94,7 +94,7 @@ start-dfs.sh
 jps
 ```
 
-#### 3.2.4 连接测试
+#### 2.2.4 连接测试
 
 ```bash
 # 测试 HDFS 连接（验证配置正确性）
@@ -106,14 +106,14 @@ hdfs dfsadmin -report
 # - 无错误信息输出
 ```
 
-### 3.3 Web UI 访问
+### 2.3 Web UI 访问
 
-#### 3.3.1 本地环境访问
+#### 2.3.1 本地环境访问
 
 - **HDFS NameNode Web UI**：<http://localhost:9870/>
 - **功能**：查看集群状态、浏览文件系统、监控存储使用情况
 
-#### 3.3.2 远程环境访问（阿里云 ECS）
+#### 2.3.2 远程环境访问（阿里云 ECS）
 
 ```bash
 # 建立 SSH 隧道（在本地机器执行）
@@ -124,19 +124,19 @@ ssh -L 9870:localhost:9870 hadoop@你的ECS公网IP
 
 ---
 
-## 4. HDFS 文件操作命令
+## 3. HDFS 文件操作命令
 
-### 4.1 学习目标
+### 3.1 学习目标
 
 - 掌握 HDFS 基本文件操作
 - 理解 HDFS 与本地文件系统的差异
 - 熟练使用文件上传、下载、复制、移动等操作
 
-### 4.2 Linux 与 HDFS 命令对比
+### 3.2 Linux 与 HDFS 命令对比
 
 为了帮助学生更好地理解和记忆 HDFS 命令，以下是 Linux 文件系统命令与 HDFS 命令的详细对比：
 
-#### 4.2.1 目录操作命令对比
+#### 3.2.1 目录操作命令对比
 
 | **功能**         | **Linux 命令**          | **HDFS 命令**                     | **说明**                      |
 | ---------------- | ----------------------- | --------------------------------- | ----------------------------- |
@@ -148,7 +148,7 @@ ssh -L 9870:localhost:9870 hadoop@你的ECS公网IP
 | **删除空目录**   | `rmdir /path/to/dir`    | `hdfs dfs -rmdir /path/to/dir`    | 只能删除空目录                |
 | **递归删除目录** | `rm -r /path/to/dir`    | `hdfs dfs -rm -r /path/to/dir`    | 可删除非空目录                |
 
-#### 4.2.2 文件传输命令对比
+#### 3.2.2 文件传输命令对比
 
 | **功能**       | **Linux 命令**    | **HDFS 命令**                             | **说明**              |
 | -------------- | ----------------- | ----------------------------------------- | --------------------- |
@@ -158,7 +158,7 @@ ssh -L 9870:localhost:9870 hadoop@你的ECS公网IP
 | **复制到本地** | `cp file /tmp/`   | `hdfs dfs -copyToLocal file /tmp/`        | `get` 的别名          |
 | **从本地复制** | `cp /tmp/file .`  | `hdfs dfs -copyFromLocal /tmp/file .`     | `put` 的别名          |
 
-#### 4.2.3 文件查看命令对比
+#### 3.2.3 文件查看命令对比
 
 | **功能**         | **Linux 命令**  | **HDFS 命令**              | **说明**       |
 | ---------------- | --------------- | -------------------------- | -------------- |
@@ -170,7 +170,7 @@ ssh -L 9870:localhost:9870 hadoop@你的ECS公网IP
 | **查看目录大小** | `du -h /path`   | `hdfs dfs -du -h /path`    | 人类可读格式   |
 | **汇总目录大小** | `du -sh /path`  | `hdfs dfs -du -s -h /path` | 汇总显示       |
 
-#### 4.2.4 文件管理命令对比
+#### 3.2.4 文件管理命令对比
 
 | **功能**         | **Linux 命令**       | **HDFS 命令**                  | **说明**      |
 | ---------------- | -------------------- | ------------------------------ | ------------- |
@@ -182,7 +182,7 @@ ssh -L 9870:localhost:9870 hadoop@你的ECS公网IP
 | **删除多个文件** | `rm file1 file2`     | `hdfs dfs -rm file1 file2`     | 支持多文件    |
 | **通配符删除**   | `rm *.txt`           | `hdfs dfs -rm *.txt`           | 支持通配符    |
 
-#### 4.2.5 权限管理命令对比
+#### 3.2.5 权限管理命令对比
 
 | **功能**             | **Linux 命令**              | **HDFS 命令**                         | **说明** |
 | -------------------- | --------------------------- | ------------------------------------- | -------- |
@@ -194,7 +194,7 @@ ssh -L 9870:localhost:9870 hadoop@你的ECS公网IP
 | **修改组**           | `chgrp group filename`      | `hdfs dfs -chgrp group filename`      | 功能相同 |
 | **递归修改所有者**   | `chown -R user:group /path` | `hdfs dfs -chown -R user:group /path` | 功能相同 |
 
-#### 4.2.6 学习记忆技巧
+#### 3.2.6 学习记忆技巧
 
 **相似性总结**：
 
@@ -215,7 +215,7 @@ ssh -L 9870:localhost:9870 hadoop@你的ECS公网IP
 3. 重点记忆文件传输命令的差异（`put` vs `get`）
 4. 注意 HDFS 特有的功能（如回收站、副本数等）
 
-### 4.3 命令分类说明
+### 3.3 命令分类说明
 
 HDFS 文件操作命令主要分为以下几类：
 
@@ -227,9 +227,9 @@ HDFS 文件操作命令主要分为以下几类：
 | **文件管理** | `cp`, `mv`, `rm`                             | HDFS 内部文件复制、移动、删除 |
 | **权限管理** | `chmod`, `chown`, `chgrp`                    | 修改文件权限和所有者          |
 
-### 4.4 目录操作命令
+### 3.4 目录操作命令
 
-#### 4.4.1 创建目录
+#### 3.4.1 创建目录
 
 ```bash
 # 基本语法：hdfs dfs -mkdir [选项] <目录路径>
@@ -254,7 +254,7 @@ hdfs dfs -ls /user/hadoop
 - 路径必须以 `/` 开头，表示 HDFS 根目录
 - 支持一次创建多个目录，提高操作效率
 
-#### 4.4.2 查看目录内容
+#### 3.4.2 查看目录内容
 
 ```bash
 # 基本语法：hdfs dfs -ls [选项] <目录路径>
@@ -283,7 +283,7 @@ hdfs dfs -ls -l /user/hadoop
 # ↑权限      ↑副本数 ↑所有者 ↑组           ↑大小 ↑修改时间        ↑路径
 ```
 
-#### 4.4.3 删除目录
+#### 3.4.3 删除目录
 
 ```bash
 # 删除空目录
@@ -303,9 +303,9 @@ hdfs dfs -rm -r -skipTrash /user/hadoop/temp
 - 删除的文件默认进入回收站，可以恢复
 - `-skipTrash` 参数会永久删除文件，无法恢复
 
-### 4.5 文件传输命令
+### 3.5 文件传输命令
 
-#### 4.5.1 上传文件到 HDFS
+#### 3.5.1 上传文件到 HDFS
 
 ```bash
 # 准备测试数据
@@ -339,7 +339,7 @@ echo "Content from stdin" | hdfs dfs -put - /user/hadoop/stdin_file.txt
 - 支持通配符：`hdfs dfs -put /tmp/*.txt /user/hadoop/`
 - 如果目标文件已存在，会报错（除非使用 `-f` 强制覆盖）
 
-#### 4.5.2 从 HDFS 下载文件
+#### 3.5.2 从 HDFS 下载文件
 
 ```bash
 # 基本语法：hdfs dfs -get <HDFS路径> <本地路径>
@@ -361,9 +361,9 @@ ls -la /tmp/downloaded_test.txt
 cat /tmp/downloaded_test.txt
 ```
 
-### 4.6 文件查看命令
+### 3.6 文件查看命令
 
-#### 4.6.1 查看文件内容
+#### 3.6.1 查看文件内容
 
 ```bash
 # 查看完整文件内容（类似 Linux cat）
@@ -380,7 +380,7 @@ hdfs dfs -cat /user/hadoop/large_file.txt | head -10
 hdfs dfs -cat /user/hadoop/large_file.txt | tail -10
 ```
 
-#### 4.6.2 查看文件属性
+#### 3.6.2 查看文件属性
 
 ```bash
 # 查看文件详细信息（stat 命令）
@@ -397,9 +397,9 @@ hdfs dfs -du -h /user/hadoop/
 hdfs dfs -du -s -h /user/hadoop/
 ```
 
-### 4.7 文件管理命令
+### 3.7 文件管理命令
 
-#### 4.7.1 HDFS 内部复制
+#### 3.7.1 HDFS 内部复制
 
 ```bash
 # 基本语法：hdfs dfs -cp <源路径> <目标路径>
@@ -414,7 +414,7 @@ hdfs dfs -cp /user/hadoop/input /user/hadoop/input_backup
 hdfs dfs -cp /user/hadoop/test.txt /user/hadoop/multiline.txt /user/hadoop/backup/
 ```
 
-#### 4.7.2 HDFS 内部移动
+#### 3.7.2 HDFS 内部移动
 
 ```bash
 # 基本语法：hdfs dfs -mv <源路径> <目标路径>
@@ -429,7 +429,7 @@ hdfs dfs -mv /user/hadoop/old_name.txt /user/hadoop/new_name.txt
 hdfs dfs -mv /user/hadoop/temp /user/hadoop/archive/temp_moved
 ```
 
-#### 4.7.3 删除文件
+#### 3.7.3 删除文件
 
 ```bash
 # 删除单个文件
@@ -446,9 +446,9 @@ hdfs dfs -rm /user/hadoop/temp_*
 hdfs dfs -rm -r /user/hadoop/temp_directory
 ```
 
-### 4.8 权限管理命令
+### 3.8 权限管理命令
 
-#### 4.8.1 修改文件权限
+#### 3.8.1 修改文件权限
 
 ```bash
 # 基本语法：hdfs dfs -chmod <权限> <文件路径>
@@ -465,7 +465,7 @@ hdfs dfs -chmod o+r /user/hadoop/test.txt
 hdfs dfs -chmod -R 755 /user/hadoop/data/
 ```
 
-#### 4.8.2 修改所有者和组
+#### 3.8.2 修改所有者和组
 
 ```bash
 # 修改文件所有者
@@ -481,7 +481,7 @@ hdfs dfs -chgrp newgroup /user/hadoop/test.txt
 hdfs dfs -chown -R hadoop:hadoop /user/hadoop/data/
 ```
 
-### 4.9 实践练习：文件操作综合演示
+### 3.9 实践练习：文件操作综合演示
 
 ```bash
 # 练习 1：完整的文件操作流程
@@ -531,15 +531,15 @@ echo "=== 练习完成 ==="
 
 ---
 
-## 5. HDFS 运维管理命令
+## 4. HDFS 运维管理命令
 
-### 5.1 学习目标
+### 4.1 学习目标
 
 - 掌握 HDFS 集群状态监控
 - 学会使用系统管理命令
 - 理解 HDFS 的运维操作
 
-### 5.2 命令分类说明
+### 4.2 命令分类说明
 
 HDFS 运维管理命令主要分为以下几类：
 
@@ -552,9 +552,9 @@ HDFS 运维管理命令主要分为以下几类：
 | **快照管理**     | `dfs -createSnapshot`, `dfs -deleteSnapshot`    | 管理目录快照           |
 | **块管理**       | `fsck -blocks`, `balancer`                      | 管理数据块和集群平衡   |
 
-### 5.3 集群状态监控
+### 4.3 集群状态监控
 
-#### 5.3.1 查看集群报告
+#### 4.3.1 查看集群报告
 
 ```bash
 # 查看详细的集群状态报告
@@ -581,7 +581,7 @@ Blocks with corrupt replicas: 0                 # 损坏的块数
 Missing blocks: 0                               # 丢失的块数
 ```
 
-#### 5.3.2 查看集群拓扑
+#### 4.3.2 查看集群拓扑
 
 ```bash
 # 查看集群拓扑结构
@@ -592,9 +592,9 @@ hdfs dfsadmin -printTopology
 #    127.0.0.1:9866 (localhost)
 ```
 
-### 5.4 文件系统检查
+### 4.4 文件系统检查
 
-#### 5.4.1 基本文件系统检查
+#### 4.4.1 基本文件系统检查
 
 ```bash
 # 检查整个文件系统
@@ -631,7 +631,7 @@ hdfs fsck / -list-corruptfileblocks
 # - Missing replicas: 丢失的副本
 ```
 
-#### 5.4.2 高级检查选项
+#### 4.4.2 高级检查选项
 
 ```bash
 # 检查特定文件的块信息
@@ -644,9 +644,9 @@ hdfs fsck / -move
 hdfs fsck / -delete
 ```
 
-### 5.5 安全模式管理
+### 4.5 安全模式管理
 
-#### 5.5.1 安全模式操作
+#### 4.5.1 安全模式操作
 
 ```bash
 # 查看安全模式状态
@@ -669,9 +669,9 @@ hdfs dfsadmin -safemode wait
 - NameNode 启动时会自动进入安全模式
 - 当达到最小副本数要求时，会自动退出安全模式
 
-### 5.6 配额管理
+### 4.6 配额管理
 
-#### 5.6.1 设置目录配额
+#### 4.6.1 设置目录配额
 
 ```bash
 # 创建测试目录
@@ -695,7 +695,7 @@ hdfs dfs -count -q /user/hadoop/quota_test
 #      100          99              1g              1g            1            0                  0 /user/hadoop/quota_test
 ```
 
-#### 5.6.2 清除配额
+#### 4.6.2 清除配额
 
 ```bash
 # 清除文件数量配额
@@ -708,9 +708,9 @@ hdfs dfsadmin -clrSpaceQuota /user/hadoop/quota_test
 hdfs dfs -count -q /user/hadoop/quota_test
 ```
 
-### 5.7 快照管理
+### 4.7 快照管理
 
-#### 5.7.1 快照操作
+#### 4.7.1 快照操作
 
 ```bash
 # 创建测试目录和文件
@@ -721,7 +721,7 @@ hdfs dfs -put /tmp/test.txt /user/hadoop/snapshot_test/
 hdfs dfsadmin -allowSnapshot /user/hadoop/snapshot_test
 
 # 创建快照
-hdfs dfs -createSnapshot /user/hadoop/snapshot_test snapshot_$(date +%Y%m%d_%H%M%S)
+hdfs dfsadmin -createSnapshot /user/hadoop/snapshot_test snapshot_$(date +%Y%m%d_%H%M%S)
 
 # 列出快照
 hdfs dfs -ls /user/hadoop/snapshot_test/.snapshot/
@@ -730,22 +730,22 @@ hdfs dfs -ls /user/hadoop/snapshot_test/.snapshot/
 hdfs dfs -ls /user/hadoop/snapshot_test/.snapshot/snapshot_*/
 ```
 
-#### 5.7.2 快照管理操作
+#### 4.7.2 快照管理操作
 
 ```bash
 # 重命名快照
-hdfs dfs -renameSnapshot /user/hadoop/snapshot_test snapshot_20240101_120000 backup_20240101
+hdfs dfsadmin -renameSnapshot /user/hadoop/snapshot_test snapshot_20240101_120000 backup_20240101
 
 # 删除快照
-hdfs dfs -deleteSnapshot /user/hadoop/snapshot_test backup_20240101
+hdfs dfsadmin -deleteSnapshot /user/hadoop/snapshot_test backup_20240101
 
 # 禁用快照功能
 hdfs dfsadmin -disallowSnapshot /user/hadoop/snapshot_test
 ```
 
-### 5.8 块管理和集群平衡
+### 4.8 块管理和集群平衡
 
-#### 5.8.1 查看块信息
+#### 4.8.1 查看块信息
 
 ```bash
 # 查看文件的块分布
@@ -758,7 +758,7 @@ hdfs getconf -confKey dfs.blocksize
 hdfs getconf -confKey dfs.replication
 ```
 
-#### 5.8.2 集群平衡（适用于多节点环境）
+#### 4.8.2 集群平衡（适用于多节点环境）
 
 ```bash
 # 启动集群平衡器（单节点环境不需要）
@@ -771,7 +771,7 @@ hdfs balancer -threshold 5
 hdfs balancer -bandwidth 1000
 ```
 
-### 5.9 实践练习：运维管理综合演示
+### 4.9 实践练习：运维管理综合演示
 
 ```bash
 # 练习 2：HDFS 运维管理综合练习
@@ -801,7 +801,7 @@ echo "5. 快照管理演示："
 hdfs dfs -mkdir -p /user/hadoop/snapshot_demo
 echo "snapshot test content" | hdfs dfs -put - /user/hadoop/snapshot_demo/test.txt
 hdfs dfsadmin -allowSnapshot /user/hadoop/snapshot_demo
-hdfs dfs -createSnapshot /user/hadoop/snapshot_demo demo_snapshot
+hdfs dfsadmin -createSnapshot /user/hadoop/snapshot_demo demo_snapshot
 hdfs dfs -ls /user/hadoop/snapshot_demo/.snapshot/
 
 # 6. 查看系统配置
@@ -811,7 +811,7 @@ echo "副本因子: $(hdfs getconf -confKey dfs.replication)"
 
 # 7. 清理演示数据
 echo "7. 清理演示数据："
-hdfs dfs -deleteSnapshot /user/hadoop/snapshot_demo demo_snapshot
+hdfs dfsadmin -deleteSnapshot /user/hadoop/snapshot_demo demo_snapshot
 hdfs dfsadmin -disallowSnapshot /user/hadoop/snapshot_demo
 hdfs dfs -rm -r /user/hadoop/snapshot_demo
 hdfs dfsadmin -clrQuota /user/hadoop/quota_demo
@@ -823,22 +823,141 @@ echo "=== 运维管理练习完成 ==="
 
 ---
 
-## 6. HDFS Java SDK 编程
+## 5. HDFS Java SDK 编程
 
-### 6.1 学习目标
+### 5.1 学习目标
 
 - 掌握 HDFS Java API 的基本使用
-- 学会编写 HDFS 客户端程序
-- 理解 HDFS 编程的最佳实践
+- 理解 HDFS 命令执行的底层机制
+- 学习 Java API 的设计思想
+- 掌握文件系统操作的编程实现
 
-### 6.2 开发环境准备
+### 5.2 HDFS 命令执行的底层机制
 
-#### 6.2.1 Maven 依赖配置
+#### 5.2.1 客户端与 NameNode 的交互流程
 
-创建 Maven 项目并添加以下依赖：
+当我们执行 HDFS 命令时，底层发生了复杂的交互过程：
+
+```text
+HDFS 客户端与集群交互流程：
+
+┌─────────────┐         ┌─────────────┐         ┌─────────────┐
+│ HDFS 客户端  │         │  NameNode   │         │  DataNode   │
+└──────┬──────┘         └──────┬──────┘         └──────┬──────┘
+       │                       │                       │
+       │ 1. RPC 请求（文件操作）  │                       │
+       ├──────────────────────>│                       │
+       │                       │                       │
+       │                       │ 2. 检查权限和命名空间    │
+       │                       ├─────────┐             │
+       │                       │         │             │
+       │                       │<────────┘             │
+       │                       │                       │
+       │ 3. 返回元数据信息       │                       │
+       │<──────────────────────┤                       │
+       │                       │                       │
+       │ 4. 直接与 DataNode 交互 │                       │
+       ├──────────────────────────────────────────────>│
+       │                       │                       │
+       │ 5. 返回数据或确认       │                       │
+       │<──────────────────────────────────────────────┤
+       │                       │                       │
+```
+
+**详细流程说明**：
+
+1. **RPC 通信**：客户端通过 RPC（Remote Procedure Call）与 NameNode 通信
+2. **元数据查询**：NameNode 查询文件系统元数据，检查权限
+3. **数据定位**：NameNode 返回数据块位置信息
+4. **数据传输**：客户端直接与 DataNode 进行数据传输
+5. **状态更新**：操作完成后更新 NameNode 的元数据
+
+#### 5.2.2 文件读取的底层机制
+
+```java
+// 文件读取的底层步骤
+// 1. 客户端向 NameNode 请求文件块位置
+// 2. NameNode 返回块位置列表（按距离排序）
+// 3. 客户端选择最近的 DataNode 读取数据
+// 4. 如果读取失败，自动切换到下一个副本
+```
+
+#### 5.2.3 文件写入的底层机制
+
+```java
+// 文件写入的底层步骤
+// 1. 客户端向 NameNode 申请写入权限
+// 2. NameNode 分配数据块 ID 和 DataNode 列表
+// 3. 客户端建立数据管道（Pipeline）
+// 4. 数据流式写入，DataNode 间自动复制
+// 5. 写入完成后通知 NameNode 更新元数据
+```
+
+### 5.3 Java API 的设计思想
+
+#### 5.3.1 抽象文件系统设计
+
+Hadoop 的 Java API 采用了**抽象文件系统**的设计模式：
+
+```java
+// 核心抽象类
+public abstract class FileSystem {
+    // 统一的文件系统接口
+    public abstract FSDataInputStream open(Path f) throws IOException;
+    public abstract FSDataOutputStream create(Path f) throws IOException;
+    public abstract boolean mkdirs(Path f) throws IOException;
+    // ... 其他抽象方法
+}
+
+// HDFS 具体实现
+public class DistributedFileSystem extends FileSystem {
+    // HDFS 特定的实现
+}
+```
+
+**设计优势**：
+
+- **统一接口**：本地文件系统、HDFS、S3 等都实现相同接口
+- **可扩展性**：易于添加新的文件系统实现
+- **透明性**：应用程序无需关心底层存储细节
+
+#### 5.3.2 配置驱动的设计
+
+```java
+// 配置驱动设计示例
+Configuration conf = new Configuration();
+// 通过配置决定使用哪种文件系统
+conf.set("fs.defaultFS", "hdfs://namenode:9000");  // HDFS
+// conf.set("fs.defaultFS", "file:///");           // 本地文件系统
+// conf.set("fs.defaultFS", "s3a://bucket/");      // Amazon S3
+
+FileSystem fs = FileSystem.get(conf);
+```
+
+#### 5.3.3 流式处理设计
+
+HDFS API 采用流式处理，支持大文件的高效处理：
+
+```java
+// 输入流设计
+FSDataInputStream in = fs.open(path);
+// 支持随机访问
+in.seek(1024);  // 跳转到指定位置
+byte[] buffer = new byte[4096];
+in.read(buffer);
+
+// 输出流设计
+FSDataOutputStream out = fs.create(path);
+// 支持流式写入
+out.write(data);
+out.flush();  // 强制刷新到磁盘
+```
+
+### 5.4 开发环境准备
+
+#### 5.4.1 Maven 依赖配置
 
 ```xml
-<!-- pom.xml -->
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -857,46 +976,59 @@ echo "=== 运维管理练习完成 ==="
     </properties>
 
     <dependencies>
-        <!-- Hadoop Client 依赖 -->
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
             <version>${hadoop.version}</version>
         </dependency>
-
-        <!-- 日志依赖 -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.30</version>
-        </dependency>
-
-        <!-- 测试依赖 -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.2</version>
-            <scope>test</scope>
+            <version>1.7.36</version>
         </dependency>
     </dependencies>
 </project>
 ```
 
-#### 6.2.2 日志配置
+#### 5.4.2 配置文件方式连接
 
-创建 `src/main/resources/log4j.properties`：
+在 `src/main/resources` 目录下创建配置文件：
 
-```properties
-# log4j.properties
-log4j.rootLogger=INFO, stdout
-log4j.appender.stdout=org.apache.log4j.ConsoleAppender
-log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
-log4j.appender.stdout.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n
+**core-site.xml**：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://hadoop:9000</value>
+    </property>
+    <property>
+        <name>hadoop.security.authentication</name>
+        <value>simple</value>
+    </property>
+</configuration>
 ```
 
-### 6.3 HDFS 客户端基础操作
+**hdfs-site.xml**：
 
-#### 6.3.1 建立 HDFS 连接
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+    <property>
+        <name>dfs.client.socket-timeout</name>
+        <value>60000</value>
+    </property>
+</configuration>
+```
+
+### 5.5 HDFS 客户端基础操作
+
+#### 5.5.1 建立 HDFS 连接
 
 ```java
 package com.example.hdfs;
@@ -909,39 +1041,30 @@ import java.net.URI;
 
 /**
  * HDFS 客户端连接管理类
- * 功能：建立和管理 HDFS 连接
+ * 功能：使用配置文件方式建立和管理 HDFS 连接
  */
 public class HDFSClient {
 
     private FileSystem fileSystem;
     private Configuration configuration;
 
-    // HDFS 连接配置
-    private static final String HDFS_URI = "hdfs://localhost:9000";
-    private static final String USER = "hadoop";
-
     /**
-     * 初始化 HDFS 客户端连接
+     * 使用配置文件初始化 HDFS 客户端连接
+     * 配置文件（core-site.xml, hdfs-site.xml）会自动从 classpath 加载
      * @throws IOException 连接异常
      */
     public void init() throws IOException {
-        // 1. 创建配置对象
+        // 创建配置对象，自动加载 classpath 中的配置文件
         configuration = new Configuration();
 
-        // 2. 设置 HDFS 相关配置（可选，通常从配置文件读取）
-        configuration.set("fs.defaultFS", HDFS_URI);
-        configuration.set("dfs.replication", "1");
-
-        // 3. 建立 HDFS 连接
+        // 建立 HDFS 连接
         try {
-            fileSystem = FileSystem.get(
-                URI.create(HDFS_URI),
-                configuration,
-                USER
-            );
-            System.out.println("HDFS 连接建立成功: " + HDFS_URI);
+            fileSystem = FileSystem.get(configuration);
+            System.out.println("HDFS 连接建立成功");
+            System.out.println("HDFS URI: " + fileSystem.getUri());
+            System.out.println("工作目录: " + fileSystem.getWorkingDirectory());
         } catch (Exception e) {
-            throw new IOException("HDFS 连接失败", e);
+            throw new IOException("HDFS 连接失败，请检查配置文件和网络连接: " + e.getMessage(), e);
         }
     }
 
@@ -991,27 +1114,28 @@ public class HDFSClient {
 }
 ```
 
-#### 6.3.2 目录操作实现
+#### 5.5.2 HDFS 统一操作实现
 
 ```java
 package com.example.hdfs;
 
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import java.io.IOException;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.io.IOUtils;
+import java.io.*;
 
 /**
- * HDFS 目录操作类
- * 功能：创建、删除、列出目录
+ * HDFS 统一操作类
+ * 功能：目录操作、文件操作的统一接口
  */
-public class HDFSDirectoryOperations {
+public class HDFSOperations {
 
     private FileSystem fileSystem;
 
-    public HDFSDirectoryOperations(FileSystem fileSystem) {
+    public HDFSOperations(FileSystem fileSystem) {
         this.fileSystem = fileSystem;
     }
+
+    // ==================== 目录操作 ====================
 
     /**
      * 创建目录
@@ -1021,59 +1145,37 @@ public class HDFSDirectoryOperations {
     public boolean createDirectory(String dirPath) {
         try {
             Path path = new Path(dirPath);
-
-            // 检查目录是否已存在
             if (fileSystem.exists(path)) {
                 System.out.println("目录已存在: " + dirPath);
                 return true;
             }
-
-            // 创建目录（自动创建父目录）
             boolean result = fileSystem.mkdirs(path);
-
-            if (result) {
-                System.out.println("目录创建成功: " + dirPath);
-            } else {
-                System.out.println("目录创建失败: " + dirPath);
-            }
-
+            System.out.println(result ? "目录创建成功: " + dirPath : "目录创建失败: " + dirPath);
             return result;
-
         } catch (IOException e) {
-            System.err.println("创建目录时出错: " + e.getMessage());
+            System.err.println("创建目录失败: " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * 删除目录
-     * @param dirPath 目录路径
+     * 删除路径（文件或目录）
+     * @param path 路径
      * @param recursive 是否递归删除
      * @return 删除是否成功
      */
-    public boolean deleteDirectory(String dirPath, boolean recursive) {
+    public boolean delete(String path, boolean recursive) {
         try {
-            Path path = new Path(dirPath);
-
-            // 检查目录是否存在
-            if (!fileSystem.exists(path)) {
-                System.out.println("目录不存在: " + dirPath);
+            Path hdfsPath = new Path(path);
+            if (!fileSystem.exists(hdfsPath)) {
+                System.out.println("路径不存在: " + path);
                 return false;
             }
-
-            // 删除目录
-            boolean result = fileSystem.delete(path, recursive);
-
-            if (result) {
-                System.out.println("目录删除成功: " + dirPath);
-            } else {
-                System.out.println("目录删除失败: " + dirPath);
-            }
-
+            boolean result = fileSystem.delete(hdfsPath, recursive);
+            System.out.println(result ? "删除成功: " + path : "删除失败: " + path);
             return result;
-
         } catch (IOException e) {
-            System.err.println("删除目录时出错: " + e.getMessage());
+            System.err.println("删除失败: " + e.getMessage());
             return false;
         }
     }
@@ -1085,36 +1187,23 @@ public class HDFSDirectoryOperations {
     public void listDirectory(String dirPath) {
         try {
             Path path = new Path(dirPath);
-
-            // 检查路径是否存在
             if (!fileSystem.exists(path)) {
                 System.out.println("路径不存在: " + dirPath);
                 return;
             }
 
-            // 获取目录内容
             FileStatus[] fileStatuses = fileSystem.listStatus(path);
-
             System.out.println("\n目录内容: " + dirPath);
-            System.out.println("权限\t\t副本数\t所有者\t\t组\t\t大小\t\t修改时间\t\t\t名称");
-            System.out.println("-------------------------------------------------------------------------------------");
-
+            System.out.println("类型\t名称\t\t大小\t\t修改时间");
+            System.out.println("----------------------------------------");
             for (FileStatus status : fileStatuses) {
-                String type = status.isDirectory() ? "d" : "-";
-                String permission = type + status.getPermission().toString();
-                short replication = status.getReplication();
-                String owner = status.getOwner();
-                String group = status.getGroup();
-                long size = status.getLen();
-                long modTime = status.getModificationTime();
+                String type = status.isDirectory() ? "目录" : "文件";
                 String name = status.getPath().getName();
-
-                System.out.printf("%s\t%d\t%s\t\t%s\t\t%d\t\t%tF %<tT\t%s%n",
-                    permission, replication, owner, group, size, modTime, name);
+                long size = status.getLen();
+                System.out.printf("%s\t%s\t\t%d\t\t%tF %<tT%n", type, name, size, status.getModificationTime());
             }
-
         } catch (IOException e) {
-            System.err.println("列出目录内容时出错: " + e.getMessage());
+            System.err.println("列出目录失败: " + e.getMessage());
         }
     }
 
@@ -1127,72 +1216,12 @@ public class HDFSDirectoryOperations {
         try {
             return fileSystem.exists(new Path(path));
         } catch (IOException e) {
-            System.err.println("检查路径存在性时出错: " + e.getMessage());
+            System.err.println("检查路径失败: " + e.getMessage());
             return false;
         }
     }
 
-    /**
-     * 测试目录操作
-     */
-    public static void main(String[] args) {
-        HDFSClient client = new HDFSClient();
-        try {
-            // 建立连接
-            client.init();
-
-            HDFSDirectoryOperations dirOps = new HDFSDirectoryOperations(client.getFileSystem());
-
-            // 测试目录操作
-            String testDir = "/user/hadoop/java_test";
-
-            // 1. 创建目录
-            dirOps.createDirectory(testDir);
-            dirOps.createDirectory(testDir + "/subdir1");
-            dirOps.createDirectory(testDir + "/subdir2");
-
-            // 2. 列出目录内容
-            dirOps.listDirectory(testDir);
-
-            // 3. 检查路径存在性
-            System.out.println("目录是否存在: " + dirOps.exists(testDir));
-
-            // 4. 删除目录
-            dirOps.deleteDirectory(testDir, true);
-
-        } catch (IOException e) {
-            System.err.println("测试失败: " + e.getMessage());
-        } finally {
-            client.close();
-        }
-    }
-}
-```
-
-#### 6.3.3 文件操作实现
-
-```java
-package com.example.hdfs;
-
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IOUtils;
-
-import java.io.*;
-
-/**
- * HDFS 文件操作类
- * 功能：上传、下载、读取、写入文件
- */
-public class HDFSFileOperations {
-
-    private FileSystem fileSystem;
-
-    public HDFSFileOperations(FileSystem fileSystem) {
-        this.fileSystem = fileSystem;
-    }
+    // ==================== 文件操作 ====================
 
     /**
      * 上传本地文件到 HDFS
@@ -1205,27 +1234,20 @@ public class HDFSFileOperations {
             Path localFilePath = new Path(localPath);
             Path hdfsFilePath = new Path(hdfsPath);
 
-            // 检查本地文件是否存在
-            File localFile = new File(localPath);
-            if (!localFile.exists()) {
+            if (!new File(localPath).exists()) {
                 System.out.println("本地文件不存在: " + localPath);
                 return false;
             }
 
-            // 如果 HDFS 文件已存在，先删除
             if (fileSystem.exists(hdfsFilePath)) {
                 fileSystem.delete(hdfsFilePath, false);
-                System.out.println("已删除已存在的 HDFS 文件: " + hdfsPath);
             }
 
-            // 执行上传
             fileSystem.copyFromLocalFile(localFilePath, hdfsFilePath);
             System.out.println("文件上传成功: " + localPath + " -> " + hdfsPath);
-
             return true;
-
         } catch (IOException e) {
-            System.err.println("上传文件时出错: " + e.getMessage());
+            System.err.println("上传文件失败: " + e.getMessage());
             return false;
         }
     }
@@ -1241,20 +1263,16 @@ public class HDFSFileOperations {
             Path hdfsFilePath = new Path(hdfsPath);
             Path localFilePath = new Path(localPath);
 
-            // 检查 HDFS 文件是否存在
             if (!fileSystem.exists(hdfsFilePath)) {
                 System.out.println("HDFS 文件不存在: " + hdfsPath);
                 return false;
             }
 
-            // 执行下载
             fileSystem.copyToLocalFile(hdfsFilePath, localFilePath);
             System.out.println("文件下载成功: " + hdfsPath + " -> " + localPath);
-
             return true;
-
         } catch (IOException e) {
-            System.err.println("下载文件时出错: " + e.getMessage());
+            System.err.println("下载文件失败: " + e.getMessage());
             return false;
         }
     }
@@ -1265,40 +1283,20 @@ public class HDFSFileOperations {
      * @return 文件内容
      */
     public String readFile(String hdfsPath) {
-        FSDataInputStream inputStream = null;
-        try {
-            Path path = new Path(hdfsPath);
+        try (FSDataInputStream inputStream = fileSystem.open(new Path(hdfsPath));
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
-            // 检查文件是否存在
-            if (!fileSystem.exists(path)) {
+            if (!fileSystem.exists(new Path(hdfsPath))) {
                 System.out.println("文件不存在: " + hdfsPath);
                 return null;
             }
 
-            // 打开文件输入流
-            inputStream = fileSystem.open(path);
-
-            // 读取文件内容
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             IOUtils.copyBytes(inputStream, outputStream, 4096, false);
-
-            String content = outputStream.toString("UTF-8");
             System.out.println("文件读取成功: " + hdfsPath);
-
-            return content;
-
+            return outputStream.toString("UTF-8");
         } catch (IOException e) {
-            System.err.println("读取文件时出错: " + e.getMessage());
+            System.err.println("读取文件失败: " + e.getMessage());
             return null;
-        } finally {
-            // 关闭输入流
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    System.err.println("关闭输入流时出错: " + e.getMessage());
-                }
-            }
         }
     }
 
@@ -1309,110 +1307,19 @@ public class HDFSFileOperations {
      * @return 写入是否成功
      */
     public boolean writeFile(String hdfsPath, String content) {
-        FSDataOutputStream outputStream = null;
-        try {
-            Path path = new Path(hdfsPath);
-
-            // 如果文件已存在，先删除
-            if (fileSystem.exists(path)) {
-                fileSystem.delete(path, false);
-            }
-
-            // 创建文件输出流
-            outputStream = fileSystem.create(path);
-
-            // 写入内容
+        try (FSDataOutputStream outputStream = fileSystem.create(new Path(hdfsPath))) {
             outputStream.writeBytes(content);
             outputStream.flush();
-
             System.out.println("文件写入成功: " + hdfsPath);
             return true;
-
         } catch (IOException e) {
-            System.err.println("写入文件时出错: " + e.getMessage());
-            return false;
-        } finally {
-            // 关闭输出流
-            if (outputStream != null) {
-                try {
-                    outputStream.close();
-                } catch (IOException e) {
-                    System.err.println("关闭输出流时出错: " + e.getMessage());
-                }
-            }
-        }
-    }
-
-    /**
-     * 复制 HDFS 文件
-     * @param srcPath 源文件路径
-     * @param dstPath 目标文件路径
-     * @return 复制是否成功
-     */
-    public boolean copyFile(String srcPath, String dstPath) {
-        try {
-            Path src = new Path(srcPath);
-            Path dst = new Path(dstPath);
-
-            // 检查源文件是否存在
-            if (!fileSystem.exists(src)) {
-                System.out.println("源文件不存在: " + srcPath);
-                return false;
-            }
-
-            // 执行复制
-            boolean result = org.apache.hadoop.fs.util.FileUtil.copy(
-                fileSystem, src, fileSystem, dst, false, fileSystem.getConf()
-            );
-
-            if (result) {
-                System.out.println("文件复制成功: " + srcPath + " -> " + dstPath);
-            } else {
-                System.out.println("文件复制失败");
-            }
-
-            return result;
-
-        } catch (IOException e) {
-            System.err.println("复制文件时出错: " + e.getMessage());
+            System.err.println("写入文件失败: " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * 删除 HDFS 文件
-     * @param hdfsPath HDFS 文件路径
-     * @return 删除是否成功
-     */
-    public boolean deleteFile(String hdfsPath) {
-        try {
-            Path path = new Path(hdfsPath);
-
-            // 检查文件是否存在
-            if (!fileSystem.exists(path)) {
-                System.out.println("文件不存在: " + hdfsPath);
-                return false;
-            }
-
-            // 删除文件
-            boolean result = fileSystem.delete(path, false);
-
-            if (result) {
-                System.out.println("文件删除成功: " + hdfsPath);
-            } else {
-                System.out.println("文件删除失败: " + hdfsPath);
-            }
-
-            return result;
-
-        } catch (IOException e) {
-            System.err.println("删除文件时出错: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * 测试文件操作
+     * 测试 HDFS 操作
      */
     public static void main(String[] args) {
         HDFSClient client = new HDFSClient();
@@ -1420,35 +1327,23 @@ public class HDFSFileOperations {
             // 建立连接
             client.init();
 
-            HDFSFileOperations fileOps = new HDFSFileOperations(client.getFileSystem());
+            HDFSOperations ops = new HDFSOperations(client.getFileSystem());
 
-            // 准备测试数据
-            String testContent = "这是一个 HDFS Java API 测试文件\n" +
-                               "包含中文和英文内容\n" +
-                               "测试时间: " + new java.util.Date();
+            // 测试目录操作
+            String testDir = "/user/hadoop/java_test";
+            ops.createDirectory(testDir);
+            ops.listDirectory("/user");
 
-            String hdfsTestFile = "/user/hadoop/java_test.txt";
-            String localTestFile = "/tmp/java_test_local.txt";
+            // 测试文件操作
+            String testFile = testDir + "/test.txt";
+            String content = "这是一个测试文件\n包含中文内容";
 
-            // 1. 写入文件到 HDFS
-            fileOps.writeFile(hdfsTestFile, testContent);
+            ops.writeFile(testFile, content);
+            String readContent = ops.readFile(testFile);
+            System.out.println("读取内容: " + readContent);
 
-            // 2. 读取 HDFS 文件内容
-            String readContent = fileOps.readFile(hdfsTestFile);
-            System.out.println("读取的文件内容:\n" + readContent);
-
-            // 3. 下载文件到本地
-            fileOps.downloadFile(hdfsTestFile, localTestFile);
-
-            // 4. 复制文件
-            fileOps.copyFile(hdfsTestFile, hdfsTestFile + ".backup");
-
-            // 5. 清理测试文件
-            fileOps.deleteFile(hdfsTestFile);
-            fileOps.deleteFile(hdfsTestFile + ".backup");
-
-            // 删除本地测试文件
-            new File(localTestFile).delete();
+            // 清理测试数据
+            ops.delete(testDir, true);
 
         } catch (IOException e) {
             System.err.println("测试失败: " + e.getMessage());
@@ -1459,13 +1354,58 @@ public class HDFSFileOperations {
 }
 ```
 
-### 6.4 完整的 HDFS 客户端示例
+#### 5.5.3 实践练习
+
+创建一个简单的 HDFS 操作程序：
 
 ```java
 package com.example.hdfs;
 
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
+import java.io.IOException;
+
+/**
+ * HDFS 操作练习
+ */
+public class HDFSPractice {
+    public static void main(String[] args) {
+        HDFSClient client = new HDFSClient();
+        try {
+            // 1. 建立连接
+            client.init();
+            HDFSOperations ops = new HDFSOperations(client.getFileSystem());
+
+            // 2. 创建工作目录
+            String workDir = "/user/student/practice";
+            ops.createDirectory(workDir);
+
+            // 3. 创建测试文件
+            String testFile = workDir + "/hello.txt";
+            String content = "Hello HDFS!\n这是我的第一个 HDFS 文件。";
+            ops.writeFile(testFile, content);
+
+            // 4. 读取并显示文件内容
+            String readContent = ops.readFile(testFile);
+            System.out.println("文件内容:\n" + readContent);
+
+            // 5. 列出目录内容
+            ops.listDirectory(workDir);
+
+            System.out.println("练习完成！");
+
+        } catch (IOException e) {
+            System.err.println("练习失败: " + e.getMessage());
+        } finally {
+            client.close();
+        }
+    }
+}
+```
+
+### 5.6 完整的 HDFS 客户端示例
+
+```java
+package com.example.hdfs;
+
 import java.io.IOException;
 import java.util.Scanner;
 
@@ -1476,8 +1416,7 @@ import java.util.Scanner;
 public class HDFSClientMain {
 
     private HDFSClient client;
-    private HDFSDirectoryOperations dirOps;
-    private HDFSFileOperations fileOps;
+    private HDFSOperations operations;
     private Scanner scanner;
 
     public HDFSClientMain() {
@@ -1490,9 +1429,7 @@ public class HDFSClientMain {
      */
     public void init() throws IOException {
         client.init();
-        FileSystem fs = client.getFileSystem();
-        dirOps = new HDFSDirectoryOperations(fs);
-        fileOps = new HDFSFileOperations(fs);
+        operations = new HDFSOperations(client.getFileSystem());
         System.out.println("HDFS 客户端初始化完成");
     }
 
@@ -1508,10 +1445,9 @@ public class HDFSClientMain {
         System.out.println("5. 下载文件");
         System.out.println("6. 读取文件内容");
         System.out.println("7. 写入文件内容");
-        System.out.println("8. 复制文件");
-        System.out.println("9. 删除文件");
+        System.out.println("8. 删除文件");
         System.out.println("0. 退出");
-        System.out.print("请选择操作 (0-9): ");
+        System.out.print("请选择操作 (0-8): ");
     }
 
     /**
@@ -1548,9 +1484,6 @@ public class HDFSClientMain {
                         writeFile();
                         break;
                     case 8:
-                        copyFile();
-                        break;
-                    case 9:
                         deleteFile();
                         break;
                     case 0:
@@ -1566,46 +1499,64 @@ public class HDFSClientMain {
         }
     }
 
+    /**
+     * 列出目录内容的交互操作
+     */
     private void listDirectory() {
         System.out.print("请输入目录路径: ");
         String path = scanner.nextLine();
-        dirOps.listDirectory(path);
+        operations.listDirectory(path);
     }
 
+    /**
+     * 创建目录的交互操作
+     */
     private void createDirectory() {
         System.out.print("请输入要创建的目录路径: ");
         String path = scanner.nextLine();
-        dirOps.createDirectory(path);
+        operations.createDirectory(path);
     }
 
+    /**
+     * 删除目录的交互操作
+     */
     private void deleteDirectory() {
         System.out.print("请输入要删除的目录路径: ");
         String path = scanner.nextLine();
         System.out.print("是否递归删除? (y/n): ");
         boolean recursive = scanner.nextLine().toLowerCase().startsWith("y");
-        dirOps.deleteDirectory(path, recursive);
+        operations.delete(path, recursive);
     }
 
+    /**
+     * 上传文件的交互操作
+     */
     private void uploadFile() {
         System.out.print("请输入本地文件路径: ");
         String localPath = scanner.nextLine();
         System.out.print("请输入 HDFS 目标路径: ");
         String hdfsPath = scanner.nextLine();
-        fileOps.uploadFile(localPath, hdfsPath);
+        operations.uploadFile(localPath, hdfsPath);
     }
 
+    /**
+     * 下载文件的交互操作
+     */
     private void downloadFile() {
         System.out.print("请输入 HDFS 文件路径: ");
         String hdfsPath = scanner.nextLine();
         System.out.print("请输入本地目标路径: ");
         String localPath = scanner.nextLine();
-        fileOps.downloadFile(hdfsPath, localPath);
+        operations.downloadFile(hdfsPath, localPath);
     }
 
+    /**
+     * 读取文件内容的交互操作
+     */
     private void readFile() {
         System.out.print("请输入 HDFS 文件路径: ");
         String path = scanner.nextLine();
-        String content = fileOps.readFile(path);
+        String content = operations.readFile(path);
         if (content != null) {
             System.out.println("文件内容:");
             System.out.println("----------------------------------------");
@@ -1614,6 +1565,9 @@ public class HDFSClientMain {
         }
     }
 
+    /**
+     * 写入文件内容的交互操作
+     */
     private void writeFile() {
         System.out.print("请输入 HDFS 文件路径: ");
         String path = scanner.nextLine();
@@ -1625,21 +1579,16 @@ public class HDFSClientMain {
             content.append(line).append("\n");
         }
 
-        fileOps.writeFile(path, content.toString());
+        operations.writeFile(path, content.toString());
     }
 
-    private void copyFile() {
-        System.out.print("请输入源文件路径: ");
-        String srcPath = scanner.nextLine();
-        System.out.print("请输入目标文件路径: ");
-        String dstPath = scanner.nextLine();
-        fileOps.copyFile(srcPath, dstPath);
-    }
-
+    /**
+     * 删除文件的交互操作
+     */
     private void deleteFile() {
         System.out.print("请输入要删除的文件路径: ");
         String path = scanner.nextLine();
-        fileOps.deleteFile(path);
+        operations.delete(path, false);
     }
 
     /**
@@ -1677,7 +1626,7 @@ public class HDFSClientMain {
 }
 ```
 
-### 6.5 实践练习：Java SDK 编程
+### 5.7 实践练习：Java SDK 编程
 
 #### 练习 1：批量文件处理程序
 
@@ -1685,7 +1634,7 @@ public class HDFSClientMain {
 package com.example.hdfs.practice;
 
 import com.example.hdfs.HDFSClient;
-import com.example.hdfs.HDFSFileOperations;
+import com.example.hdfs.HDFSOperations;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -1697,7 +1646,7 @@ import java.io.IOException;
 public class BatchFileProcessor {
 
     private HDFSClient client;
-    private HDFSFileOperations fileOps;
+    private HDFSOperations operations;
 
     public BatchFileProcessor() {
         client = new HDFSClient();
@@ -1708,7 +1657,7 @@ public class BatchFileProcessor {
      */
     public void init() throws IOException {
         client.init();
-        fileOps = new HDFSFileOperations(client.getFileSystem());
+        operations = new HDFSOperations(client.getFileSystem());
     }
 
     /**
@@ -1740,7 +1689,7 @@ public class BatchFileProcessor {
                 String localPath = file.getAbsolutePath();
                 String hdfsPath = hdfsDir + "/" + file.getName();
 
-                if (fileOps.uploadFile(localPath, hdfsPath)) {
+                if (operations.uploadFile(localPath, hdfsPath)) {
                     successCount++;
                     totalSize += file.length();
                 } else {
@@ -1817,17 +1766,17 @@ public class BatchFileProcessor {
 
 ---
 
-## 7. 故障排除与最佳实践
+## 6. 故障排除与最佳实践
 
-### 7.1 学习目标
+### 6.1 学习目标
 
 - 掌握常见 HDFS 问题的诊断和解决方法
 - 了解 HDFS 性能优化策略
 - 学习 HDFS 运维最佳实践
 
-### 7.2 常见问题及解决方案
+### 6.2 常见问题及解决方案
 
-#### 7.2.1 连接问题
+#### 6.2.1 连接问题
 
 **问题现象**：无法连接到 HDFS
 
@@ -1871,7 +1820,31 @@ ping localhost
 nslookup localhost
 ```
 
-#### 7.2.2 权限问题
+**单节点伪分布式集群特殊注意事项**：
+
+```bash
+# 1. 检查单节点集群特有的配置
+# 确认主机名映射正确
+ping hadoop
+
+# 2. 验证副本数配置
+hdfs dfsadmin -getDefaultReplication
+# 应该返回 1，而不是 3
+
+# 3. 检查所有服务是否在同一台机器上运行
+jps | grep -E "(NameNode|DataNode|ResourceManager|NodeManager)"
+# 应该看到所有四个服务都在运行
+
+# 4. 验证端口配置
+netstat -tulpn | grep -E "(9000|9870|8088|8042)"
+# 确认所有必要端口都在监听
+
+# 5. 检查磁盘空间（单节点容易出现空间不足）
+df -h
+hdfs dfsadmin -report
+```
+
+#### 6.2.2 权限问题
 
 **问题现象**：权限被拒绝
 
@@ -1896,9 +1869,9 @@ sudo -u hadoop hdfs dfs -chmod 755 /user/$USER
 hdfs dfs -ls -d /user/$USER
 ```
 
-### 7.3 性能优化策略
+### 6.3 性能优化策略
 
-#### 7.3.1 文件大小优化
+#### 6.3.1 文件大小优化
 
 ```bash
 # 问题：大量小文件会影响 NameNode 性能
@@ -1914,7 +1887,7 @@ hdfs dfs -count -h /user/hadoop/*
 hdfs dfs -D dfs.blocksize=268435456 -put large_file.txt /user/hadoop/
 ```
 
-### 7.4 实践练习：故障排除综合演示
+### 6.4 实践练习：故障排除综合演示
 
 ```bash
 # 练习：HDFS 故障排除综合演示
@@ -1955,32 +1928,32 @@ echo "=== 故障排除练习完成 ==="
 
 ---
 
-## 8. 课程总结与评估
+## 7. 课程总结与评估
 
-### 8.1 知识点回顾
+### 7.1 知识点回顾
 
 通过本课程的学习，我们掌握了以下核心内容：
 
-#### 8.1.1 命令行操作技能
+#### 7.1.1 命令行操作技能
 
 - **文件操作命令**：`put`, `get`, `cat`, `ls`, `mkdir`, `rm`, `cp`, `mv`
 - **运维管理命令**：`dfsadmin`, `fsck`, `safemode`, `quota`, `snapshot`
 - **权限管理命令**：`chmod`, `chown`, `chgrp`
 
-#### 8.1.2 Java SDK 编程能力
+#### 7.1.2 Java SDK 编程能力
 
 - HDFS 客户端连接管理
 - 文件和目录操作的编程实现
 - 异常处理和资源管理
 - 批量处理和监控程序开发
 
-#### 8.1.3 运维管理技能
+#### 7.1.3 运维管理技能
 
 - 集群状态监控和健康检查
 - 故障诊断和问题解决
 - 性能优化和最佳实践
 
-### 8.2 课后习题
+### 7.2 课后习题
 
 本章的实践能力评估已独立为课后习题，包含基础操作和编程开发两个部分的综合练习。
 
@@ -2007,9 +1980,9 @@ echo "=== 故障排除练习完成 ==="
 
 ---
 
-## 9. 参考资料与扩展阅读
+## 8. 参考资料与扩展阅读
 
-### 9.1 官方文档
+### 8.1 官方文档
 
 1. **Apache Hadoop 官方文档**
 
@@ -2021,7 +1994,7 @@ echo "=== 故障排除练习完成 ==="
    - [Hadoop Java API](https://hadoop.apache.org/docs/current/api/)
    - [FileSystem API](https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html)
 
-### 9.2 技术书籍
+### 8.2 技术书籍
 
 1. **《Hadoop 权威指南》**（第四版）
 
@@ -2034,7 +2007,7 @@ echo "=== 故障排除练习完成 ==="
    - 出版社：人民邮电出版社
    - 内容：大数据技术基础理论和实践
 
-### 9.3 在线资源
+### 8.3 在线资源
 
 1. **学习平台**
 
