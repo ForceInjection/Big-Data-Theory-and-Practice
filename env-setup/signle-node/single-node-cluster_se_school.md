@@ -10,7 +10,7 @@
    http://172.19.240.2:5000
    ```
 
-2. 点击"切换到用户登录"，选择"AD/LDAP 用户"
+2. 点击下方的"切换到 项目登录"，选择"AD/LDAP 用户"
 
    - **账户**：您的学号（如 MF1932001）
    - **密码**：南京大学统一身份认证密码
@@ -354,6 +354,7 @@ exit
 
 ```bash
 sudo hostnamectl set-hostname hadoop-node
+# 上述 hostnamectl 命令设置的主机名在重启后会失效，每次重启后都需要重新输入此命令。如需持久化配置请参阅第 7.3 节
 sudo nano /etc/hosts
 # 确保有 127.0.0.1 localhost 和 127.0.1.1 hadoop-node（没有就加进去）
 
@@ -380,6 +381,18 @@ jps
 - SecondaryNameNode
 - ResourceManager
 - NodeManager
+
+### 7.3 持久化主机名配置
+
+为确保主机名配置持久化，需要修改 cloud-init 配置：
+
+```bash
+# 编辑 cloud-init 配置文件
+sudo nano /etc/cloud/cloud.cfg
+
+# 定位并修改以下参数：
+preserve_hostname: false   →   preserve_hostname: true
+```
 
 ## 8. 验证与测试
 
