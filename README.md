@@ -12,7 +12,7 @@
 
 《daHadoop 权威指南》第 4 版：
 
-![hadoop-definitive-guide.jpg](./books/hadoop-definitive-guide-cover.jpg) - Hadoop 权威指南封面图
+![hadoop-definitive-guide.jpg](./books/hadoop-definitive-guide-cover.jpg)
 
 ---
 
