@@ -8,12 +8,11 @@
 
 ---
 
-## 2. 参考书籍
+## 2. [参考书籍](./books/README.md)
 
-存放大数据相关的参考书籍和资料
+《daHadoop 权威指南》第 4 版：
 
-- `README.md` - 书籍目录说明
-- `hadoop-definitive-guide.jpg` - Hadoop 权威指南封面图
+![hadoop-definitive-guide.jpg](./books/hadoop-definitive-guide-cover.jpg) - Hadoop 权威指南封面图
 
 ---
 
@@ -36,7 +35,6 @@
 - **第三讲**：
 
   - [分布式文件系统 HDFS（上）](./courses/chapter03/第03讲-分布式文件系统HDFS（上）.pdf)
-
   - [补充：GFS-大数据存储的奠基者](./courses/chapter03/【补充】GFS-大数据存储的奠基者.pdf)
 
 - **第四讲**：
