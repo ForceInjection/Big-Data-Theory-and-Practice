@@ -25,7 +25,13 @@ MapReduce 是一种编程模型，用于处理和生成大数据集。它由 Goo
 
 ### 1.3 数据格式
 
-NCDC 气象数据使用固定宽度的文本格式存储，每行代表一个气象观测记录。了解数据格式对于编写正确的 MapReduce 程序至关重要。
+NCDC 气象数据使用固定宽度的文本格式存储，每行代表一个气象观测记录。
+
+**示例数据记录**：
+
+```text
+0057332130999991950010106004+64333+023450FM-12+000599999V0202701N015919999999N0000001N9-00781+99999102001ADDGF108991999999999999999999
+```
 
 #### 1.3.1 数据格式规范
 
@@ -62,24 +68,19 @@ NCDC 气象数据使用固定宽度的文本格式存储，每行代表一个气
 
 每个温度读数都有一个质量标识符，用于表示数据的可靠性：
 
-```text
-质量代码    含义
-0          通过所有质量控制检查
-1          通过所有质量控制检查，但存在疑问
-2          通过粗略质量控制检查
-3          通过粗略质量控制检查，但存在疑问
-4          通过基本质量控制检查
-5          未通过质量控制检查
-9          缺失数据
-```
+| **质量代码** | **含义**                         |
+| :----------: | :------------------------------- |
+|      0       | 通过所有质量控制检查             |
+|      1       | 通过所有质量控制检查，但存在疑问 |
+|      2       | 通过粗略质量控制检查             |
+|      3       | 通过粗略质量控制检查，但存在疑问 |
+|      4       | 通过基本质量控制检查             |
+|      5       | 未通过质量控制检查               |
+|      9       | 缺失数据                         |
 
-#### 1.3.4 示例数据记录
+#### 1.3.4 示例数据解析
 
-```text
-0057332130999991950010106004+64333+023450FM-12+000599999V0202701N015919999999N0000001N9-00781+99999102001ADDGF108991999999999999999999
-```
-
-解析这条记录：
+解析以上记录，以下我们会用到的数据：
 
 - **年份**：1950
 - **月日**：0101（1 月 1 日）
@@ -91,7 +92,12 @@ NCDC 气象数据使用固定宽度的文本格式存储，每行代表一个气
 
 ## 第 2 章 使用 Unix 工具分析数据
 
-在介绍 MapReduce 解决方案之前，让我们先看看如何使用传统的 Unix 工具来处理这个问题。这有助于理解 MapReduce 的优势和必要性，同时也能看到 Unix 管道机制与 MapReduce 核心概念的相似性。
+在深入学习 MapReduce 分布式计算框架之前，我们首先探讨如何使用传统的 Unix 工具来解决气象数据分析问题。通过这种对比学习方式，我们将能够：
+
+1. **理解设计动机**：认识到为什么需要 MapReduce 这样的分布式计算框架
+2. **发现核心相似性**：观察 Unix 管道机制与 MapReduce 编程模型的本质联系
+3. **掌握抽象思维**：从单机处理扩展到分布式处理的思维转换过程
+4. **建立知识桥梁**：利用熟悉的 Unix 工具理解陌生的分布式概念
 
 ### 2.1 Unix 管道机制的核心思想
 
@@ -140,16 +146,20 @@ awk '{
 
 ```bash
 # Unix 管道实现流式数据处理 - 优化后的三阶段对应
-cat input.txt | \                                    # 数据源：读取原始文件
-awk '{                                                # Map: 解析、转换和过滤
+# 数据源：读取原始文件
+cat input.txt | \
+# Map: 解析、转换和过滤
+awk '{
     year = substr($0,16,4)
     temp = substr($0,88,5)
     if (temp != "+9999") {
         print year "\t" temp
     }
 }' | \
-sort -k1,1 | \                                        # Shuffle: 按年份排序分组
-awk '{                                                # Reduce: 聚合计算最大值
+# Shuffle: 按年份排序分组
+sort -k1,1 | \
+# Reduce: 聚合计算最大值
+awk '{
     if ($1 != prev_year) {
         if (prev_year != "") print prev_year "\t" max_temp
         prev_year = $1
@@ -200,7 +210,7 @@ _图 2.1 Unix 管道数据处理流程。_
 
 ### 2.4 处理时间对比
 
-以 NCDC 气象数据集为例（基于典型企业级服务器配置：16 核 CPU，64GB 内存，SSD 存储）：
+以 NCDC 气象数据集为例：
 
 > **数据来源说明**：以下数据基于《Hadoop 权威指南》中的实际测试结果和多个企业环境的性能基准测试。
 
@@ -217,11 +227,24 @@ _图 2.1 Unix 管道数据处理流程。_
 - 操作系统：CentOS 7.x
 - 测试任务：气象数据中最高温度统计（类似 WordCount 复杂度）
 
+### 2.5 本章小结
+
+通过本章的学习，我们深入了解了 Unix 工具链在数据处理中的应用，并发现了其与 MapReduce 编程模型的本质联系：
+
+1. **思维模式转换**：从单一工具思维转向管道组合思维，体现了"分而治之"的设计哲学
+2. **处理模式对应**：Unix 的 `awk → sort → awk` 三阶段处理完美对应 MapReduce 的 `Map → Shuffle → Reduce` 模式
+3. **局限性认知**：单机处理在面对大规模数据时的根本性瓶颈，为分布式计算的必要性提供了有力论证
+
 ---
 
 ## 第 3 章 让计算靠近数据：分布式计算的核心理念
 
-在深入学习 MapReduce 之前，我们需要理解一个革命性的设计理念：**让计算靠近数据（Data Locality）**。这是 Hadoop 生态系统的核心思想，也是其相对于传统分布式计算架构的最大创新。
+在深入学习 MapReduce 之前，我们需要理解一个革命性的设计理念：**让计算靠近数据（Data Locality）**。通过本章的学习，您将能够：
+
+1. **理解架构演进**：认识传统分布式计算架构的局限性和瓶颈所在
+2. **掌握核心理念**：深入理解"让计算靠近数据"的设计思想和实现原理
+3. **分析性能优势**：量化评估数据本地性对系统性能和资源利用率的影响
+4. **建立设计思维**：学会从数据本地性角度思考分布式系统的架构设计
 
 ### 3.1 传统分布式计算的瓶颈
 
@@ -242,14 +265,14 @@ _图 2.1 Unix 管道数据处理流程。_
 
 ### 3.2 数据本地性的核心思想
 
-**核心理念**：将计算任务调度到数据所在的节点执行，而不是将数据移动到计算节点。
+**核心理念**：将**计算任务**调度到**数据所在的节点**执行，而不是将数据移动到计算节点。
 
 **Hadoop 架构**：
 
 ```text
-存储   +   计算节点  ←→  存储 + 计算节点  ←→   存储 + 计算节点
-      |                    |                    |
-  数据 + 任务           数据 + 任务            数据 + 任务
+存储  +  计算节点  ←→  存储 + 计算节点  ←→   存储 + 计算节点
+      |                  |                    |
+  数据 + 任务         数据 + 任务           数据 + 任务
 ```
 
 **设计原则**：
@@ -274,23 +297,38 @@ Hadoop 定义了三个层次的数据本地性：
 
 **传统方式**：
 10GB 数据 → 网络传输 → 计算节点 → 处理 → 结果
-时间：数据传输（80%）+ 计算（20%）
+**时间**：数据传输（80%）+ 计算（20%）
 
 **Hadoop 方式**：
 10GB 数据分布在集群 → 本地计算 → 结果汇总
-时间：本地 I/O（20%）+ 计算（20%）+ 网络汇总（10%）
+**时间**：本地 I/O（20%）+ 计算（20%）+ 网络汇总（10%）
 
 **效果**：网络传输量减少 90%，总处理时间缩短 70%。
+
+### 3.5 本章小结
+
+本章深入探讨了分布式计算的核心设计理念——"让计算靠近数据"，这一理念是 MapReduce 框架高效性的根本保证：
+
+1. **架构革新**：从传统的"存储-计算分离"转向"存储-计算融合"的架构模式
+2. **性能优化**：通过数据本地性显著减少网络传输，将网络开销从系统瓶颈转化为性能优势
+3. **层次化设计**：节点本地性 > 机架本地性 > 跨机架访问的三层优化策略
+
+数据本地性不仅是一个理论概念，更是 MapReduce 框架在实际应用中取得成功的关键技术基础。理解了这一核心理念，我们就能更好地理解 MapReduce 的设计思想和实现机制。
 
 ---
 
 ## 第 4 章 MapReduce 编程模型
 
-MapReduce 是一种用于处理大规模数据集的编程模型和计算框架。它基于"分而治之"的思想，将复杂的数据处理任务分解为简单的 Map 和 Reduce 操作，实现了在分布式环境中的高效数据处理。
+在前面的章节中，我们从 Unix 工具链的单机处理模式出发，理解了数据本地性的重要价值。现在，我们将深入学习 MapReduce 这一革命性的分布式计算编程模型，它基于"分而治之"的思想，将复杂的数据处理任务分解为简单的 Map 和 Reduce 操作，实现了在分布式环境中的高效数据处理。通过本章的学习，我们将能够：
+
+1. **掌握核心模型**：深入理解 MapReduce 的"分而治之"设计哲学和编程抽象
+2. **理解执行机制**：掌握 Map 和 Reduce 两个阶段的具体执行过程和数据流转
+3. **分析设计优势**：认识 MapReduce 在容错性、可扩展性和编程简化方面的突破
+4. **建立实践能力**：通过具体案例理解如何将实际问题转化为 MapReduce 程序
 
 ### 4.1 分而治之的核心思想
 
-MapReduce 的设计哲学源于经典的"分而治之"（Divide and Conquer）算法思想：
+MapReduce 的设计哲学源于经典的"**分而治之**"（Divide and Conquer）算法思想：
 
 **分而治之的三个步骤**：
 
@@ -300,22 +338,22 @@ MapReduce 的设计哲学源于经典的"分而治之"（Divide and Conquer）�
 
 **在 MapReduce 中的体现**：
 
-**原问题**：分析 1TB 气象数据，找出每年的最高温度
+**示例问题**：分析 1TB 气象数据，找出每年的最高温度
 
-```text
-分解阶段：
-├── 数据块 1 (128MB) → Map 任务 1：处理 1950-1960 年数据
-├── 数据块 2 (128MB) → Map 任务 2：处理 1961-1970 年数据
-├── 数据块 3 (128MB) → Map 任务 3：处理 1971-1980 年数据
-└── ...
+1. 分解阶段：
 
-解决阶段：
-├── Map 任务并行执行，提取 (年份, 温度) 键值对
-└── Reduce 任务并行执行，计算每年最高温度
+   - 数据块 1 (128MB) → Map 任务 1：处理 1950-1960 年数据
+   - 数据块 2 (128MB) → Map 任务 2：处理 1961-1970 年数据
+   - 数据块 3 (128MB) → Map 任务 3：处理 1971-1980 年数据
+   - ...
 
-合并阶段：
-└── 所有 Reduce 结果汇总为最终答案
-```
+2. 解决阶段：
+
+   - Map 任务并行执行，提取 (年份, 温度) 键值对
+   - Reduce 任务并行执行，计算每年最高温度
+
+3. 合并阶段：
+   - 所有 Reduce 结果汇总为最终答案
 
 **分而治之带来的优势**：
 
@@ -643,15 +681,16 @@ MapReduce 编程模型通过"分而治之"的思想和数据本地性原理，�
 
 ---
 
-## 第 5 章 Java MapReduce
+## 第 5 章 Java MapReduce 实现
 
-现在让我们看看如何用 Java 实现气象数据的 MapReduce 程序。Java 是 Hadoop 的原生语言，提供了完整的 MapReduce API。
+在掌握了 MapReduce 的核心理论和设计思想后，我们需要将抽象的概念转化为可执行的代码。Java 作为 Hadoop 的原生语言，提供了完整而强大的 MapReduce API，是学习分布式计算编程的最佳起点。通过本章的学习，我们将能够：
 
-本章将把第 4 章介绍的 MapReduce 理论概念转化为具体的 Java 代码实现。我们将重点关注：
+1. **掌握编程映射**：理解理论概念与 Java 类之间的对应关系和转换方法
+2. **实现核心组件**：编写 Mapper、Reducer 和 Driver 类，构建完整的 MapReduce 程序
+3. **应用优化策略**：通过 Combiner 和配置参数实现性能优化和资源管理
+4. **建立实践能力**：从需求分析到代码实现，掌握分布式程序开发的完整流程
 
-- 如何将 Map/Reduce 函数抽象转化为 Java 类
-- 如何在代码中体现数据本地性原理
-- 如何通过 Combiner 配置实现性能优化策略
+本章将以气象数据分析为例，系统展示如何将第 4 章的理论概念转化为具体的 Java 代码实现，重点关注代码中数据本地性原理的体现和性能优化策略的应用。
 
 ### 5.1 理论到实践的映射
 
@@ -660,7 +699,7 @@ MapReduce 编程模型通过"分而治之"的思想和数据本地性原理，�
 | **理论概念**                                                   | **Java 实现**                    | **作用说明**           |
 | -------------------------------------------------------------- | -------------------------------- | ---------------------- |
 | Map 函数：`map(key1, value1) → list(key2, value2)`             | `MaxTemperatureMapper.map()`     | 数据转换和特征提取     |
-| Reduce 函数：`reduce(key2, list(value2)) → list(key3, value3)` | `MaxTemperatureReducer.reduce()` | 数据聚合和结果计算     |
+| Reduce 函数：`reduce(key2, list(value2)) → list(key2, value3)` | `MaxTemperatureReducer.reduce()` | 数据聚合和结果计算     |
 | 数据本地性原理                                                 | `setCombinerClass()`             | 本地聚合减少网络传输   |
 | 分而治之思想                                                   | 多个 Map 任务并行执行            | 大问题分解为小问题     |
 | 容错机制                                                       | Hadoop 框架自动处理              | 任务失败重试和数据备份 |
@@ -1056,15 +1095,14 @@ hdfs dfs -ls output/
 
 ---
 
-## 第 6 章 横向扩展
+## 第 6 章 集群横向扩展
 
-MapReduce 的一个关键优势是能够轻松扩展到大规模集群。本章将深入探讨如何将单机程序扩展到分布式环境，并详细分析数据本地性的实现机制。
+从单机程序到分布式集群，这是 MapReduce 真正展现其威力的关键跃迁。本章将引导你深入理解如何通过增加集群节点来扩展 MapReduce 的处理能力，探索数据本地性在集群横向扩展中的实现机制。通过本章的学习，我们将能够：
 
-**本章与前面章节的关系**：
-
-- **承接第 4 章理论**：将数据本地性原理转化为具体的实现机制
-- **扩展第 5 章实践**：从单机 Java 程序扩展到分布式集群环境
-- **深化核心概念**：进一步阐述分而治之思想在大规模集群中的具体体现
+- **掌握集群扩展原理**：理解通过增加计算节点实现集群横向扩展的核心机制
+- **分析扩展性能优势**：量化分析集群节点扩展带来的处理能力提升
+- **实现分布式部署**：掌握 MapReduce 程序在扩展集群环境中的部署和运行
+- **优化扩展策略**：学会利用数据本地性和负载均衡优化集群扩展效果
 
 ### 6.1 从单机到集群
 
@@ -1094,30 +1132,25 @@ HDFS 为数据本地性提供了基础支持：
 
 #### 6.2.2 MapReduce 的调度策略
 
-MapReduce 调度器实现智能任务分配：
+MapReduce 调度器（由 YARN ResourceManager 负责）实现智能任务分配：
+
+**数据本地性调度策略**：
+
+基于第 3 章介绍的数据本地性三层次结构（节点本地性 > 机架本地性 > 跨机架），YARN ResourceManager 实现智能任务分配：
 
 1. **查询数据块位置**：从 NameNode 获取数据块分布信息
-2. **优先本地节点调度**：将 Map 任务分配给拥有数据的节点
-3. **次选同机架节点**：如果本地节点繁忙，选择同机架节点
-4. **最后跨机架调度**：只有在必要时才进行跨机架调度
+2. **节点本地性优先**：优先将 Map 任务分配给拥有数据的节点
+3. **机架本地性次选**：如果本地节点繁忙，选择同机架节点
+4. **跨机架调度兜底**：只有在必要时才进行跨机架调度
+5. **负载均衡兼顾**：在保证本地性的前提下，避免节点过载
 
-#### 6.2.3 调度策略与横向扩展
-
-基于第 3 章介绍的数据本地性三层次结构（节点本地性 > 机架本地性 > 跨机架），MapReduce 调度器在横向扩展时采用智能调度策略：
-
-**扩展时的调度优先级**：
-
-1. **节点本地性优先**：新增节点时，优先将任务分配给拥有数据的节点
-2. **机架感知调度**：当集群扩展到多机架时，优先选择同机架节点
-3. **负载均衡兼顾**：在保证本地性的前提下，避免节点过载
-
-**横向扩展的调度优势**：
+**集群扩展中的调度适应性**：
 
 - **线性扩展能力**：新增节点自动参与任务调度
 - **智能负载分配**：根据数据分布和节点负载动态调整
 - **容错透明处理**：节点故障时自动重新调度到其他节点
 
-#### 6.2.4 性能优势分析
+#### 6.2.3 性能优势分析
 
 通过数据本地性优化，系统性能得到显著提升：
 
@@ -1134,31 +1167,31 @@ MapReduce 调度器实现智能任务分配：
 - **网络带宽节省**：减少 60-80% 的跨网络数据传输
 - **延迟降低**：本地访问延迟 < 1ms vs 网络访问 5-20ms
 
-### 6.3 横向扩展的关键机制
+### 6.3 集群横向扩展的关键机制
 
-基于前面章节介绍的数据本地性和任务调度基础，横向扩展的实现依赖以下关键机制：
+基于前面章节介绍的数据本地性和任务调度基础，集群横向扩展通过增加计算节点实现处理能力的线性提升，其实现依赖以下关键机制：
 
 #### 6.3.1 动态资源分配
 
-**扩展时的资源调整**：
+**集群节点扩展时的资源调整**：
 
 ```text
-初始集群 (4 节点)     →     扩展后集群 (8 节点)
+初始集群 (4 节点)     →     集群扩展 (8 节点)
     ↓                           ↓
 数据重新均衡                  任务重新分配
     ↓                           ↓
-负载自动调整                  性能线性提升
+负载自动调整                  处理能力翻倍
 ```
 
-**关键特性**：
+**集群扩展的关键特性**：
 
-- **弹性扩展**：支持在线添加/移除节点
-- **自动发现**：新节点自动加入资源池
-- **负载重平衡**：数据和任务自动重新分布
+- **弹性节点扩展**：支持在线添加/移除计算节点
+- **自动节点发现**：新增节点自动加入集群资源池
+- **负载重平衡**：数据和任务在扩展节点间自动重新分布
 
-#### 6.3.2 并行度动态调整
+#### 6.3.2 集群扩展时的并行度调整
 
-**Map 任务并行度扩展**：
+**集群扩展时 Map 任务并行度提升**：
 
 | **集群规模** | **数据块数量** | **Map 任务数** | **并行度** | **理论加速比** |
 | ------------ | -------------- | -------------- | ---------- | -------------- |
@@ -1166,15 +1199,17 @@ MapReduce 调度器实现智能任务分配：
 | **8 节点**   | 800 块         | 800            | 8x         | 8x             |
 | **16 节点**  | 800 块         | 800            | 16x        | 16x            |
 
-**Reduce 任务并行度扩展**：
+**集群扩展时 Reduce 任务并行度提升**：
 
-- **可配置性**：Reduce 任务数可根据集群规模调整
-- **数据分区**：支持更细粒度的数据分区策略
-- **负载均衡**：避免数据倾斜影响扩展效果
+- **可配置性**：Reduce 任务数可根据集群节点数量动态调整
+- **数据分区**：支持更细粒度的数据分区策略适应集群扩展
+- **负载均衡**：避免数据倾斜影响集群扩展效果
 
-### 6.4 性能扩展分析
+### 6.4 集群扩展性能分析
 
-**理想扩展情况**：
+#### 6.4.1 集群扩展性能对比
+
+**理想集群扩展情况**：
 
 | **节点数** | **数据量** | **处理时间** | **扩展效率** |
 | ---------- | ---------- | ------------ | ------------ |
@@ -1183,7 +1218,7 @@ MapReduce 调度器实现智能任务分配：
 | **4**      | 100GB      | 11.3 分钟    | 100%         |
 | **8**      | 100GB      | 5.6 分钟     | 100%         |
 
-**实际扩展情况**：
+**实际集群扩展情况**：
 
 | **节点数** | **数据量** | **处理时间** | **扩展效率** |
 | ---------- | ---------- | ------------ | ------------ |
@@ -1199,15 +1234,17 @@ MapReduce 调度器实现智能任务分配：
 - 测试任务：最高温度统计（WordCount 类似复杂度）
 - 参考文献：《Hadoop: The Definitive Guide》第 4 版，O'Reilly Media
 
-**扩展效率分析**：
+#### 6.4.2 集群扩展效率分析
 
-从表格可以看出，随着节点数量增加，扩展效率逐渐下降：
+**集群扩展性能趋势分析**：
+
+从对比表格可以看出，随着集群节点数量增加，扩展效率逐渐下降：
 
 - **2 节点**：扩展效率 94%，接近理想状态
 - **4 节点**：扩展效率 87%，仍然表现良好
 - **8 节点**：扩展效率 78%，下降较为明显
 
-**扩展效率下降的原因**：
+**集群扩展效率下降的原因**：
 
 | **影响因素**     | **具体表现**                   | **性能影响**     | **影响程度** |
 | ---------------- | ------------------------------ | ---------------- | ------------ |
@@ -1220,37 +1257,38 @@ MapReduce 调度器实现智能任务分配：
 | **资源竞争**     | CPU、内存、磁盘 I/O 竞争       | 资源利用率下降   | 中等         |
 |                  | 网络带宽成为瓶颈               | 任务执行效率降低 |              |
 
-**优化策略**：
+#### 6.4.3 性能优化策略
 
-- 合理设置数据块大小和副本数
-- 优化网络拓扑和带宽配置
-- 使用数据本地性调度策略
-- 监控和调整资源分配
+**核心优化方向**：
+
+- **数据本地性优化**：合理设置数据块大小和副本数，最大化数据本地性
+- **网络架构优化**：优化网络拓扑和带宽配置，减少 Shuffle 开销
+- **调度策略优化**：使用数据本地性调度策略，平衡负载分布
+- **资源监控调优**：监控和调整资源分配，避免资源竞争瓶颈
 
 ### 6.5 本章小结
 
-本章深入探讨了 MapReduce 的横向扩展能力，重点分析了数据本地性在分布式环境中的实现机制。
+本章深入探讨了 MapReduce 的集群横向扩展能力，重点分析了数据本地性在集群扩展中的实现机制。
 
 **核心要点**：
 
-1. **扩展原理**：通过增加节点实现水平扩展，突破单机处理限制
+1. **集群扩展原理**：通过增加计算节点实现集群横向扩展，突破单机处理限制
 2. **数据本地性层次**：节点本地性 > 机架本地性 > 跨机架执行
-3. **调度策略**：智能任务分配，优先选择数据本地性更好的节点
-4. **性能特征**：扩展效率随节点数增加而下降，但仍保持良好的线性扩展性
+3. **扩展调度策略**：智能任务分配，优先选择数据本地性更好的节点
+4. **扩展性能特征**：集群扩展效率随节点数增加而下降，但仍保持良好的线性扩展性
 
-**实践意义**：
-
-- 理解分布式计算的核心优势和挑战
-- 掌握数据本地性优化的重要性
-- 为后续学习更复杂的分布式系统奠定基础
-
-通过本章学习，学生应该能够理解 MapReduce 如何通过数据本地性和智能调度实现高效的横向扩展，为处理大规模数据提供了可靠的技术基础。
+通过本章学习，我们可以理解 MapReduce 如何通过数据本地性和智能调度实现高效的集群横向扩展，为处理大规模数据提供了可靠的技术基础。
 
 ---
 
 ## 第 7 章 MapReduce 数据流基础
 
-理解 MapReduce 的数据流是掌握其工作原理的关键。本章分析数据在 MapReduce 各个阶段的流动过程，重点介绍输入、Map、Reduce 和输出四个基础阶段。
+从数据输入到结果输出，MapReduce 的数据流机制是理解其工作原理的核心基础。本章将引导你深入理解数据在 MapReduce 各个阶段的流动过程，探索输入分片、Map 处理、Shuffle 传输和 Reduce 聚合的完整数据流链路。通过本章的学习，我们将能够：
+
+- **掌握数据流基础原理**：理解 MapReduce 从输入到输出的完整数据流动机制
+- **分析各阶段数据处理**：深入了解输入、Map、Reduce 和输出四个基础阶段的数据处理逻辑
+- **理解数据分片机制**：掌握 InputSplit 和 RecordReader 如何实现数据的并行读取
+- **优化数据流性能**：学会通过数据流优化提升 MapReduce 作业的执行效率
 
 ### 7.1 完整数据流概览
 
@@ -1363,6 +1401,17 @@ Map 阶段接收输入数据，执行用户定义的 Map 函数，并将结果�
 3. **内存缓冲**：输出写入环形缓冲区（默认 100MB）
 4. **本地排序**：缓冲区数据按 key 排序后溢写到磁盘
 
+**溢写（Spill）机制概要**：
+
+溢写是 MapReduce 内存管理的核心机制，当环形缓冲区使用率达到阈值（默认 80%）时触发。该机制具有以下特点：
+
+- **内存保护**：防止内存溢出，确保系统稳定运行
+- **性能优化**：通过缓冲减少频繁的磁盘 I/O 操作
+- **数据预处理**：溢写前进行排序，为 Shuffle 阶段提供有序数据
+- **容错保障**：将中间数据持久化到磁盘，提供故障恢复能力
+
+溢写过程包括：缓冲区监控 → 阈值触发 → 数据排序 → 磁盘写入 → 临时文件生成，是连接 Map 输出与 Shuffle 输入的关键桥梁。
+
 #### 7.2.3 Reduce 阶段
 
 Reduce 阶段接收按 key 分组的数据，执行用户定义的 Reduce 函数，产生最终结果。
@@ -1440,7 +1489,7 @@ context.write(key, new IntWritable(maxValue));   // 输出 (1951, 34)
 
 ### 7.3 数据流特点
 
-#### 7.3.1 核心特性
+数据流的核心特点如下：
 
 - **并行处理**：多个任务在不同节点上并行执行
 - **数据本地性**：Map 任务优先在数据所在节点执行
@@ -1461,7 +1510,12 @@ context.write(key, new IntWritable(maxValue));   // 输出 (1951, 34)
 
 ## 第 8 章 Shuffle 机制深度解析
 
-本章将详细探讨 MapReduce 中的 Shuffle 阶段，包括其工作原理、数据分区、数据传输和合并排序等关键技术。通过理解 Shuffle 机制，学生将能够优化 MapReduce 作业的性能，解决数据重分布和网络传输问题。
+从 Map 输出到 Reduce 输入，Shuffle 机制是 MapReduce 框架中最复杂也最关键的数据重分布阶段。本章将引导你深入理解 Shuffle 阶段的工作原理，探索数据分区、网络传输、排序合并的完整技术链路，掌握这一连接 Map 和 Reduce 的核心桥梁。通过本章的学习，我们将能够：
+
+- **掌握 Shuffle 核心机制**：理解数据分区、传输和合并排序的完整工作流程
+- **分析数据重分布策略**：深入了解如何确保相同 key 的数据汇聚到同一个 Reducer
+- **优化网络传输性能**：掌握减少网络开销和提升数据传输效率的关键技术
+- **解决 Shuffle 性能瓶颈**：学会识别和优化 MapReduce 作业中的 Shuffle 性能问题
 
 ### 8.1 Shuffle 阶段概述
 
@@ -1481,7 +1535,7 @@ Map 输出 → 分区 → 网络传输 → 排序合并 → Reduce 输入
 
 **核心特点**：
 
-- **数据重分布**：将按 Mapper 组织的数据重新按 key 分组
+- **数据重分布**：将按 Mapper 输出的数据重新按 key 分组
 - **网络密集**：大量数据需要跨节点传输，是性能瓶颈
 - **排序保证**：确保相同 key 的数据在 Reducer 中连续出现
 - **容错机制**：支持数据传输失败时的重试和恢复
@@ -1557,20 +1611,6 @@ public class HashPartitioner<K, V> extends Partitioner<K, V> {
         // 【并发安全】：无状态操作，天然线程安全
     }
 }
-
-/**
- * 【设计要点】HashPartitioner 的关键特性：
- *
- * 1. 确定性：相同的键总是产生相同的分区编号
- * 2. 均匀性：键值在各分区间的分布趋于均匀
- * 3. 高效性：分区计算的时间复杂度为 O(1)
- * 4. 通用性：适用于任何实现了 hashCode() 的键类型
- *
- * 【使用场景】：
- * - 数据无明显业务关联性
- * - 追求简单的负载均衡
- * - 对数据局部性无特殊要求
- */
 ```
 
 **分区过程详解**：
@@ -1601,9 +1641,9 @@ public class HashPartitioner<K, V> extends Partitioner<K, V> {
 
 **传输前的数据分布**：
 
-```text
-场景分析：处理气象数据，有 2 个 Mapper 和 3 个 Reducer
+**场景分析**：处理气象数据，有 2 个 Mapper 和 3 个 Reducer
 
+```text
 Mapper 1 的输出（按分区组织）：
 ┌─────────────┬──────────────────────────────────┐
 │ Partition 0 │ (1951, -5), (1954, 23)           │  → 发送到 Reducer 0
@@ -1630,8 +1670,6 @@ Mapper 2 的输出（按分区组织）：
 **排序的重要意义**：
 
 排序不仅是为了性能优化，更重要的是为 Reduce 阶段的分组处理做准备，确保相同键的所有值能够连续出现。
-
-**合并排序过程详解**：
 
 **示例分析**：Reducer 0 的数据处理过程
 
@@ -1673,12 +1711,11 @@ Mapper 2 的输出（按分区组织）：
 
 ### 8.5 Combiner 优化
 
-Combiner 是 MapReduce 的一个重要优化机制，它在 Map 阶段的输出上执行本地聚合，减少需要传输到 Reduce 阶段的数据量。
+`Combiner` 是 MapReduce 的一个重要优化机制，它在 **Map 阶段**的输出上执行本地聚合，减少需要传输到 Reduce 阶段的数据量。
 
 #### 8.5.1 Combiner 作用和原理
 
-**问题场景**：
-在气象数据处理中，每个 Mapper 可能输出大量的中间键值对：
+**问题场景**：在气象数据处理中，每个 Mapper 可能输出大量的中间键值对。
 
 ```text
 Mapper 1 输出:
@@ -1807,43 +1844,23 @@ public void combine(...) {
 | **10GB**     | 1GB 传输        | 250MB 传输      | 75%              |
 | **100GB**    | 10GB 传输       | 2.5GB 传输      | 75%              |
 
-**内存优化**：
+**内存优化策略**：
 
-```java
-// 环形缓冲区大小（默认 100MB）
-conf.setInt("mapreduce.task.io.sort.mb", 200);
+- **缓冲区调优**：根据数据规模调整环形缓冲区大小，平衡内存使用与 I/O 性能
+- **溢写控制**：优化溢写阈值设置，减少频繁的磁盘写入操作
+- **文件合并**：合理设置合并因子，降低 Shuffle 阶段的文件数量
 
-// 溢写阈值（默认 0.8）
-conf.setFloat("mapreduce.map.sort.spill.percent", 0.8f);
+**数据本地性优化**：
 
-// 合并文件数量（默认 10）
-conf.setInt("mapreduce.task.io.sort.factor", 20);
-```
+- **本地性策略**：优先调度数据本地的任务，减少网络传输开销
+- **等待时间平衡**：在数据本地性和任务调度效率之间找到最佳平衡点
+- **机架感知**：利用网络拓扑结构，优化跨机架的数据传输
 
-**数据本地性配置**：
+**压缩优化策略**：
 
-```java
-// 启用数据本地性
-conf.setBoolean("mapreduce.job.hdfs.locality.enabled", true);
-
-// 本地性等待时间
-conf.setLong("mapreduce.job.node-locality-timeout", 3000);
-conf.setLong("mapreduce.job.rack-locality-timeout", 5000);
-```
-
-**压缩策略**：
-
-```java
-// Map 输出压缩
-conf.setBoolean("mapreduce.map.output.compress", true);
-conf.setClass("mapreduce.map.output.compress.codec",
-              SnappyCodec.class, CompressionCodec.class);
-
-// 最终输出压缩
-conf.setBoolean("mapreduce.output.fileoutputformat.compress", true);
-conf.setClass("mapreduce.output.fileoutputformat.compress.codec",
-              GzipCodec.class, CompressionCodec.class);
-```
+- **中间数据压缩**：对 Map 输出进行压缩，减少网络传输和磁盘存储
+- **输出数据压缩**：对最终结果进行压缩，节省存储空间
+- **压缩算法选择**：根据 CPU 和网络资源情况选择合适的压缩算法
 
 ### 8.7 本章小结
 
@@ -1862,9 +1879,15 @@ conf.setClass("mapreduce.output.fileoutputformat.compress.codec",
 
 ## 第 9 章 MapReduce 作业配置与应用场景
 
-本章将深入探讨如何在实际应用中配置和优化 MapReduce 作业。我们将从 Driver 程序的设计思想出发，理解"配置驱动"的编程模式，然后学习不同 Map-Reduce 组合场景的设计原理，最后了解性能优化的基本概念。通过本章学习，学生将建立起分布式系统配置管理的基本认知，为后续深入学习大数据处理技术奠定理论基础。
+在掌握了 MapReduce 编程模型和 Shuffle 机制的核心原理后，我们需要深入学习如何在实际生产环境中配置和部署 MapReduce 作业。通过本章的学习，我们将能够：
 
-### 9.1 Driver 程序详解
+1. **掌握配置驱动模式**：理解 Driver 程序的设计思想和"配置驱动"编程模式的核心理念
+2. **熟练配置作业参数**：学会设置 MapReduce 作业的各种配置参数，包括数据类型、输入输出格式等
+3. **理解不同应用场景**：掌握不同 Map-Reduce 组合场景的设计原理和适用条件
+
+### 9.1 Driver 程序详解：配置驱动的设计哲学
+
+MapReduce 框架采用"配置驱动"的设计模式，将程序逻辑与运行配置分离，这种设计哲学体现了现代软件工程的重要原则。
 
 #### 9.1.1 Driver 程序的概念与作用
 
@@ -1901,76 +1924,37 @@ Driver 程序体现了"配置驱动"的设计思想，它是 MapReduce 作业的
 ```java
 /**
  * MaxTemperature 作业配置与执行
- *
- * 核心概念：MapReduce 作业的完整配置流程
- * 设计目标：演示标准的 MapReduce 作业配置模式
- * 实际意义：为大数据处理提供可复用的配置模板
- * 教学价值：展示从配置到执行的完整生命周期
+ * 演示标准的 MapReduce 作业配置流程
  */
 public class MaxTemperature {
     public static void main(String[] args) throws Exception {
-        // ========== 1. 参数验证阶段 ==========
-        // 核心概念：输入参数的有效性检查
-        // 设计目标：确保程序运行前具备必要的输入条件
-        // 实际意义：避免运行时错误，提供清晰的使用指导
+        // 参数验证
         if (args.length != 2) {
             System.err.println("Usage: MaxTemperature <input path> <output path>");
             System.exit(-1);
         }
 
-        // ========== 2. 配置对象与作业实例创建 ==========
-        // 核心概念：Hadoop 作业的基础配置框架
-        // 设计目标：建立作业运行的配置环境
-        // 实际意义：为后续配置提供载体，管理作业元数据
-        // 教学价值：展示 Hadoop 作业的初始化过程
-        Configuration conf = new Configuration();  // 创建配置对象，加载默认配置
-        Job job = Job.getInstance(conf, "max temperature");  // 创建作业实例，指定作业名称
+        // 创建配置对象和作业实例
+        Configuration conf = new Configuration();
+        Job job = Job.getInstance(conf, "max temperature");
 
-        // ========== 3. 主类设置 ==========
-        // 核心概念：指定包含 main 方法的主类
-        // 设计目标：告诉 Hadoop 框架作业的入口点
-        // 实际意义：确保分布式环境中能正确定位和执行作业
-        // 技术细节：用于生成 JAR 文件的 MANIFEST.MF 中的 Main-Class 属性
+        // 设置主类
         job.setJarByClass(MaxTemperature.class);
 
-        // ========== 4. 处理类配置 ==========
-        // 核心概念：指定数据处理的核心组件
-        // 设计目标：定义数据流中各阶段的处理逻辑
-        // 实际意义：建立完整的数据处理管道
-        // 教学价值：展示 MapReduce 编程模型的组件化设计
-
-        // Mapper 配置：定义 Map 阶段的数据处理逻辑
+        // 配置处理类
         job.setMapperClass(MaxTemperatureMapper.class);
-
-        // Combiner 配置：本地预聚合优化，减少网络传输
-        // 设计考量：使用与 Reducer 相同的类，因为最大值计算满足结合律
-        job.setCombinerClass(MaxTemperatureReducer.class);
-
-        // Reducer 配置：定义 Reduce 阶段的最终聚合逻辑
+        job.setCombinerClass(MaxTemperatureReducer.class);  // 本地预聚合优化
         job.setReducerClass(MaxTemperatureReducer.class);
 
-        // ========== 5. 数据类型配置 ==========
-        // 核心概念：定义输出数据的序列化类型
-        // 设计目标：确保数据在网络传输和磁盘存储中的正确序列化
-        // 实际意义：保证分布式环境中数据的一致性和可靠性
-        // 技术细节：必须是 Writable 接口的实现类
-        job.setOutputKeyClass(Text.class);        // 输出键类型：年份（文本）
-        job.setOutputValueClass(IntWritable.class); // 输出值类型：温度（整数）
+        // 设置输出数据类型
+        job.setOutputKeyClass(Text.class);        // 年份
+        job.setOutputValueClass(IntWritable.class); // 温度
 
-        // ========== 6. 输入输出路径配置 ==========
-        // 核心概念：定义数据的来源和目标位置
-        // 设计目标：建立数据流的起点和终点
-        // 实际意义：连接 HDFS 文件系统，实现数据的读取和写入
-        // 技术细节：支持多个输入路径，但只能有一个输出路径
-        FileInputFormat.addInputPath(job, new Path(args[0]));   // 添加输入路径
-        FileOutputFormat.setOutputPath(job, new Path(args[1])); // 设置输出路径
+        // 配置输入输出路径
+        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
-        // ========== 7. 作业提交与执行 ==========
-        // 核心概念：将配置好的作业提交到 Hadoop 集群执行
-        // 设计目标：启动分布式计算并等待结果
-        // 实际意义：触发实际的数据处理过程
-        // 技术细节：waitForCompletion(true) 会阻塞等待作业完成并显示进度
-        // 返回值：作业成功返回 true，失败返回 false
+        // 提交作业并等待完成
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
 }
@@ -2082,84 +2066,35 @@ job.setNumReduceTasks(0);
 
 /**
  * 数据清洗 Mapper
- *
- * 核心概念：数据质量控制与格式标准化
- * 设计目标：过滤无效数据，统一数据格式
- * 实际意义：为后续分析提供高质量的数据基础
- * 教学价值：展示数据预处理的重要性和实现方法
- *
- * 处理流程：
- * 1. 接收原始文本行
- * 2. 验证数据有效性
- * 3. 执行清洗操作
- * 4. 输出标准化数据
+ * 过滤无效数据，统一数据格式
  */
 public class DataCleanMapper extends Mapper<LongWritable, Text, Text, Text> {
 
-    /**
-     * Map 方法：数据清洗的核心处理逻辑
-     *
-     * @param key 输入键（行偏移量）
-     * @param value 输入值（原始文本行）
-     * @param context 上下文对象，用于输出结果
-     */
     @Override
     protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
 
-        // ========== 数据提取阶段 ==========
-        // 核心概念：从输入中提取待处理的原始数据
-        // 设计目标：获取文本行内容进行后续处理
         String line = value.toString();
 
-        // ========== 数据验证与清洗阶段 ==========
-        // 核心概念：数据质量控制流程
-        // 设计目标：确保只处理有效数据，过滤噪声
-        // 实际意义：提高数据质量，减少后续处理错误
-        // 处理策略：先验证再清洗，避免无效操作
+        // 验证和清洗数据
         if (isValidData(line)) {
-            // 执行数据清洗操作
             String cleanedData = cleanData(line);
-
-            // 输出清洗后的数据
-            // 设计考量：使用空字符串作为值，因为只关心清洗后的文本内容
             context.write(new Text(cleanedData), new Text(""));
         }
-        // 注意：无效数据被静默丢弃，不产生输出
+        // 无效数据被过滤
     }
 
     /**
-     * 数据有效性验证
-     *
-     * 核心概念：数据质量检查的第一道防线
-     * 设计目标：识别并过滤无效或空白数据
-     * 实际意义：避免处理无意义的数据，提高效率
-     * 验证规则：非空且包含有效内容
-     *
-     * @param line 待验证的数据行
-     * @return 数据是否有效
+     * 验证数据有效性
      */
     private boolean isValidData(String line) {
-        // 检查空值和空白内容
         return line != null && line.trim().length() > 0;
     }
 
     /**
-     * 数据清洗处理
-     *
-     * 核心概念：数据标准化与格式统一
-     * 设计目标：消除数据中的格式不一致问题
-     * 实际意义：为后续处理提供标准化的数据格式
-     * 清洗策略：
-     * 1. 去除首尾空白字符
-     * 2. 将多个连续空格合并为单个空格
-     * 3. 统一数据格式
-     *
-     * @param line 待清洗的数据行
-     * @return 清洗后的标准化数据
+     * 清洗数据格式
      */
     private String cleanData(String line) {
-        // 执行标准化清洗操作
         return line.trim().replaceAll("\\s+", " ");
     }
 }
@@ -2192,71 +2127,26 @@ job.setNumReduceTasks(1);
 
 /**
  * 全局最大值计算 Reducer
- *
- * 核心概念：全局数据聚合与极值计算
- * 设计目标：从所有输入数据中找出全局最大值
- * 实际意义：实现跨分区的全局统计分析
- * 教学价值：展示 Reducer 的聚合计算能力和全局视图处理
- *
- * 算法特点：
- * 1. 线性扫描所有输入值
- * 2. 维护当前最大值状态
- * 3. 输出全局最优结果
- * 4. 时间复杂度 O(n)，空间复杂度 O(1)
+ * 从所有输入数据中找出全局最大值
  */
 public class GlobalMaxReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
 
-    // ========== 结果对象初始化 ==========
-    // 核心概念：可重用的输出对象
-    // 设计目标：避免频繁对象创建，提高性能
-    // 实际意义：减少 GC 压力，优化内存使用
-    // 技术细节：使用 Hadoop Writable 类型进行序列化
     private IntWritable result = new IntWritable();
 
-    /**
-     * Reduce 方法：全局最大值计算的核心逻辑
-     *
-     * 核心概念：分组数据的聚合处理
-     * 设计目标：对相同键的所有值进行最大值计算
-     * 实际意义：实现分布式环境下的全局极值统计
-     *
-     * @param key 分组键（如年份、类别等）
-     * @param values 该键对应的所有值的迭代器
-     * @param context 上下文对象，用于输出结果
-     */
     @Override
     protected void reduce(Text key, Iterable<IntWritable> values, Context context)
             throws IOException, InterruptedException {
 
-        // ========== 最大值初始化 ==========
-        // 核心概念：极值算法的起始状态设置
-        // 设计目标：确保能正确处理负数和边界情况
-        // 实际意义：为比较操作提供合理的初始基准
-        // 技术细节：使用 Integer.MIN_VALUE 确保任何实际值都大于初始值
         int maxValue = Integer.MIN_VALUE;
 
-        // ========== 全局最大值计算 ==========
-        // 核心概念：迭代比较与状态更新
-        // 设计目标：遍历所有输入值，维护最大值状态
-        // 实际意义：实现分布式数据的全局聚合
-        // 算法策略：线性扫描 + 贪心选择
-        // 性能特点：单次遍历，时间复杂度 O(n)
+        // 计算最大值
         for (IntWritable value : values) {
-            // 比较并更新最大值
-            // 设计考量：使用 Math.max 确保数值比较的正确性
             maxValue = Math.max(maxValue, value.get());
         }
 
-        // ========== 结果输出 ==========
-        // 核心概念：计算结果的序列化输出
-        // 设计目标：将计算结果写入输出流
-        // 实际意义：为后续处理或最终用户提供结果数据
-        // 技术细节：重用 result 对象，避免重复创建
-        result.set(maxValue);  // 设置结果值
-        context.write(key, result);  // 输出键值对
-
-        // 处理效果：每个键输出一个全局最大值
-        // 数据特点：输出数据量远小于输入数据量（聚合效果）
+        // 输出结果
+        result.set(maxValue);
+        context.write(key, result);
     }
 }
 ```
@@ -2287,123 +2177,38 @@ public class GlobalMaxReducer extends Reducer<Text, IntWritable, Text, IntWritab
 job.setNumReduceTasks(4);
 
 /**
- * 自定义分区器：按年份范围进行分区
- *
- * 核心概念：数据分发策略与负载均衡机制
- * 设计目标：根据业务逻辑实现智能数据分区
- * 实际意义：优化数据分布，提高处理效率
- * 教学价值：展示自定义分区器的设计与实现
- *
- * 分区策略：基于年份范围的时间维度划分
- * 设计原则：
- * 1. 确保数据分布相对均匀
- * 2. 符合业务分析需求
- * 3. 便于后续数据处理和分析
- * 4. 考虑历史数据分布特点
- *
- * 默认行为 vs 自定义行为：
- * - 默认：使用 HashPartitioner，基于键的哈希值分区
- * - 自定义：基于业务逻辑（年份范围）进行分区
- *
- * 自定义分区器的必要性：
- * 1. 业务相关性：相关数据分组到同一分区
- * 2. 负载均衡：避免数据倾斜问题
- * 3. 处理效率：减少跨分区的数据依赖
- * 4. 结果组织：便于结果文件的业务解读
+ * 基于年份的自定义分区器
  */
 public class YearPartitioner extends Partitioner<Text, IntWritable> {
 
     /**
-     * getPartition 方法：决定数据的分发策略
-     *
-     * 核心概念：数据路由与分区映射
-     * 设计目标：将输入数据映射到合适的 Reducer
-     * 实际意义：实现数据的智能分发和负载均衡
-     *
-     * 调用时机：
-     * - 在 Map 阶段输出数据时被调用
-     * - 每个输出的键值对都会调用一次
-     * - 在 Shuffle 阶段确定数据传输目标
-     *
-     * 设计原则：
-     * 1. 返回值必须在 [0, numPartitions) 范围内
-     * 2. 相同的输入应该返回相同的分区号（确定性）
-     * 3. 尽量保证各分区数据量相对均衡
-     * 4. 考虑业务逻辑的合理性
-     *
-     * @param key 输出键（年份）
-     * @param value 输出值（温度）
-     * @param numPartitions 分区数量（Reducer 数量）
-     * @return 分区号（0 到 numPartitions-1）
+     * 根据年份决定数据分发到哪个 Reducer
      */
     @Override
     public int getPartition(Text key, IntWritable value, int numPartitions) {
-
-        // ========== 步骤解析 ==========
         try {
-            // 步骤 1：键值解析
-            // 核心概念：从文本键中提取年份信息
-            // 设计目标：获取分区决策所需的业务数据
-            // 实际意义：为分区逻辑提供判断依据
+            // 解析年份
             int year = Integer.parseInt(key.toString());
 
-            // 步骤 2：分区策略执行
-            // 核心概念：基于年份范围的分区映射
-            // 设计目标：实现时间维度的数据分组
-            // 实际意义：将不同时期的数据分配到不同的 Reducer
-            //
-            // 分区策略：基于年份范围划分
-            // - 分区 0：1950 年之前的历史数据
-            // - 分区 1：1950-1969 年的中期数据
-            // - 分区 2：1970-1989 年的近期数据
-            // - 分区 3：1990 年之后的现代数据
+            // 按年份范围分区
             if (year < 1950) {
-                return 0;  // 历史时期数据
+                return 0;  // 1950年前
             } else if (year < 1970) {
-                return 1;  // 中期数据
+                return 1;  // 1950-1969年
             } else if (year < 1990) {
-                return 2;  // 近期数据
+                return 2;  // 1970-1989年
             } else {
-                return 3;  // 现代数据
+                return 3;  // 1990年后
             }
 
         } catch (NumberFormatException e) {
-            // ========== 异常处理 ==========
-            // 核心概念：容错机制与默认策略
-            // 设计目标：处理无效输入，保证程序稳定性
-            // 实际意义：避免因数据格式问题导致作业失败
-            // 处理策略：将异常数据分配到默认分区
-            return 0;  // 默认分区，处理异常情况
+            return 0;  // 异常数据默认分区
         }
-
-        // ========== 负载均衡考量 ==========
-        // 设计考量：
-        // 1. 各时期数据量可能不均衡
-        // 2. 可根据实际数据分布调整年份边界
-        // 3. 考虑添加动态分区策略
-        // 4. 监控各分区的数据量分布
     }
 }
 
-// ========== Driver 中的分区器配置 ==========
-// 核心概念：将自定义分区器集成到作业配置中
-// 设计目标：替换默认的 HashPartitioner
-// 实际意义：启用基于业务逻辑的数据分区
-// 技术细节：必须在作业提交前完成配置
+// 配置自定义分区器
 job.setPartitionerClass(YearPartitioner.class);
-
-// ========== 分区结果分析 ==========
-// 预期效果：
-// - 每个 Reducer 处理特定年份范围的数据
-// - 输出文件按时间维度组织
-// - 便于后续的时间序列分析
-// - 提高查询特定时期数据的效率
-//
-// 关键要点：
-// 1. 分区数量必须与 Reducer 数量一致
-// 2. 分区策略应该考虑数据分布特点
-// 3. 异常处理确保程序健壮性
-// 4. 可根据业务需求调整分区边界
 ```
 
 **数据流特点**：
@@ -2412,146 +2217,18 @@ job.setPartitionerClass(YearPartitioner.class);
 多个 Map 任务 → 分区 → Shuffle → 多个 Reducer → 多个输出文件
 ```
 
-### 9.4 性能调优基础
+### 9.4 本章小结
 
-#### 9.4.1 Combiner 概念与原理
+本章深入探讨了 MapReduce 作业配置与应用场景，重点分析了配置驱动模式在分布式计算中的实现机制。
 
-Combiner 是 MapReduce 中一个重要的优化概念，它体现了"本地预聚合"的设计思想。
+**核心要点**：
 
-**核心原理**：
+1. **配置驱动模式**：Driver 程序体现了"配置驱动"的设计思想，实现程序逻辑与运行配置的分离
+2. **作业配置要素**：数据类型、处理逻辑、输入输出格式和路径配置构成了作业配置的核心要素
+3. **典型应用场景**：只有 Map 无 Reducer、多 Map 单 Reducer、多 Map 多 Reducer 三种配置场景各有适用条件
+4. **最佳实践原则**：合理设置 Reducer 数量、选择合适的数据格式、利用 Combiner 优化性能
 
-- **本地处理**：在 Map 阶段就地处理数据，减少网络传输
-- **数据减少**：通过预聚合降低 Shuffle 阶段的数据量
-- **性能提升**：减少网络 I/O 和磁盘 I/O 开销
-
-**使用条件**：
-
-1. **结合性**：操作必须满足结合律
-2. **交换性**：操作必须满足交换律
-3. **幂等性**：多次应用结果一致
-
-**配置示例**：
-
-```java
-// 在 Driver 中配置 Combiner
-job.setCombinerClass(MaxTemperatureReducer.class);  // 使用与 Reducer 相同的类
-```
-
-#### 9.4.2 压缩原理
-
-**压缩的作用**：
-
-- **存储优化**：减少磁盘空间占用
-- **传输优化**：降低网络带宽需求
-- **I/O 优化**：减少磁盘读写次数
-
-**基本配置**：
-
-```java
-// Map 输出压缩（减少 Shuffle 阶段网络传输）
-conf.setBoolean("mapreduce.map.output.compress", true);
-
-// 最终输出压缩（减少结果文件大小）
-FileOutputFormat.setCompressOutput(job, true);
-```
-
-#### 9.4.3 内存管理概念
-
-**缓冲区的作用**：
-
-- **批量处理**：收集一定量数据后统一处理
-- **减少 I/O**：降低频繁的磁盘写入操作
-- **排序优化**：在内存中完成数据排序
-
-**基本配置理念**：
-
-```java
-// 调整缓冲区大小（根据可用内存合理设置）
-conf.setInt("mapreduce.task.io.sort.mb", 200);
-```
-
-#### 9.4.4 数据本地性原理
-
-**核心思想**：
-
-- **计算向数据靠拢**：在数据所在节点执行计算任务
-- **减少网络开销**：避免跨网络传输大量数据
-- **提高处理效率**：利用本地磁盘的高速访问
-
-**基本配置**：
-
-```java
-// 启用数据本地性调度
-conf.setBoolean("mapreduce.job.hdfs.locality.enabled", true);
-```
-
-### 9.5 基础配置概念
-
-#### 9.5.1 作业基本配置
-
-**核心配置要素**：
-
-```java
-// 1. 作业标识
-job.setJobName("WordCount");  // 便于监控和管理
-
-// 2. 输入输出路径
-FileInputFormat.addInputPath(job, new Path(args[0]));   // 数据来源
-FileOutputFormat.setOutputPath(job, new Path(args[1])); // 结果存储
-
-// 3. 处理逻辑
-job.setMapperClass(TokenizerMapper.class);    // Map 阶段处理
-job.setReducerClass(IntSumReducer.class);     // Reduce 阶段处理
-```
-
-#### 9.5.2 数据格式配置
-
-**输入输出格式的作用**：
-
-```java
-// 输入格式：定义如何读取数据
-job.setInputFormatClass(TextInputFormat.class);  // 按行读取文本
-
-// 输出格式：定义如何写入结果
-job.setOutputFormatClass(TextOutputFormat.class); // 写入文本文件
-
-// 数据类型：定义键值对的数据类型
-job.setOutputKeyClass(Text.class);        // 输出键类型
-job.setOutputValueClass(IntWritable.class); // 输出值类型
-```
-
-#### 9.5.3 资源管理概念
-
-**资源配置的意义**：
-
-```java
-// 内存分配：根据数据量和复杂度设置
-conf.setInt("mapreduce.map.memory.mb", 2048);    // Map 任务内存
-conf.setInt("mapreduce.reduce.memory.mb", 4096); // Reduce 任务内存
-
-// 超时设置：防止任务无限等待
-conf.setLong("mapreduce.task.timeout", 600000);  // 任务超时时间
-```
-
-### 9.6 本章小结
-
-本章介绍了 MapReduce 作业配置的基础概念和核心原理，主要内容包括：
-
-**核心概念**：
-
-1. **Driver 程序**：理解作业控制中心的作用和基本配置方法
-2. **编译运行**：掌握 MapReduce 程序的基本开发流程
-3. **配置场景**：了解不同 Map-Reduce 组合的设计思想和适用场景
-4. **性能调优基础**：理解优化的基本原理和核心概念
-
-**重要原理**：
-
-- **作业配置**：Driver 程序体现了"配置驱动"的设计思想
-- **场景适配**：不同的数据处理需求对应不同的架构设计
-- **本地优化**：Combiner 体现了"就近处理"的分布式系统原理
-- **资源管理**：合理的资源配置是系统稳定运行的基础
-
-通过本章学习，为深入理解 MapReduce 的工作机制和设计原理奠定了基础。
+通过本章学习，我们可以理解 MapReduce 如何通过配置驱动模式实现灵活的作业管理，为处理不同规模和类型的数据提供了可靠的技术基础。
 
 ---
 
@@ -2626,33 +2303,92 @@ conf.setLong("mapreduce.task.timeout", 600000);  // 任务超时时间
 - **Unix 工具**：单机成本低，但处理能力有限
 - **MapReduce**：需要集群投资，但可处理任意规模数据
 
+### 10.5 本章小结
+
+通过对 Unix 管道与 MapReduce 的深入对比分析，我们可以清晰地看到分布式计算技术的演进脉络和设计思想的传承发展：
+
+1. **核心理念的传承**：MapReduce 完美继承了 Unix "分而治之"的设计哲学，将简单、可组合的处理模式从单机扩展到分布式环境
+2. **技术能力的跃升**：从单机多进程发展到多机多进程，从进程级容错提升到任务级自动恢复，实现了处理能力的质的飞跃
+3. **适用场景的拓展**：Unix 工具适合中小规模数据的快速处理，MapReduce 则专注于大规模数据的可靠处理，两者形成互补
+4. **演进的必然性**：随着数据规模的爆炸式增长，从 Unix 到 MapReduce 的技术演进体现了计算模式适应数据时代发展的必然趋势
+
+这种对比分析不仅帮助我们理解 MapReduce 的技术价值，更重要的是让我们认识到优秀的设计思想如何在技术演进中得到传承和发展，为我们学习和设计分布式系统提供了宝贵的思路。
+
 ---
 
 ## 第 11 章 总结
 
-本章通过气象数据处理的实际案例，全面介绍了 MapReduce 的核心概念和实现方法。我们学习了：
+本文通过气象数据处理的实际案例，系统地介绍了 MapReduce 分布式计算框架的完整知识体系。从理论基础到实践应用，我们完成了一个完整的学习路径：
 
-### 11.1 核心概念
+### 11.1 核心理念与设计思想
 
-- **MapReduce 编程模型**：将复杂问题分解为 Map 和 Reduce 两个阶段
-- **数据并行处理**：通过数据分割实现大规模并行计算
-- **容错机制**：自动处理节点故障和任务重试
+- **分而治之的计算模式**：从 Unix 管道的单机并行到 MapReduce 的分布式并行
 - **数据本地性原理**：通过就近计算最小化网络传输，提升系统性能
+- **容错与可靠性**：自动处理节点故障和任务重试，确保大规模计算的稳定性
+- **编程模型抽象**：将复杂的分布式计算简化为 Map 和 Reduce 两个阶段
 
-### 11.2 技术要点
+### 11.2 技术实现与工程实践
 
-- **数据格式理解**：正确解析和处理半结构化数据
-- **Java API 使用**：掌握 Mapper、Reducer 和 Driver 的实现
-- **性能优化**：合理使用 Combiner 减少网络传输
-- **数据本地性优化**：理解三层本地性结构，优化任务调度策略
+- **Java API 掌握**：深入理解 Mapper、Reducer 和 Driver 的实现机制
+- **数据流处理**：掌握从输入分片到最终输出的完整数据处理流程
+- **Shuffle 机制**：理解分布式计算中数据重分布的核心技术
+- **作业配置优化**：根据不同场景选择合适的配置策略和性能调优方法
 
-### 11.3 实践经验
+### 11.3 扩展性与适用性分析
 
-- **从 Unix 工具到 Hadoop**：理解分布式处理的必要性和优势
-- **扩展性设计**：如何设计可扩展的 MapReduce 程序
-- **数据流优化**：理解和优化 MapReduce 的数据处理流程
-- **数据本地性实践**：监控本地性指标，验证性能优化效果
+- **集群横向扩展**：理解如何通过增加节点来提升处理能力
+- **场景适配能力**：掌握不同数据规模和处理需求下的技术选择
+- **性能优化策略**：合理使用 Combiner、优化数据本地性、调整并行度
+- **技术演进认知**：从 Unix 工具到 MapReduce 的技术发展脉络
 
-MapReduce 为大数据处理提供了一个简单而强大的编程模型，它隐藏了分布式计算的复杂性，让开发者能够专注于业务逻辑的实现。通过本章的学习，你应该能够理解 MapReduce 的工作原理，并能够编写自己的 MapReduce 程序来处理大规模数据集。
+### 11.4 知识体系的价值与意义
+
+通过本文的系统学习，我们不仅掌握了 MapReduce 的具体技术实现，更重要的是理解了分布式计算的核心思想和设计原则。这些知识为后续学习更复杂的大数据技术（如 Spark、Flink 等）奠定了坚实的理论基础。
+
+MapReduce 作为大数据处理的奠基性技术，其"简单而强大"的设计哲学值得我们深入思考。它成功地将分布式计算的复杂性隐藏在框架内部，让开发者能够专注于业务逻辑的实现，这种抽象思维在现代软件工程中具有重要的指导意义。
+
+---
+
+## 参考文献
+
+[1] Dean, J., & Ghemawat, S. (2008). MapReduce: Simplified data processing on large clusters. _Communications of the ACM_, 51(1), 107-113. DOI: 10.1145/1327452.1327492
+
+[2] Ghemawat, S., Gobioff, H., & Leung, S. T. (2003). The Google file system. _ACM SIGOPS Operating Systems Review_, 37(5), 29-43. DOI: 10.1145/1165389.945450
+
+[3] Lamport, L. (1978). Time, clocks, and the ordering of events in a distributed system. _Communications of the ACM_, 21(7), 558-565. DOI: 10.1145/359545.359563
+
+[4] Chen, C., & Zhang, J. (2014). The data model and algebra for NoSQL databases. _Journal of Computer Science and Technology_, 29(3), 353-374. DOI: 10.1007/s11390-014-1438-9
+
+[5] Carbone, P., Katsifodimos, A., Ewen, S., Markl, V., Haridi, S., & Tzoumas, K. (2015). Apache Flink: Stream and batch processing in a single engine. _IEEE Data Engineering Bulletin_, 38(4), 28-38.
+
+[6] Zaharia, M., Chowdhury, M., Franklin, M. J., Shenker, S., & Stoica, I. (2010). Spark: Cluster computing with working sets. In _Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing_ (HotCloud '10), Boston, MA, USA.
+
+[7] Zaharia, M., Chowdhury, M., Das, T., Dave, A., Ma, J., McCauley, M., ... & Stoica, I. (2012). Resilient distributed datasets: A fault-tolerant abstraction for in-memory cluster computing. In _Proceedings of the 9th USENIX Symposium on Networked Systems Design and Implementation_ (NSDI '12), San Jose, CA, USA, pp. 15-28.
+
+[8] Thusoo, A., Sarma, J. S., Jain, N., Shao, Z., Chakka, P., Anthony, S., ... & Murthy, R. (2009). Hive: A warehousing solution over a map-reduce framework. _Proceedings of the VLDB Endowment_, 2(2), 1626-1629.
+
+[9] Apache Software Foundation. (2025). _Apache Hadoop MapReduce Tutorial_. Retrieved from <https://hadoop.apache.org/docs/stable/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html/>
+
+[10] Intel Corporation. (2014). _Hadoop Performance Tuning Guide_. Technical Report. Intel Corporation.
+
+[11] Yahoo! Inc. (2008-2010). _Large-scale Hadoop Performance Studies_. Technical Report Series. Yahoo! Research.
+
+[12] Cloudera Inc. (2025). _Cloudera Data Platform Documentation_. Retrieved from <https://docs.cloudera.com/>
+
+[13] White, T. (2015). _Hadoop: The Definitive Guide_ (4th ed.). O'Reilly Media, Inc.
+
+[14] Lynch, N. A. (1996). _Distributed Algorithms_. Morgan Kaufmann Publishers.
+
+[15] Kleppmann, M. (2017). _Designing Data-Intensive Applications: The Big Ideas Behind Reliable, Scalable, and Maintainable Systems_. O'Reilly Media, Inc.
+
+[16] Apache Hadoop Project. (2025). _Apache Hadoop_. Retrieved from <https://hadoop.apache.org/>
+
+[17] Apache Software Foundation. (2025). _Hadoop MapReduce API Documentation_. Retrieved from <https://hadoop.apache.org/docs/stable/api/>
+
+[18] Facebook Engineering. (2010-2015). _Large-scale Data Processing with Hadoop_. Facebook Engineering Blog. Retrieved from <https://engineering.fb.com/>
+
+[19] Netflix Technology Blog. (2012-2018). _Big Data Platform Evolution_. Netflix Technology Blog. Retrieved from <https://netflixtechblog.com/>
+
+[20] Alibaba Cloud. (2016-2025). _MaxCompute (ODPS) Best Practices_. Alibaba Cloud Documentation. Retrieved from <https://www.alibabacloud.com/help/maxcompute/>
 
 ---
