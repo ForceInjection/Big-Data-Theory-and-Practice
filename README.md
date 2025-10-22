@@ -21,27 +21,33 @@
 
 以下是课程章节内容：
 
-- **第一讲** - [大数据技术综述](./courses/chapter01/第01讲-大数据技术综述.pdf)
+- **第一讲**:
 
+  - [大数据技术综述](./courses/chapter01/第01讲-大数据技术综述.pdf)
   - [补充：大数据发展的历史-从核心理念到生态演化](./courses/chapter01/【补充】大数据发展的历史-从核心理念到生态演化.pdf)
 
-- **第二讲** - [分布式协调服务 ZooKeeper](./courses/chapter02/第02讲-分布式协调服务Zookeeper.pdf)
+- **第二讲**：
 
+  - [分布式协调服务 ZooKeeper](./courses/chapter02/第02讲-分布式协调服务Zookeeper.pdf)
   - [补充：Basic Paxos 两阶段共识流程全解析](./courses/chapter02/【补充】Basic%20Paxos%20两阶段共识流程全解析.pdf)
   - [补充：Chubby - 分布式锁服务介绍](./courses/chapter02/【补充】Chubby%20-%20分布式锁服务介绍.pdf)
   - [补充：分布式系统讲义](./courses/chapter02/【补充】分布式系统讲义.pdf)
 
-- **第三讲** - [分布式文件系统 HDFS（上）](./courses/chapter03/第03讲-分布式文件系统HDFS（上）.pdf)
+- **第三讲**：
+
+  - [分布式文件系统 HDFS（上）](./courses/chapter03/第03讲-分布式文件系统HDFS（上）.pdf)
 
   - [补充：GFS-大数据存储的奠基者](./courses/chapter03/【补充】GFS-大数据存储的奠基者.pdf)
 
-- **第四讲** - [分布式文件系统 HDFS（下）](./courses/chapter04/第03讲-分布式文件系统HDFS（下）.pdf)
+- **第四讲**：
 
+  - [分布式文件系统 HDFS（下）](./courses/chapter04/第03讲-分布式文件系统HDFS（下）.pdf)
   - [HDFS 关键概念复习文档](./courses/chapter04/HDFS关键概念复习文档.md)
   - [HDFS 常见操作](./courses/chapter04/HDFS常见操作.md)
   - [练习 1](./courses/chapter04/exercise_1.md)
 
-- **第五讲** - [MapReduce 分布式计算框架](./courses/chapter05/map-reduce.md)
+- **第五讲**：
+  - [MapReduce 分布式计算框架](./courses/chapter05/map-reduce.md)
   - [学生使用指南](./courses/chapter05/student-guide.md)
 
 ---
