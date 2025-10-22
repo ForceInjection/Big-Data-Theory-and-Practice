@@ -1,0 +1,72 @@
+<svg width="1000" height="150" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #2c3e50; }
+      .step-title { font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; fill: #34495e; }
+      .step-desc { font-family: Arial, sans-serif; font-size: 11px; fill: #7f8c8d; }
+      .command { font-family: 'Courier New', monospace; font-size: 11px; fill: #e74c3c; }
+      .data-flow { stroke: #3498db; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .step-box { fill: #ecf0f1; stroke: #bdc3c7; stroke-width: 1; rx: 5; }
+      .mapreduce-label { font-family: Arial, sans-serif; font-size: 10px; fill: #8e44ad; font-weight: bold; }
+      .pipeline-symbol { font-family: 'Courier New', monospace; font-size: 20px; fill: #e74c3c; font-weight: bold; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#3498db" />
+    </marker>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="500" y="25" text-anchor="middle" class="title">Unix 管道数据处理流程</text>
+  
+  <!-- 输入数据 -->
+  <rect x="20" y="60" width="110" height="70" class="step-box"/>
+  <text x="75" y="80" text-anchor="middle" class="step-title">原始数据</text>
+  <text x="75" y="95" text-anchor="middle" class="step-desc">input.txt</text>
+  <text x="75" y="110" text-anchor="middle" class="step-desc">气象记录</text>
+  
+  <!-- 管道符号1 -->
+  <text x="145" y="100" text-anchor="middle" class="pipeline-symbol">|</text>
+  
+  <!-- 步骤1: Map阶段 - 数据解析和过滤 -->
+  <rect x="170" y="60" width="140" height="70" class="step-box"/>
+  <text x="240" y="80" text-anchor="middle" class="step-title">Map 阶段</text>
+  <text x="240" y="95" text-anchor="middle" class="command">awk</text>
+  <text x="240" y="110" text-anchor="middle" class="step-desc">解析、转换、过滤</text>
+  <text x="240" y="125" text-anchor="middle" class="mapreduce-label">数据映射处理</text>
+  
+  <!-- 管道符号2 -->
+  <text x="325" y="100" text-anchor="middle" class="pipeline-symbol">|</text>
+  
+  <!-- 步骤2: Shuffle阶段 - 数据排序 -->
+  <rect x="350" y="60" width="140" height="70" class="step-box"/>
+  <text x="420" y="80" text-anchor="middle" class="step-title">Shuffle 阶段</text>
+  <text x="420" y="95" text-anchor="middle" class="command">sort</text>
+  <text x="420" y="110" text-anchor="middle" class="step-desc">按年份分组排序</text>
+  <text x="420" y="125" text-anchor="middle" class="mapreduce-label">数据重新分布</text>
+  
+  <!-- 管道符号3 -->
+  <text x="505" y="100" text-anchor="middle" class="pipeline-symbol">|</text>
+  
+  <!-- 步骤3: Reduce阶段 - 聚合计算 -->
+  <rect x="530" y="60" width="140" height="70" class="step-box"/>
+  <text x="600" y="80" text-anchor="middle" class="step-title">Reduce 阶段</text>
+  <text x="600" y="95" text-anchor="middle" class="command">awk</text>
+  <text x="600" y="110" text-anchor="middle" class="step-desc">计算最高温度</text>
+  <text x="600" y="125" text-anchor="middle" class="mapreduce-label">数据聚合处理</text>
+  
+  <!-- 管道符号4 -->
+  <text x="685" y="100" text-anchor="middle" class="pipeline-symbol">|</text>
+  
+  <!-- 输出结果 -->
+  <rect x="710" y="60" width="110" height="70" class="step-box"/>
+  <text x="765" y="80" text-anchor="middle" class="step-title">最终结果</text>
+  <text x="765" y="95" text-anchor="middle" class="step-desc">年份-温度</text>
+  <text x="765" y="110" text-anchor="middle" class="step-desc">键值对</text>
+  
+  <!-- 数据流箭头 -->
+  <line x1="130" y1="95" x2="170" y2="95" class="data-flow"/>
+  <line x1="310" y1="95" x2="350" y2="95" class="data-flow"/>
+  <line x1="490" y1="95" x2="530" y2="95" class="data-flow"/>
+  <line x1="670" y1="95" x2="710" y2="95" class="data-flow"/>
+  
+</svg>
