@@ -29,10 +29,10 @@
 | 节点角色 | 主机名         | IP 地址      | 服务组件                                    |
 | -------- | -------------- | ------------ | ------------------------------------------- |
 | Master   | hadoop-master  | 192.168.1.10 | NameNode, ResourceManager, JobHistoryServer |
-| Worker1  | hadoop-worker1 | 192.168.1.11 | DataNode, NodeManager, SecondaryNameNode    |
-| Worker2  | hadoop-worker2 | 192.168.1.12 | DataNode, NodeManager                       |
-| Worker3  | hadoop-worker3 | 192.168.1.13 | DataNode, NodeManager                       |
-| Worker4  | hadoop-worker4 | 192.168.1.14 | DataNode, NodeManager                       |
+| Worker   | hadoop-worker1 | 192.168.1.11 | DataNode, NodeManager, SecondaryNameNode    |
+| Worker   | hadoop-worker2 | 192.168.1.12 | DataNode, NodeManager                       |
+| Worker   | hadoop-worker3 | 192.168.1.13 | DataNode, NodeManager                       |
+| Worker   | hadoop-worker4 | 192.168.1.14 | DataNode, NodeManager                       |
 
 **注意**：请根据您的实际网络环境调整 IP 地址。
 
@@ -40,9 +40,9 @@
 
 ## 2. 系统要求
 
-### 2.1 支持的平台
+### 2.1 建议平台
 
-- **操作系统**：GNU/Linux（推荐 Ubuntu 20.04 LTS 或更高版本）
+- **操作系统**：GNU/Linux（推荐 Ubuntu 22.04 LTS 或更高版本）
 - **架构**：x86_64
 
 ### 2.2 硬件配置要求
@@ -85,7 +85,7 @@
 
 #### 2.3.1 Java 环境
 
-- **Java 版本**：推荐使用 OpenJDK 8 或 OpenJDK 11
+- **Java 版本**：推荐使用 OpenJDK 8（Hadoop 3.4+ 也支持 Java 11/17，但为确保最佳兼容性建议使用 Java 8）
 - **环境变量**：需要正确配置 `JAVA_HOME`
 
 #### 2.3.2 SSH 服务
@@ -1576,12 +1576,12 @@ yarn.scheduler.minimum-allocation-mb=1024
 
 ## 参考文献
 
-[1] Apache Software Foundation. Hadoop: Cluster Setup [EB/OL]. Apache Hadoop Documentation, 2024. <https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/ClusterSetup.html/>
+[1] Apache Software Foundation. Hadoop: Cluster Setup [EB/OL]. Apache Hadoop Documentation, 2024. <https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/ClusterSetup.html>
 
 [2] Apache Software Foundation. Apache Hadoop 3.4.2 Documentation [EB/OL]. 2024. <https://hadoop.apache.org/docs/stable/>
 
-[3] Apache Software Foundation. HDFS Architecture Guide [EB/OL]. Apache Hadoop Documentation, 2024. <https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html/>
+[3] Apache Software Foundation. HDFS Architecture Guide [EB/OL]. Apache Hadoop Documentation, 2024. <https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html>
 
-[4] Apache Software Foundation. Apache Hadoop YARN [EB/OL]. Apache Hadoop Documentation, 2024. <https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/YARN.html/>
+[4] Apache Software Foundation. Apache Hadoop YARN [EB/OL]. Apache Hadoop Documentation, 2024. <https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/YARN.html>
 
 ---
