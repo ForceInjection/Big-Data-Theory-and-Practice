@@ -1,0 +1,10 @@
+Hello World Hello Hadoop
+MapReduce is powerful and efficient
+Hadoop HDFS MapReduce Spark
+Big Data Processing with Hadoop ecosystem
+Distributed computing makes data processing scalable
+HDFS provides reliable storage for big data
+MapReduce enables parallel processing of large datasets
+Apache Hadoop is an open source framework
+Data analytics and machine learning on big data
+Cloud computing and distributed systems
