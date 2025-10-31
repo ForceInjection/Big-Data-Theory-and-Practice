@@ -2,7 +2,7 @@
 
 **摘要：**
 
-本文深入对比分析了 Apache YARN [1] 和 Kubernetes [2] 两种主流资源管理平台的底层隔离技术实现机制。研究从 Linux 内核隔离基础出发，系统性分析了 YARN Container 和 Kubernetes Pod 的资源抽象模型、隔离技术架构和实现细节。通过深入探讨 YARN 的三种 ContainerExecutor（Default、Linux、Docker）隔离策略，以及 Kubernetes 的多层隔离体系（Namespace、CGroups、网络隔离、存储隔离），揭示了两种技术在设计理念、适用场景和技术特性方面的本质差异。研究发现，YARN 专注于大数据批处理场景的资源优化，采用集中式资源管理和数据本地性优先策略；而 Kubernetes 面向云原生应用，构建了声明式管理和分布式控制的容器编排平台。本文为企业在大数据与云原生技术选型中提供了理论依据和实践指导，有助于架构师根据具体业务场景做出最优的技术决策。
+本文深入对比分析了 Apache YARN [1] 和 Kubernetes [2] 两种主流资源管理平台的底层隔离技术实现机制。研究从 Linux 内核隔离基础出发，系统性分析了 YARN Container 和 Kubernetes Pod 的资源抽象模型、隔离技术架构和实现细节。通过深入探讨 YARN 的三种 ContainerExecutor（Default、Linux、Docker）隔离策略，以及 Kubernetes 的多层隔离体系（Namespace、CGroups、网络隔离、存储隔离），揭示了两种技术在设计理念、适用场景和技术特性方面的本质差异。实践证明，YARN 专注于大数据批处理场景的资源优化，采用集中式资源管理和数据本地性优先策略；而 Kubernetes 面向云原生应用，构建了声明式管理和分布式控制的容器编排平台。本文通过技术对比分析，为理解两种技术的底层机制和适用场景提供了理论基础。
 
 ## 第 1 章 引言与背景
 
