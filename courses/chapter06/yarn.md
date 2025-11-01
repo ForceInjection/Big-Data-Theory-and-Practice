@@ -69,8 +69,6 @@
 在 MapReduce v1 架构下，该公司不得不为每种计算需求部署独立的集群，形成了严重的**资源孤岛**问题。具体来看，这种资源分配现状可以用以下架构图来说明：
 
 ```text
-                    MapReduce v1 时代的资源分配模式
-
     ┌─────────────────────────────────────────────────────────────────┐
     │                    1000 节点数据中心                              │
     │                   (总投资 5000 万元)                              │
@@ -95,6 +93,8 @@
     │利用率:16.7%  │ │利用率:58.3%  │ │利用率:9.5%   │ │ 利用率:1.7%      │
     └─────────────┘ └─────────────┘ └─────────────┘ └─────────────────┘
 ```
+
+_图 1-1 MapReduce v1 时代的资源分配模式。_
 
 从这个架构图可以清晰地看到资源浪费的严重程度。让我们通过详细的量化分析来计算这种资源分配模式的效率。首先分析每日资源利用情况：
 
@@ -142,8 +142,6 @@ MapReduce v1 的设计哲学是"**一个框架，一套集群**"，这种设计�
 从架构层次的角度来看，MapReduce v1 采用了一种看似合理但实际存在根本性缺陷的分层设计。通过对这种分层架构的深入剖析，我们可以清晰地识别出导致资源利用率低下和扩展性受限的技术根源：
 
 ```text
-                    MapReduce v1 分层架构与问题分析
-
     ┌─────────────────────────────────────────────────────────────────┐
     │                      应用层 (Application Layer)                  │
     │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────┐ │
@@ -206,6 +204,8 @@ MapReduce v1 的设计哲学是"**一个框架，一套集群**"，这种设计�
     └──────────────────────────────────────────────────────────────────┘
 ```
 
+_图 1-2 MapReduce v1 分层架构与问题分析。_
+
 通过这个分层架构图，我们可以清晰地看到 MapReduce v1 设计中的根本性问题。这些问题不仅仅是表面的性能瓶颈，更是深层次的架构设计缺陷，严重制约了 Hadoop 生态系统的发展和扩展能力。
 
 为了全面理解 YARN 设计的必要性和合理性，我们需要深入剖析 MapReduce v1 的具体技术问题。接下来，我们将从架构设计、资源管理、扩展性和容错机制等多个维度，详细分析这些问题的技术本质和影响范围。
@@ -215,7 +215,10 @@ MapReduce v1 的设计哲学是"**一个框架，一套集群**"，这种设计�
 MapReduce v1 的根本缺陷在于 JobTracker 承担了两个本应分离的职责：资源管理和作业调度。这种设计违背了软件工程中的单一职责原则，导致了一系列连锁问题。通过以下代码分析可以清晰地看到这种**职责耦合**的问题：
 
 ```java
-// MapReduce v1 中 JobTracker 的双重职责（来源：Hadoop 0.20.x JobTracker.java）
+/**
+ * JobTracker 的双重职责（来源：Hadoop 0.20.x JobTracker.java)
+ * 源文件：org.apache.hadoop.mapred.JobTracker
+ */
 public class JobTracker implements InterTrackerProtocol {
     // 资源管理相关字段
     private Map<String, TaskTrackerStatus> taskTrackers =
@@ -293,8 +296,6 @@ public class JobTracker implements InterTrackerProtocol {
 除了紧耦合设计问题外，MapReduce v1 采用的**固定 Slot** 机制是资源利用率低下的另一个直接原因。为了深入理解这个问题，我们需要分析 Slot 机制的技术细节：
 
 ```text
-                    固定 Slot 分配机制分析
-
     ┌─────────────────────────────────────────────────────────────────┐
     │                    单个节点资源分配                                │
     │                   (16 核 CPU, 64GB 内存)                         │
@@ -337,6 +338,8 @@ public class JobTracker implements InterTrackerProtocol {
     │  平均资源利用率：60% × 50% + 40% × 50% = 50%                       │
     └─────────────────────────────────────────────────────────────────┘
 ```
+
+_图 1-3 固定 Slot 分配机制分析。_
 
 通过具体的数据分析，我们可以更清晰地看到这种固定 Slot 机制造成的资源浪费。在我们的案例中，400 个批处理节点的实际利用情况：
 
@@ -507,7 +510,7 @@ YARN 的核心设计哲学可以概括为"**一个平台，多种框架**"，这
 
 #### 1.3.1 设计目标的理论基础
 
-YARN（Yet Another Resource Negotiator）的设计目标源于对 MapReduce v1 局限性的深入分析和大数据计算需求的演进。其核心设计理念是**"分离关注点"**——将资源管理与作业调度解耦，实现更灵活、高效的集群资源管理。
+YARN 的设计目标源于对 MapReduce v1 局限性的深入分析和大数据计算需求的演进。其核心设计理念是**"分离关注点"**——将资源管理与作业调度解耦，实现更灵活、高效的集群资源管理。
 
 **1. 资源管理与作业调度分离**：
 
@@ -549,71 +552,19 @@ YARN 引入了 Container 概念，替代了 MapReduce v1 的固定 Slot 机制�
 
 YARN 的核心创新在于引入了 Container 的概念，将传统的固定槽位（slot）模式转变为灵活的资源抽象模式。这种设计使得不同类型的应用能够根据实际需求动态申请和使用计算资源，而不再受限于预定义的 Map 槽位和 Reduce 槽位。Container 作为资源分配的基本单位，封装了内存、CPU 等计算资源，为上层应用提供了统一的资源视图。
 
-```java
-// YARN 中的资源抽象（基于 Hadoop 3.x API）
-import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.api.records.NodeId;
-import org.apache.hadoop.yarn.api.records.Priority;
+YARN 的资源管理基于 **Resource** 和 **Container** 两个核心抽象概念。Resource 对象表示计算资源的抽象，主要包括内存大小和虚拟 CPU 核心数等资源维度。通过 `Resource.newInstance(memory, vCores)` 方法可以创建资源对象，系统还提供了 Resources 工具类来进行资源的比较、加减等运算操作。
 
-public class YarnResourceExample {
+Container 作为 YARN 中资源分配的基本单位，封装了完整的资源分配信息，包括 ContainerId、分配的资源量、运行节点等信息。ApplicationMaster 通过向 ResourceManager 申请 Container 来获取执行任务所需的资源。
 
-    // 资源对象表示计算资源的抽象
-    public static class ResourceWrapper {
-        private Resource resource;
+资源管理的核心机制包括：
 
-        public ResourceWrapper(int memory, int vCores) {
-            this.resource = Resource.newInstance(memory, vCores);
-        }
-
-        // 资源比较和运算方法
-        public static Resource max(Resource lhs, Resource rhs) {
-            return Resource.newInstance(
-                Math.max(lhs.getMemorySize(), rhs.getMemorySize()),
-                Math.max(lhs.getVirtualCores(), rhs.getVirtualCores())
-            );
-        }
-
-        // 资源加法运算
-        public static Resource add(Resource lhs, Resource rhs) {
-            return Resource.newInstance(
-                lhs.getMemorySize() + rhs.getMemorySize(),
-                lhs.getVirtualCores() + rhs.getVirtualCores()
-            );
-        }
-    }
-
-    // Container 封装了完整的资源分配信息
-    public static class ContainerWrapper {
-        private ContainerId containerId;
-        private Resource allocatedResource;
-        private NodeId nodeId;
-        private Priority priority;
-
-        public ContainerWrapper(ContainerId id, Resource resource,
-                               NodeId node, Priority prio) {
-            this.containerId = id;
-            this.allocatedResource = resource;
-            this.nodeId = node;
-            this.priority = prio;
-        }
-
-        // 获取容器的资源使用情况
-        public String getResourceInfo() {
-            return String.format("Container %s: Memory=%dMB, vCores=%d, Node=%s",
-                containerId.toString(),
-                allocatedResource.getMemorySize(),
-                allocatedResource.getVirtualCores(),
-                nodeId.getHost());
-        }
-    }
-}
-```
+1. **资源抽象**：通过 Resource 类统一表示不同类型的计算资源，支持内存、CPU 等多维度资源的描述和管理。
+2. **容器分配**：Container 作为资源分配的原子单位，确保资源的隔离性和可管理性。
+3. **资源运算**：提供丰富的资源比较和运算方法，支持资源的合并、比较、分割等操作，为调度算法提供基础支持。
 
 **2. 应用生命周期管理**：
 
-YARN 采用了分布式应用管理架构，其中每个应用都拥有独立的 ApplicationMaster（AM）组件。这种设计实现了应用级别的资源管理和任务调度，使得不同应用之间能够实现真正的隔离和独立运行。ApplicationMaster 作为应用的代理，负责与 ResourceManager 进行资源协商，并在获得资源后管理应用内部的任务执行。这种架构不仅提高了系统的容错能力，还为不同类型的计算框架提供了统一的资源管理接口。
+YARN 为每个应用提供独立的 ApplicationMaster（AM）组件，实现应用级别的资源管理和任务调度。
 
 ApplicationMaster 的核心职责包括资源协商、任务调度、故障处理和进度监控等多个方面。在资源协商阶段，AM 根据应用的具体需求向 ResourceManager 申请相应的 Container 资源；在任务调度阶段，AM 将应用逻辑分解为具体的任务，并将这些任务分配到已获得的 Container 中执行；当出现任务失败或容器异常时，AM 负责实施相应的故障恢复策略；同时，AM 还需要持续监控应用的执行进度，并向客户端报告应用状态。
 
@@ -652,8 +603,6 @@ YARN 在引入新架构的同时，高度重视与现有生态系统的兼容性
 YARN 采用经典的主从架构（Master-Slave Architecture）设计模式，通过分层解耦的方式实现了资源管理与应用调度的有效分离。整个架构由四个核心组件构成：ResourceManager（资源管理器）、NodeManager（节点管理器）、ApplicationMaster（应用主控器）和 Container（容器），它们协同工作形成了一个高度可扩展的分布式资源管理系统。
 
 ```text
-                           YARN 集群架构图
-
     ┌─────────────────────────────────────────────────────────────────┐
     │                        YARN 集群                                 │
     └─────────────────────────────────────────────────────────────────┘
@@ -699,13 +648,15 @@ YARN 采用经典的主从架构（Master-Slave Architecture）设计模式，�
     └─────────────────────────────────────────────────────────────────┘
 ```
 
+_图 1-4 YARN 集群架构图。_
+
 数据流向说明
 
-1. Client 向 ResourceManager 提交应用请求
-2. ResourceManager 的 ApplicationsManager 启动 ApplicationMaster
-3. ApplicationMaster 向 ResourceManager 的 Scheduler 请求资源
-4. ResourceManager 分配资源，ApplicationMaster 在 NodeManager 上启动 Container
-5. ApplicationMaster 监控任务执行，Container 向 ApplicationMaster 汇报状态
+1. `Client` 向 `ResourceManager` 提交应用请求
+2. `ResourceManager` 的 `ApplicationsManager` 启动 `ApplicationMaster`
+3. `ApplicationMaster` 向 `ResourceManager` 的 `Scheduler` 请求资源
+4. `ResourceManager` 分配资源，`ApplicationMaster` 在 `NodeManager` 上启动 `Container`
+5. `ApplicationMaster` 监控任务执行，`Container` 向 `ApplicationMaster` 汇报状态
 
 #### 1.4.2 核心组件详解
 
@@ -730,7 +681,7 @@ NodeManager 作为部署在每个工作节点上的本地代理程序，负责�
 
 **3. ApplicationMaster（应用主控器）**：
 
-ApplicationMaster 是 YARN 架构中的创新设计，为每个应用提供专用的管理器实例。它运行在集群的容器中，负责该应用的资源协商、任务调度和执行监控，实现了应用级别的自主管理和优化。
+ApplicationMaster 为每个应用提供专用的管理器实例，运行在集群的容器中，负责该应用的资源协商、任务调度和执行监控。
 
 **核心职责**：
 
@@ -750,7 +701,7 @@ Container 是 YARN 中资源分配和任务执行的基本单位，它封装了�
 
 通过对 YARN 核心组件的深入分析，我们全面了解了其架构设计的核心理念和技术特性。为了更好地理解 YARN 的技术优势和创新价值，接下来我们将从历史演进的角度，对比分析 MapReduce v1 和 YARN（MRv2）在架构设计、性能表现、功能特性等方面的差异，深入探讨 YARN 是如何解决传统架构的局限性，并为大数据处理带来革命性改进的。
 
-### 1. 5 从 MRv1 到 MRv2 的演进对比
+### 1.5 从 MRv1 到 MRv2 的演进对比
 
 #### 1.5.1 架构演进对比
 
@@ -774,7 +725,7 @@ YARN 相比于 MapReduce v1 在多个关键性能指标上实现了显著提升�
 
 **1. 扩展性能力的革命性提升**：
 
-YARN 通过分布式架构设计彻底解决了 MapReduce v1 的扩展性瓶颈问题。在 MapReduce v1 中，JobTracker 作为单一的主节点需要处理所有的资源管理和作业调度请求，这种集中式设计限制了系统的扩展能力，通常只能支持约 4000 个节点和 40000 个并发任务。YARN 通过将资源管理和应用调度分离，使得 ResourceManager 可以专注于资源分配，而具体的任务调度由各个 ApplicationMaster 独立完成，这种设计使得系统能够支持超过 10000 个节点的大规模集群，并且理论上对并发应用数量没有硬性限制。
+YARN 通过分布式架构设计彻底解决了扩展性瓶颈问题。通过将资源管理和应用调度分离，使得 ResourceManager 可以专注于资源分配，而具体的任务调度由各个 ApplicationMaster 独立完成，这种设计使得系统能够支持超过 10000 个节点的大规模集群，并且理论上对并发应用数量没有硬性限制。
 
 **2. 资源利用效率的显著改善**：
 
@@ -798,431 +749,1033 @@ YARN 在容错机制方面实现了从单点故障到分布式容错的根本性
 
 ## 第 2 章 应用生命周期与资源管理
 
-本章将深入探讨 YARN 中应用的完整生命周期管理和资源分配机制。在第 1 章了解了 YARN 的整体架构设计后，本章将聚焦于应用在 YARN 集群中的实际运行过程，包括应用提交、资源协商、任务执行和状态监控等关键环节。
+本章将深入探讨 YARN 中应用的完整生命周期管理和资源分配机制。在第 1 章了解了 YARN 的整体架构设计后，本章将聚焦于应用在 YARN 集群中的实际运行过程，从分布式应用管理的根本挑战出发，系统分析 YARN 如何通过创新的设计理念和技术机制，实现高效、可靠的资源管理和应用调度。
 
-通过本章的学习，我们将理解 YARN 如何实现高效的资源管理和应用调度，以及它如何通过心跳机制、容器抽象和本地性优化等技术手段，确保分布式应用的可靠执行和资源的最优利用。
+我们将通过具体的企业级案例和量化分析，深入理解 YARN 如何解决传统分布式系统在资源管理、故障处理、性能优化等方面的核心问题。本章不仅关注技术机制的实现细节，更注重从系统设计的角度理解这些机制背后的设计思想和实践价值。
 
 通过本章学习，读者将能够：
 
-1. **掌握应用生命周期**：深入理解从应用提交到完成的完整流程，包括各组件间的交互协议
-2. **理解资源管理机制**：掌握 YARN 的资源模型、容器概念以及动态资源分配策略
-3. **熟悉心跳与监控**：理解心跳机制在状态同步、资源监控和故障检测中的作用
-4. **掌握本地性优化**：理解数据本地性的重要性以及 YARN 的本地性调度策略
-5. **建立系统思维**：能够从系统角度分析和优化 YARN 应用的性能表现
-
-### 2.1 应用提交流程
-
-#### 2.1.1 应用提交概述
-
-在传统的集中式计算环境中，应用的启动和管理相对简单——操作系统直接负责进程的创建、调度和监控。然而，当我们将计算任务扩展到由数百甚至数千台机器组成的分布式集群时，应用管理面临着前所未有的挑战：如何在不可靠的网络环境中协调多个节点？如何处理节点故障时的应用恢复？如何确保资源的公平分配和高效利用？
-
-这些挑战促使 YARN 设计了一套精巧的应用提交和管理机制。其核心思想是将应用管理的职责分离：ResourceManager 负责全局资源调度，而每个应用都有自己专属的 ApplicationMaster 来管理应用内部的任务调度和容错处理。这种"一应用一管理者"的设计不仅提高了系统的可扩展性，还增强了应用间的隔离性。
-
-YARN 中应用的提交是一个复杂的多步骤过程，涉及客户端、ResourceManager、NodeManager 和 ApplicationMaster 之间的协调。
-
-**详细流程图**：
-
-```text
-应用提交完整流程
-
-Client                ResourceManager           NodeManager            ApplicationMaster
-  |                         |                        |                        |
-  |--1. submitApplication-->|                        |                        |
-  |                         |--2. 验证应用请求         |                        |
-  |<--3. ApplicationId------|                        |                        |
-  |                         |--4. 为AM分配容器------->|                         |
-  |                         |                        |--5. 启动AM容器--------->|
-  |                         |<--6. AM注册-------------|                        |
-  |                         |                        |                        |
-  |                         |<--7. 资源请求-----------|                         |
-  |                         |--8. 分配容器----------->|                         |
-  |                         |                        |<--9. 启动任务容器--------|
-  |                         |                        |                        |
-  |                         |<--10. 进度汇报----------|                         |
-  |                         |<--11. 应用完成----------|                         |
-  |                         |--12. 清理资源---------->|                         |
-```
-
-#### 2.1.2 各阶段详细分析
-
-**阶段 1：应用提交与验证**：
-
-客户端向 ResourceManager 提交应用时，需要提供应用提交上下文，包含：
-
-**应用提交信息**：
-
-- **基本信息**：应用 ID、名称、目标队列、优先级
-- **资源需求**：ApplicationMaster 所需的内存和 CPU 资源
-- **启动配置**：AM 容器的启动命令、环境变量、依赖文件
-- **运行参数**：容器保持策略、重试配置等
-
-ResourceManager 接收到提交请求后，会进行以下验证：
-
-- **权限验证**：检查用户是否有权限提交应用到指定队列
-- **资源验证**：验证请求的资源是否合理
-- **配置验证**：检查应用配置的有效性
-
-**阶段 2：ApplicationMaster 容器分配**：
-
-验证通过后，ResourceManager 会：
-
-1. 生成唯一的 ApplicationId
-2. 将应用信息存储到状态存储中
-3. 为 ApplicationMaster 分配容器
-4. 选择合适的 NodeManager 启动 AM
-
-**阶段 3：ApplicationMaster 启动与注册**：
-
-NodeManager 接收到启动 AM 的请求后：
-
-1. 下载应用所需的资源文件
-2. 设置容器的运行环境
-3. 启动 ApplicationMaster 进程
-4. 监控 AM 的运行状态
-
-ApplicationMaster 启动后必须向 ResourceManager 注册，这个看似简单的注册过程实际上建立了分布式应用管理的基础契约。通过注册，ResourceManager 能够识别和跟踪每个应用的管理者，而 ApplicationMaster 也获得了与集群资源调度器对话的"身份证"。这种双向确认机制确保了即使在网络分区或节点故障的情况下，系统也能准确判断应用的状态。
-
-注册信息包括：
-
-- **主机信息**：AM 运行的主机名和端口
-- **跟踪 URL**：用于监控应用进度的 Web 界面地址
-- **资源能力**：从 RM 获取集群的最大资源配置信息
-
-这种注册机制的巧妙之处在于它建立了一个"拉取式"的资源协商模型。与传统的"推送式"调度不同，ApplicationMaster 主动向 ResourceManager 请求资源，这样既避免了中央调度器的性能瓶颈，又让每个应用能够根据自身的执行策略灵活地调整资源需求。
-
-#### 2.1.3 错误处理与重试机制
-
-**ApplicationMaster 启动失败**：
-
-如果 AM 启动失败，ResourceManager 会：
-
-1. 记录失败原因和次数
-2. 如果未超过最大重试次数，选择新的节点重新启动
-3. 如果超过重试次数，标记应用为失败
-
-**重试策略配置**：
-
-- **最大重试次数**：默认为 3 次
-- **重试间隔**：默认 10 秒
-- **容器保持策略**：重试时是否保留已分配的容器
-
-### 2.2 心跳机制与状态同步
-
-#### 2.2.1 心跳机制概述
-
-在分布式系统中，最大的挑战之一就是如何在网络延迟、节点故障和消息丢失的环境下维护全局状态的一致性。想象一下，当你管理着数千台机器时，如何及时发现某台机器已经宕机？如何确保资源分配的决策基于最新的集群状态？如何在不造成网络风暴的前提下保持信息的实时性？
-
-传统的轮询方式要么延迟过高，要么开销过大。YARN 采用了一种巧妙的"心跳驱动"模式来解决这个难题。这种设计的核心思想是将状态同步与资源调度相结合：每次心跳不仅是一次"我还活着"的声明，更是一次状态更新和指令传递的机会。这样既保证了信息的及时性，又避免了额外的网络开销。
-
-YARN 使用心跳机制来维护集群状态的一致性和及时性。主要包括两种心跳：
-
-- **NodeManager 到 ResourceManager 的心跳**
-- **ApplicationMaster 到 ResourceManager 的心跳**
-
-**心跳机制示意图**：
-
-```text
-心跳驱动的资源管理模式：
-
-NodeManager          ResourceManager          ApplicationMaster
-     |                       |                       |
-     |---1.节点心跳(状态)----->|                       |
-     |                       |--2.处理节点状态         |
-     |<---3.心跳响应(指令)-----|                       |
-     |                       |                       |
-     |                       |<---4.AM心跳(资源请求)---|
-     |                       |---5.调度资源分配        |
-     |                       |---6.心跳响应(分配结果)-->|
-     |                       |                       |
-     |<---7.启动容器请求-------|<----8.启动容器请求------|
-     |---9.容器状态更新------->|                       |
-     |                       |--10.状态同步---------->|
-```
-
-1. 时间轴：每秒重复上述流程
-2. 心跳内容：
-   - **NodeManager**: 节点状态、容器状态、资源使用情况
-   - **ApplicationMaster**: 应用进度、资源需求、容器释放请求
-   - **ResourceManager**: 资源分配结果、管理指令、状态更新
-
-#### 2.2.2 NodeManager 心跳机制
-
-**心跳内容**：
-
-NodeManager 定期（默认每秒）向 ResourceManager 发送心跳，包含：
-
-**心跳信息内容**：
-
-- **节点标识**：节点 ID 和响应序号
-- **容器状态**：所有运行容器的状态列表
-- **健康状态**：节点的健康检查结果
-- **资源使用**：已使用和可用的 CPU、内存资源
-- **保活应用**：需要保持活跃的应用列表
-
-**心跳处理流程**：
-
-这种心跳处理的设计体现了"批量化"和"异步化"的核心思想。与传统的同步调用不同，ResourceManager 将多个操作打包在一次心跳交互中完成，这大大减少了网络往返次数。同时，通过心跳响应来传递管理指令，避免了主动推送可能带来的连接管理复杂性。
-
-ResourceManager 接收到心跳后会：
-
-1. **更新节点状态**：记录节点的健康状态和资源使用情况
-2. **处理容器状态**：更新容器的运行状态
-3. **分配新容器**：如果有待分配的容器，通过心跳响应返回
-4. **发送管理命令**：如清理容器、重启服务等
-
-**心跳响应内容**：
-
-- **响应序号**：用于确保消息的顺序性
-- **清理指令**：需要清理的容器和应用列表
-- **安全令牌**：容器访问和节点管理的安全密钥
-- **心跳间隔**：下次心跳的时间间隔
-
-#### 2.2.3 ApplicationMaster 心跳机制
-
-**资源请求与分配**：
-
-ApplicationMaster 通过心跳向 ResourceManager 请求资源：
-
-**心跳请求内容**：
-
-- **应用进度**：当前应用的完成百分比
-- **资源请求**：新的容器资源需求列表
-- **容器释放**：不再需要的容器列表
-- **黑名单管理**：需要避免的节点列表
-
-**资源请求参数**：
-
-- **优先级**：任务的重要程度
-- **位置偏好**：节点、机架或任意位置
-- **资源规格**：CPU 和内存需求
-- **容器数量**：需要的容器个数
-- **本地性策略**：是否可以放松位置要求
-
-**心跳响应处理**：
-
-ResourceManager 的心跳响应包含：
-
-**心跳响应内容**：
-
-- **分配结果**：新分配的容器列表
-- **容器状态**：已完成容器的状态信息
-- **资源限制**：当前应用的资源使用上限
-- **节点更新**：集群节点状态变化信息
-- **抢占通知**：需要释放资源的抢占消息
-- **访问令牌**：访问 NodeManager 的安全令牌
-
-#### 2.2.4 心跳超时与故障检测
-
-**超时检测机制**：
-
-YARN 心跳超时时间默认配置为 10 分钟，超过此时间未收到心跳则视为节点或应用失败。
-
-**心跳配置参数**：
-
-- **NM 心跳间隔**：默认 1 秒
-- **NM 超时时间**：默认 10 分钟
-- **AM 心跳间隔**：默认 1 秒
-- **AM 超时时间**：默认 10 分钟
-
-**故障处理策略**：
-
-当检测到心跳超时时：
-
-- **NodeManager 超时**：标记节点为不健康，停止向该节点分配新容器
-- **ApplicationMaster 超时**：尝试重启 AM，或标记应用失败
-
-### 2.3 资源模型与容器概念
-
-#### 2.3.1 资源抽象模型
-
-在传统的集群管理系统中，资源管理往往采用"**静态分区**"的方式：每个节点被预先划分给特定的服务或用户，这种方式虽然简单，但存在严重的资源浪费问题。
-
-YARN 的资源模型设计巧妙地解决了这些问题。它将资源抽象为多维向量，使得资源分配可以更加精细和灵活。这种设计的核心思想是"**资源的组合性**"：任何复杂的资源需求都可以表示为基础资源类型的组合，而任何节点的资源能力也可以用同样的方式描述。这样，资源匹配就变成了向量运算，既简化了调度算法，又提高了资源利用率。
-
-YARN 将计算资源抽象为多维资源向量，主要包括：
-
-**基础资源类型**：
-
-- **内存（Memory）**：以 MB 为单位
-- **CPU（Virtual Cores）**：虚拟 CPU 核心数
-- **扩展资源**：GPU、FPGA、磁盘、网络等
-
-**资源模型组成**：
-
-- **内存**：以 MB 为单位的内存资源
-- **虚拟 CPU 核心**：可分配的 CPU 计算能力
-- **扩展资源**：GPU、FPGA、磁盘、网络等自定义资源
-
-**资源操作**：
-
-- **资源加法**：合并多个资源需求
-- **资源减法**：计算剩余可用资源
-- **资源比较**：判断资源是否满足需求
-
-#### 2.3.2 容器概念与特性
-
-**容器定义**：
-
-容器（Container）的设计体现了 YARN 对资源管理的深刻理解。传统的进程管理方式往往将资源分配和任务执行紧密耦合，这使得资源的动态调整变得困难。YARN 的容器概念巧妙地将这两者解耦：容器作为资源的"载体"，封装了在特定节点上分配的特定数量的资源，而具体运行什么任务则由 ApplicationMaster 决定。
-
-这种设计的优势在于它提供了统一的资源抽象层。无论是 MapReduce 的 Map 任务、Spark 的 Executor，还是其他类型的计算任务，都可以运行在标准的容器中。这不仅简化了资源管理的复杂性，还为不同计算框架的共存提供了可能。
-
-Container 是 YARN 中资源分配和任务执行的基本单位：
-
-```java
-// 容器定义
-public class Container {
-    private ContainerId id;                    // 容器唯一标识
-    private NodeId nodeId;                     // 运行节点
-    private Resource resource;                 // 分配的资源
-    private Priority priority;                 // 优先级
-    private Token containerToken;              // 访问令牌
-
-    // 容器启动上下文
-    private ContainerLaunchContext launchContext;
-}
-
-// 容器启动上下文
-public class ContainerLaunchContext {
-    private Map<String, LocalResource> localResources; // 本地资源
-    private Map<String, String> environment;           // 环境变量
-    private List<String> commands;                     // 启动命令
-    private Map<String, ByteBuffer> serviceData;       // 服务数据
-    private Credentials credentials;                   // 安全凭证
-    private Map<ApplicationAccessType, String> applicationACLs; // 访问控制
-}
-```
-
-**容器生命周期**：
-
-Container 经历以下生命周期状态：
-
-```text
-    NEW ──────→ ALLOCATED ──────→ ACQUIRED ──────→ RUNNING
-     ↓             ↓                ↓               ↓
-     └─────────────┴────────────────┴───────────────┴──→ COMPLETE
-                                                            ↓
-                                                        SUCCEEDED
-                                                         FAILED
-                                                         KILLED
-```
-
-**容器状态说明：**
-
-- **NEW**: 容器刚被创建，等待调度器分配资源
-- **ALLOCATED**: 调度器已为容器分配了资源，但尚未被 ApplicationMaster 获取
-- **ACQUIRED**: ApplicationMaster 已获取容器，准备启动容器进程
-- **RUNNING**: 容器正在 NodeManager 上运行
-- **COMPLETE**: 容器执行完成，进入最终状态
-  - **SUCCEEDED**: 容器正常完成任务
-  - **FAILED**: 容器因错误而失败
-  - **KILLED**: 容器被主动终止（用户或系统）
-
-#### 2.3.3 资源隔离机制
-
-YARN 提供了多层次的资源隔离机制，确保容器之间的资源使用不会相互干扰。
-
-**资源隔离的核心思想**：
-
-YARN 的资源隔离设计体现了"**精确控制**"和"**灵活管理**"的平衡。传统的进程管理往往依赖操作系统的基础隔离机制，这种方式虽然简单，但难以实现精细的资源控制。YARN 通过 Linux CGroups 技术，将资源隔离提升到了新的层次：既能严格限制容器的资源使用，防止资源争抢，又能在系统资源充足时允许容器突发使用更多资源，提高整体利用率。
-
-**1. 内存控制模式**：
-
-- **轮询监控模式**：定期检查容器内存使用，超限时终止容器
-- **严格内存控制**：基于 CGroups OOM Killer，容器超限时立即终止
-- **弹性内存控制**：允许容器突发使用更多内存，系统内存不足时才终止
-
-**2. CPU 隔离实现**：
-
-YARN 通过 Linux CGroups 实现 CPU 资源的精确控制：
-
-- **CPU 份额控制**：基于相对权重分配 CPU 时间
-- **CPU 配额限制**：设置容器可使用的绝对 CPU 时间
-- **CPU 亲和性**：控制容器在特定 CPU 核心上运行
-
-> **注意**：YARN CPU 隔离机制在实现原理上类似 K8s Pod 的 request 和 limit，都基于 Linux CGroups 提供资源保证和限制，但在调度策略和配置方式上有所不同。
-
-### 2.4 本地性优化策略
-
-#### 2.4.1 本地性层级
-
-在大数据处理中，一个经常被忽视但影响巨大的因素是数据移动的成本。想象一下，当你需要处理 TB 级别的数据时，如果计算任务被分配到远离数据的节点上，那么仅仅是数据传输就可能消耗大量的网络带宽和时间。更糟糕的是，在一个繁忙的集群中，网络往往是最稀缺的资源之一。
-
-这个问题的核心在于"移动计算比移动数据更经济"这一分布式计算的基本原则。一个典型的计算任务可能只有几 KB 到几 MB 的代码，但需要处理的数据可能有 GB 甚至 TB。因此，将小的计算程序移动到数据所在的位置，远比将大量数据移动到计算程序所在的位置更加高效。
-
-YARN 的本地性优化策略正是基于这一思想设计的。它通过精心设计的层级化本地性模型和延迟调度算法，在资源利用率和数据本地性之间找到了巧妙的平衡点。
-
-YARN 定义了三个层级的数据本地性：
-
-**本地性级别**：
-
-- **节点本地性（NODE_LOCAL）**：数据与计算在同一节点
-- **机架本地性（RACK_LOCAL）**：数据与计算在同一机架
-- **任意位置（OFF_SWITCH）**：无本地性要求
-
-**本地性请求参数**：
-
-- **资源位置**：具体节点名、机架名或通配符
-- **本地性级别**：期望的本地性层级
-- **放松策略**：是否允许降低本地性要求
-
-#### 2.4.2 延迟调度算法
-
-延迟调度算法体现了 YARN 设计中的一个重要权衡：本地性优化与资源利用率之间的平衡 [5]。如果过分追求本地性，可能导致资源长时间空闲；如果完全忽视本地性，又会造成大量的网络开销。延迟调度的巧妙之处在于它给了系统一个"等待的机会"——在短时间内等待更好的本地性匹配，但不会无限期等待。
-
-这种设计的核心思想是"有限的耐心"：系统会为了更好的本地性而等待，但这种等待是有时间限制的。当等待时间超过阈值时，系统会放松本地性要求，确保任务能够及时执行。这样既保证了大部分任务能够获得良好的本地性，又避免了因过度等待而影响整体性能。
-
-延迟调度是一种为了获得更好本地性而延迟资源分配的策略：
-
-**延迟调度策略**：
-
-- **节点本地性延迟**：最大延迟 3 个调度周期
-- **机架本地性延迟**：最大延迟 5 个调度周期
-- **延迟判断逻辑**：
-  - 完美匹配时立即分配
-  - 未达到延迟上限时继续等待
-  - 超过延迟上限时放松本地性要求
-
-#### 2.4.3 本地性优化效果分析
-
-**性能提升指标**：
-
-- **网络带宽节省**：节点本地性可节省 90% 的网络传输
-- **任务执行时间**：本地性任务比远程任务快 10-50%
-- **集群整体吞吐量**：提升 15-30%
-
-**本地性统计指标**：
-
-- **节点本地性比率**：节点本地任务占总任务的百分比
-- **机架本地性比率**：机架本地任务占总任务的百分比
-- **远程任务比率**：跨交换机任务占总任务的百分比
-- **本地性达成率**：实际本地性与期望本地性的匹配程度
-
-### 2.5 本章小结
-
-本章深入探讨了 YARN 应用生命周期与资源管理的核心机制——"动态资源协商与本地性优化"，这一机制是 YARN 高效执行分布式应用的关键保证：
-
-1. **生命周期管理**：从应用提交到 ApplicationMaster 启动，再到资源协商和任务执行的完整流程，实现了应用的自主管理和故障恢复
-2. **心跳协调机制**：通过 NodeManager 与 ResourceManager、ApplicationMaster 与 ResourceManager 的双重心跳，确保集群状态一致性和资源动态分配
-3. **容器资源抽象**：从传统的固定资源槽位转向多维资源向量的 Container 模型，支持 CPU、内存和扩展资源的精细化管理和隔离
-
-动态资源协商与本地性优化不仅提升了资源利用效率，更通过延迟调度等策略将数据本地性比率从 30% 提升到 80%+，显著减少了网络传输开销。理解了这一核心机制，我们就能更好地理解 YARN 如何在保证应用可靠性的同时实现资源的最优配置。
+1. **分析分布式挑战**：深入理解分布式应用管理的根本性挑战，包括资源异构性、故障不可避免性、多租户隔离等核心问题
+2. **掌握生命周期管理**：全面理解从应用提交到完成的端到端流程，掌握 ApplicationMaster 的核心作用和交互协议
+3. **理解资源管理机制**：深入掌握 YARN 的多维资源模型、容器抽象以及动态资源协商策略
+4. **熟悉协调与监控**：理解心跳机制在分布式状态同步、资源监控和故障检测中的关键作用
+5. **掌握性能优化**：深入理解数据本地性优化的经济价值以及 YARN 的智能调度策略
+6. **建立系统思维**：能够从系统架构角度分析和优化 YARN 应用的性能表现，具备解决实际问题的能力
 
 ---
 
-## 第 3 章 调度策略与算法原理
+### 2.1 分布式应用管理的挑战与需求
 
-在分布式计算环境中，资源调度是决定系统性能和用户体验的关键因素。想象一个拥有数千台服务器的集群，每天需要处理来自不同部门、不同优先级的数百个计算任务——如何公平、高效地分配这些宝贵的计算资源，正是 YARN 调度器需要解决的核心问题。
+分布式应用管理是大数据系统的核心挑战之一。与传统单机应用不同，分布式应用具有多节点部署、动态资源需求、复杂依赖关系等特点，这使得应用的提交、调度、监控和故障恢复变得极其复杂。
 
-YARN 提供了多种调度策略，从简单的先进先出（FIFO）到复杂的容量调度器和公平调度器，每种策略都针对不同的应用场景和业务需求进行了优化。本章将深入探讨这些调度策略的设计原理、算法实现和适用场景，帮助读者理解如何在实际生产环境中选择和配置合适的调度策略。
+从应用的角度来看，分布式环境带来了三个层次的管理挑战：首先是**单个应用的生命周期管理复杂性**，包括多组件协调、资源动态分配、状态一致性维护等问题；其次是**多应用并发管理的挑战**，涉及资源竞争、性能隔离、优先级调度等复杂场景；最后是**应用管理系统的设计需求**，需要在性能、可靠性、可扩展性之间找到最优平衡。
 
-通过本章学习，读者将能够：
+本节将深入分析这些挑战的本质特征和技术要求，为理解 YARN 等统一资源管理系统的设计理念提供理论基础。通过对应用管理复杂性的系统性分析，我们将揭示为什么传统的 MapReduce v1 架构无法满足现代大数据应用的需求，以及新一代资源管理系统应该具备哪些核心能力。
 
-1. **理解调度器设计理念**：掌握 YARN 调度器的核心设计思想和架构原理，理解调度决策的影响因素
-2. **掌握三种调度策略**：深入了解 FIFO、容量调度器和公平调度器的工作原理、优缺点和适用场景
-3. **理解资源分配算法**：掌握主导资源公平性（DRF）算法、延迟调度等核心算法的设计思想和实现原理
-4. **具备调度器配置能力**：能够根据业务需求选择合适的调度策略，并进行相应的参数配置和优化
-5. **分析调度性能**：理解调度器的性能指标，能够分析和优化调度器的性能表现
+#### 2.1.1 应用生命周期管理的复杂性挑战
+
+分布式应用的生命周期管理与传统单机应用存在根本性差异。在单机环境中，应用程序的生命周期管理相对简单：启动进程、分配资源、监控运行、处理异常、清理退出。操作系统提供了完整的进程管理机制，应用程序只需要关注自身的业务逻辑。
+
+然而，当应用程序运行在分布式环境中时，这种简单的生命周期管理模式面临着根本性的挑战。以一个典型的大数据应用——推荐系统的特征工程任务为例，在单机环境中，这个任务只是一个简单的 Python 或 Java 程序，遵循"启动 → 运行 → 完成/失败 → 清理"的简单流程。但在分布式环境中，它变成了一个复杂的多阶段、多组件协同工作的系统，需要经历"应用提交 → 资源申请 → 容器分配 → 组件启动 → 协调运行 → 故障恢复 → 动态调整 → 完成清理"等复杂阶段。
+
+这种复杂性的根源在于分布式应用具有多个分布式组件、需要跨节点资源协调、涉及复杂状态同步、需要分布式故障处理、存在组件间依赖管理以及支持资源动态调整等特点。相比之下，单机应用只需要处理单一进程、本地资源、简单状态管理和直接错误处理。
+
+分布式应用生命周期管理的复杂性主要体现在以下几个关键方面：
+
+**多组件协调的复杂性**：分布式应用通常由多个相互依赖的组件构成，这些组件需要在不同的节点上启动，并且必须按照特定的顺序和时序进行协调。以 Spark 应用为例，它包括 Driver 程序、多个 Executor 进程、以及可能的外部服务依赖。如果 Driver 程序在 Executor 准备就绪之前就开始分发任务，会导致任务失败；如果某个 Executor 异常退出，需要决定是重启该 Executor 还是重新调度到其他节点。这种多组件协调需要精确的时序控制和状态同步机制。
+
+**资源生命周期与应用生命周期的解耦**：在传统的单机环境中，应用程序的生命周期与其占用的资源生命周期是一致的。但在分布式环境中，应用程序可能需要动态地申请和释放资源。一个长时间运行的流处理应用可能在业务高峰期需要更多的计算资源，在低峰期释放部分资源以节约成本。这种动态资源管理要求应用管理系统能够支持资源的动态申请和释放、处理资源不足时的优雅降级、在资源变化时重新平衡应用组件，以及确保资源释放时的数据一致性。
+
+**分布式故障处理的复杂性**：分布式环境中的故障模式远比单机环境复杂。除了传统的进程崩溃，还需要处理网络分区、节点缓慢、部分故障等情况。更重要的是，需要区分哪些故障是可恢复的（如临时网络问题），哪些是不可恢复的（如节点硬件故障）。应用管理系统需要实现智能的故障检测和恢复策略，包括快速故障检测以及时发现组件异常、智能重试机制以区分临时故障和永久故障、故障隔离以防止单个组件的故障影响整个应用，以及状态恢复以在故障恢复后能够从合适的检查点继续执行。
+
+**分布式状态管理的挑战**：分布式应用的状态管理比单机应用复杂得多。应用的状态信息分散在多个节点上，包括应用级状态（应用的整体运行状态、进度信息、配置参数）、组件级状态（各个组件的运行状态、健康状况、性能指标）、资源级状态（分配给应用的资源使用情况、可用性状态）以及依赖关系状态（组件间的依赖关系、通信状态、数据流状态）。这些状态信息需要在分布式环境中保持一致性，同时还要支持高效的查询和更新操作。
+
+这些复杂性挑战表明，分布式应用管理需要一个统一的系统来协调多组件的生命周期、管理动态资源分配、处理各种故障场景，并维护分布式状态的一致性。正是这些根本性的挑战推动了 YARN 等分布式应用管理系统的诞生和发展。
+
+#### 2.1.2 多应用并发管理的挑战
+
+当多个分布式应用需要在同一个集群中并发运行时，资源管理的复杂性呈指数级增长。在现代大数据平台中，通常需要同时支持多种类型的应用：实时流处理、批量数据分析、机器学习训练、交互式查询等。这些应用具有完全不同的资源需求模式和性能特征，它们之间的并发执行带来了前所未有的管理挑战。
+
+**资源竞争与冲突**：多个应用同时运行时，最直接的挑战是资源竞争。不同应用对资源的需求模式差异巨大，这种差异导致了复杂的资源分配冲突。例如，实时推荐系统需要低延迟的 CPU 和内存资源，数据仓库 ETL 任务需要高吞吐的磁盘 I/O，而机器学习训练需要 GPU 和大内存。这些应用在时间维度（7×24 小时运行 vs 夜间批处理 vs 弹性训练）、资源类型（CPU vs I/O vs GPU）和业务优先级上都存在冲突，需要智能的调度策略来协调。
+
+**性能干扰与隔离**：即使资源分配问题得到解决，多应用并发运行仍然面临性能干扰的挑战。这种干扰可能发生在网络带宽竞争（多个应用的数据传输导致网络拥塞）、存储 I/O 竞争（同时访问存储系统时的磁盘瓶颈）、内存缓存冲突（缓存需求超过可用内存导致频繁失效）以及 CPU 调度干扰（操作系统无法理解应用的业务优先级）等多个层面。这要求系统提供有效的隔离机制来保证应用间的性能独立性。
+
+**故障传播与级联效应**：在多应用环境中，单个应用的故障可能引发级联效应，影响其他正常运行的应用。这种故障传播包括资源泄漏传播（一个应用的内存泄漏导致节点资源耗尽）、网络风暴传播（故障重试机制产生网络风暴）、依赖服务故障（共享外部服务的故障影响多个应用）以及雪崩效应（高优先级应用故障恢复时抢占其他应用资源引发连锁反应）。这要求系统具备有效的故障隔离和恢复机制。
+
+**动态负载平衡的复杂性**：多应用环境中的负载是动态变化的，这要求资源管理系统具备智能的动态调整能力。然而，这种动态调整面临着多重约束：应用间的依赖关系（数据依赖或时序依赖）、SLA 约束（不同应用的服务等级要求）、调整成本（频繁调整本身消耗系统资源）以及预测准确性（对未来负载预测的准确性直接影响调整效果）。这需要在满足各种约束的前提下实现全局最优的资源分配。
+
+这些挑战表明，多应用并发管理需要一个能够提供公平性保证、隔离性保证、弹性调度、故障隔离、优先级管理和全局优化的统一资源管理系统。这些需求的复杂性和相互制约性，使得传统的资源管理方案难以胜任，正是这些挑战推动了 YARN 等现代统一资源管理系统的设计和发展。
+
+#### 2.1.3 应用管理系统的设计原则与需求
+
+基于前述分析的应用生命周期管理复杂性和多应用并发挑战，我们可以总结出现代分布式应用管理系统应当遵循的核心设计原则和功能需求。
+
+现代应用管理系统的设计应当遵循以下基本原则：
+
+1. **职责分离原则**：将全局资源管理与应用内部调度逻辑分离，避免系统复杂度的指数级增长。全局层面专注于资源分配和集群状态管理，应用层面专注于任务调度和执行优化，两者通过标准化接口协作。
+2. **接口标准化原则**：定义统一的资源申请、分配和释放接口，使得不同计算框架能够以相同的方式与资源管理系统交互，降低系统集成复杂度。
+3. **弹性伸缩原则**：支持资源的动态分配和回收，能够根据应用的实际需求和集群的整体负载情况，实时调整资源分配策略，最大化资源利用率。
+4. **容错与高可用原则**：具备完善的故障检测、隔离和恢复机制，确保单个应用或节点的故障不会影响整个系统的稳定性。
+
+基于上述设计原则，现代应用管理系统需要具备以下核心功能：
+
+**统一资源管理**：系统必须能够对集群中的所有计算资源进行统一的抽象、分配和管理，解决资源孤岛问题。这包括将异构的硬件资源（CPU、内存、存储、网络）抽象为统一的资源模型，支持根据应用需求和集群状态进行实时的资源分配和回收，通过智能调度算法最大化集群整体资源利用率，以及确保不同应用间的资源使用相互隔离。
+
+**多框架支持**：系统必须能够支持多种不同的计算框架在同一集群中并发运行，而不需要为每种框架单独维护资源池。这要求提供通用的资源申请和管理接口，允许多种框架的应用同时运行实现真正的资源共享，在提供统一接口的同时保持各计算框架的原有特性和优化能力，并支持新计算框架的快速接入。
+
+**服务质量保证**：系统必须能够为不同类型的应用提供差异化的服务质量保证，包括基于业务重要性的应用优先级设置和资源分配，确保关键应用的服务水平协议得到满足，防止低优先级应用影响高优先级应用的性能，以及为关键应用预留必要的资源。
+
+**安全与隔离**：在多租户环境中，系统必须提供完善的安全和隔离机制，确保只有授权用户能够提交和管理应用，基于用户身份和角色控制对资源的访问权限，确保不同用户或组织的应用在资源使用上相互隔离，并保护应用数据和中间结果的安全性。
+
+**可观测性**：系统必须提供全面的监控和诊断能力，支持运维和故障排查，包括集群资源使用情况和应用运行状态的实时监控，记录应用的完整生命周期信息支持问题回溯分析，提供详细的性能指标和分析工具支持性能优化，以及在出现异常情况时及时通知相关人员的告警机制。
+
+现代应用管理系统还需要考虑以下设计目标与约束：
+
+**设计目标**：系统整体可用性达到 99.9% 以上，资源分配延迟控制在秒级并支持万级并发应用，支持从百节点到万节点规模的线性扩展，以及提供简洁的 API 和管理界面降低使用门槛。
+
+**约束条件**：需要与现有的存储系统、网络架构兼容，资源管理开销不能超过总资源的 5%，必须满足企业级安全和合规要求，以及在提升资源利用率的同时控制系统复杂度和维护成本。
+
+这些设计原则、功能需求和约束条件，构成了现代分布式应用管理系统的理论基础。在接下来的章节中，我们将深入探讨 YARN 如何通过具体的技术机制来实现这些设计目标，并分析其在实际生产环境中的应用实践。
+
+### 2.2 资源模型与 Container 概念
+
+#### 2.2.1 多维资源向量模型
+
+YARN 通过多维资源向量模型解决了传统资源管理系统的核心问题：如何统一表示和管理异构资源。与传统系统分别管理不同资源类型的方式不同，YARN 将所有资源抽象为统一的向量表示，实现了资源管理的标准化和可扩展性。
+
+传统的资源管理系统往往采用硬编码的方式处理特定类型的资源，这种方式存在明显的局限性：缺乏扩展性、难以适应新硬件、资源类型之间缺乏统一的操作语义。YARN 的多维资源向量模型基于数学向量空间理论，将集群中的所有资源类型映射到一个 n 维向量空间中，每个维度代表一种资源类型。这种抽象化设计带来了三个核心优势：
+
+1. **统一的资源操作语义**：所有资源类型都支持相同的数学运算（加法、减法、比较），使得调度算法可以用统一的方式处理不同类型的资源。
+2. **动态扩展能力**：新的资源类型可以作为新的维度动态添加到向量空间中，无需修改核心调度逻辑。
+3. **资源组合优化**：调度器可以在多维空间中寻找最优的资源分配方案，实现更精细的资源匹配。
+
+YARN 资源模型采用三层架构：**核心资源**（内存、CPU）、**标准扩展资源**（GPU、存储）和**自定义资源**。这种分层设计体现了系统设计的渐进式演化思想：
+
+- **核心资源层**：保证与早期 YARN 版本的完全兼容性，所有应用都可以使用这些基础资源类型。
+- **标准扩展资源层**：为常见的新型硬件资源提供标准化支持，如 GPU、FPGA、高速存储等。
+- **自定义资源层**：允许用户根据特定需求定义专有资源类型，如特殊的加速器、网络带宽等。
+
+这种分层架构既保证了系统的向后兼容性，又为新型硬件资源提供了灵活的扩展机制，使得 YARN 能够适应快速发展的硬件技术。
+
+```java
+/**
+ * Resource 类 - YARN 资源向量的核心实现
+ * 源文件：org.apache.hadoop.yarn.api.records.Resource
+ */
+public class Resource implements Comparable<Resource> {
+    private long memory;                                    // 内存，单位 MB
+    private int virtualCores;                               // 虚拟 CPU 核心数
+    private Map<String, ResourceInformation> resources;     // 扩展资源映射
+
+    // 资源向量运算
+    public Resource add(Resource other) {
+        Resource result = Resource.newInstance(
+            this.memory + other.memory,
+            this.virtualCores + other.virtualCores
+        );
+
+        // 处理扩展资源
+        for (Map.Entry<String, ResourceInformation> entry : this.resources.entrySet()) {
+            String resourceName = entry.getKey();
+            long thisValue = entry.getValue().getValue();
+            long otherValue = other.getResourceValue(resourceName);
+            result.setResourceValue(resourceName, thisValue + otherValue);
+        }
+        return result;
+    }
+}
+```
+
+ResourceManager 维护全局的资源类型注册表，支持动态资源类型的注册和验证。当集群中引入新的硬件资源时，管理员可以通过配置文件或 API 注册新的资源类型，系统会自动更新所有节点的资源类型信息。
+
+```java
+/**
+ * registerResourceType 方法 - 资源类型注册与管理
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.ResourceManager
+ */
+public void registerResourceType(String resourceName, ResourceInformation resourceInfo) {
+    validateResourceType(resourceName, resourceInfo);
+    globalResourceTypes.put(resourceName, resourceInfo);
+    notifyNodesResourceTypeUpdate(resourceName, resourceInfo);
+}
+```
+
+这种设计使得 YARN 能够支持从传统的 CPU/内存资源到现代的 GPU、FPGA、高速存储等各种异构资源，为大数据和 AI 应用提供了统一的资源管理平台。
+
+#### 2.2.2 Container 生命周期与状态管理
+
+Container 实现了资源封装与任务执行的分离，负责管理分配的资源，而具体执行的任务由 ApplicationMaster 决定。
+
+Container 的设计体现了现代分布式系统的核心思想：**关注点分离**（Separation of Concerns）。传统的资源管理系统往往将资源分配、任务调度和执行监控紧密耦合在一起，这种设计导致系统复杂度高、扩展性差。YARN 通过 Container 抽象实现了三个层次的分离：
+
+1. **资源管理与任务执行分离**：Container 只负责资源的封装和生命周期管理，不关心具体执行什么任务。
+2. **全局调度与局部调度分离**：ResourceManager 负责全局资源分配，ApplicationMaster 负责应用内部的任务调度。
+3. **资源分配与资源使用分离**：资源的分配由调度器决定，资源的具体使用由应用程序控制。
+
+这种分离设计使得 YARN 能够支持多种计算框架（MapReduce、Spark、Flink 等），每个框架都可以根据自己的特点实现定制化的 ApplicationMaster，而无需修改底层的资源管理逻辑。
+
+**Container 核心定义**：
+
+```java
+/**
+ * Container 类 - Container 核心定义
+ * 源文件：org.apache.hadoop.yarn.api.records.Container
+ */
+public class Container {
+    private ContainerId containerId;
+    private NodeId nodeId;
+    private Resource allocatedResource;
+    private Priority priority;
+    private Token containerToken;
+
+    // 运行时状态
+    private ContainerState state;
+    private long startTime;
+    private ContainerExitStatus exitStatus;
+}
+```
+
+Container 的生命周期管理采用有限状态机（Finite State Machine）模型，这种设计在分布式系统中具有重要意义：
+
+1. **状态一致性保证**：状态机确保 Container 在任何时刻都处于明确定义的状态，避免了状态不一致导致的资源泄漏。
+2. **异常处理简化**：每个状态都有明确的进入条件和退出条件，异常情况下可以快速定位问题并执行相应的恢复操作。
+3. **并发安全性**：状态转换的原子性保证了在多线程环境下的并发安全。
+4. **系统可观测性**：状态机提供了清晰的系统行为模型，便于监控、调试和性能分析。
+
+**Container 状态机定义**：
+
+```java
+/**
+ * ContainerState 枚举和 handleStateTransition 方法 - Container 状态机定义
+ * 源文件：org.apache.hadoop.yarn.api.records.ContainerState
+ */
+public enum ContainerState {
+    NEW,          // 新建状态
+    ALLOCATED,    // 已分配资源
+    ACQUIRED,     // AM 已获取
+    RUNNING,      // 运行中
+    COMPLETE      // 已完成
+}
+
+// 状态转换处理
+public void handleStateTransition(ContainerState toState, ContainerEvent event) {
+    switch (toState) {
+        case ALLOCATED:
+            notifyApplicationMaster(event.getContainerId());
+            reserveNodeResources(event.getNodeId(), event.getResource());
+            break;
+        case RUNNING:
+            startResourceMonitoring(event.getContainerId());
+            break;
+        case COMPLETE:
+            releaseNodeResources(event.getNodeId(), event.getResource());
+            stopResourceMonitoring(event.getContainerId());
+            break;
+    }
+}
+```
+
+#### 2.2.3 资源隔离与性能优化
+
+YARN 采用多层次资源隔离架构，确保多租户环境下的资源公平性和系统稳定性。YARN 通过操作系统级别的 CGroups 和 YARN 级别的监控实现资源隔离。
+
+**多层次隔离架构的设计思想**：
+
+YARN 的资源隔离采用分层防护的设计理念，构建了从硬件到应用的多层次隔离体系。这种设计基于**纵深防御**（Defense in Depth）的安全思想，通过多个独立的隔离层次，确保即使某一层出现问题，其他层次仍能提供保护。
+
+**三层隔离架构详解**：
+
+1. **操作系统级隔离**：基于 Linux CGroups（Control Groups）技术，在内核层面实现资源的硬性限制。CGroups 提供了进程级别的资源控制，包括内存、CPU、I/O 带宽等。这一层的隔离是强制性的，任何进程都无法突破内核设置的资源限制。
+2. **YARN 级隔离**：在 YARN 框架层面实现的软性隔离和监控。这一层负责资源使用情况的实时监控、异常检测和策略执行。YARN 级隔离更加灵活，可以根据应用的实际需求动态调整资源分配策略。
+3. **应用级隔离**：由各个计算框架（如 Spark、MapReduce）在应用层面实现的资源管理。这一层主要关注应用内部的资源分配优化，如任务间的资源协调、内存池管理等。
+
+**隔离机制的协同工作原理**：
+
+三层隔离机制通过协同工作实现了完整的资源保护：操作系统级提供底线保障，确保资源不会被恶意或异常进程耗尽；YARN 级提供智能监控和动态调整，优化资源使用效率；应用级提供精细化管理，最大化应用性能。
+
+这种分层设计的核心优势在于**责任分离**和**故障隔离**：每一层都有明确的职责边界，层与层之间通过标准接口通信，某一层的故障不会影响其他层的正常工作。同时，多层次的监控和控制机制提供了丰富的可观测性，便于问题诊断和性能调优。
+
+**资源隔离核心实现机制**：
+
+YARN 的资源隔离主要通过 Linux CGroups 技术实现，核心组件包括 `CGroupsHandler` 接口及其实现类。资源隔离机制包含以下几个关键方面：
+
+1. **内存限制机制**：通过 `CGroupsMemoryResourceHandlerImpl` 类实现内存隔离。系统为每个容器在 `/sys/fs/cgroup/memory/yarn/` 目录下创建独立的 CGroup，通过写入 `memory.limit_in_bytes` 文件设置内存上限。当容器内存使用超过限制时，Linux 内核会触发 OOM Killer 机制。
+2. **CPU 限制机制**：通过 `CGroupsCpuResourceHandlerImpl` 类实现 CPU 资源隔离。使用 CPU shares 机制分配 CPU 时间片，每个 CPU 核心对应 1024 个 shares。容器的 CPU 配额通过写入 `cpu.shares` 文件进行设置，实现相对权重的 CPU 分配。
+3. **资源违规处理**：`ContainerMonitorImpl` 类负责监控容器资源使用情况。当检测到内存超限时，系统会立即终止容器；当检测到 CPU 使用异常时，系统会动态调整 CPU 配额，通过降低 CPU shares 来限制资源消耗。
+4. **动态资源调整**：系统支持运行时动态调整容器资源限制，通过修改对应的 CGroup 配置文件实现。这种机制允许 YARN 根据应用的实际需求和集群负载情况，灵活调整资源分配策略。
+
+YARN 通过智能资源预分配、动态调整和本地性优化提升系统性能。
+
+YARN 的容器性能优化机制主要体现在以下几个方面：
+
+1. **智能资源预分配**：YARN 基于 `ResourceCalculator` 组件实现智能资源预测。系统通过分析历史数据，预测应用的最优资源需求。例如，对于内存密集型任务，系统会基于历史平均内存使用量预留 20% 的缓冲空间；对于 CPU 密集型任务，系统会根据历史 CPU 使用率动态调整核心数分配。
+2. **本地性优化策略**：YARN 通过 `SchedulerNode` 实现多层次的本地性优化。调度器按照优先级顺序选择节点：首先尝试数据本地性（NODE_LOCAL），即将任务调度到数据所在的节点；其次考虑机架本地性（RACK_LOCAL），将任务调度到同一机架的其他节点；最后选择任意可用节点（OFF_SWITCH）。这种分层策略有效减少了网络传输开销。
+3. **动态资源调整**：YARN 支持运行时的资源动态调整，通过监控容器的实际资源使用情况，自动调整资源分配。当检测到资源使用不足时，系统可以回收部分资源供其他应用使用；当检测到资源不足时，系统可以为容器分配额外资源。
+
+### 2.3 应用提交与生命周期管理
+
+YARN 通过引入 **ApplicationMaster** 组件，实现了分布式应用的精细化管理。与传统的集中式调度不同，YARN 采用分层架构，将应用管理职责分解到不同层次：
+
+- **ResourceManager**：负责集群资源的全局调度和应用准入控制
+- **ApplicationMaster**：负责单个应用内部的任务调度和生命周期管理
+- **NodeManager**：负责节点本地资源管理和容器执行
+
+YARN 的应用提交过程体现了其设计的核心思想：将复杂的分布式应用管理分解为清晰的阶段和明确的组件职责。整个过程分为三个关键阶段：应用提交与接纳、ApplicationMaster 启动、应用执行与管理。每个阶段都有严格的实现机制和组件交互协议，确保系统的可靠性和可扩展性。
+
+#### 2.3.1 应用提交的实现流程
+
+应用提交是 YARN 系统的入口点，涉及客户端、ResourceManager 和调度器的协调工作。这个过程不仅要处理资源分配，还要进行严格的权限验证和资源配额检查。
+
+客户端通过 `YarnClient` API 构建应用提交请求，这个过程包括应用元数据的准备、资源需求的声明和 ApplicationMaster 启动参数的配置。客户端需要明确指定应用的基本信息（如应用名称、队列）、资源需求（内存、CPU 核数）以及 ApplicationMaster 的启动命令。
+
+```java
+/**
+ * submitApplication 方法 - 应用提交的核心逻辑
+ * 源文件：org.apache.hadoop.yarn.client.api.YarnClient
+ */
+ApplicationSubmissionContext appContext = Records.newRecord(ApplicationSubmissionContext.class);
+appContext.setApplicationId(applicationId);
+appContext.setApplicationName("MyApplication");
+appContext.setQueue("default");
+
+// 配置 ApplicationMaster 容器
+ContainerLaunchContext amContainer = Records.newRecord(ContainerLaunchContext.class);
+amContainer.setCommands(Collections.singletonList("$JAVA_HOME/bin/java MyApplicationMaster"));
+
+Resource capability = Records.newRecord(Resource.class);
+capability.setMemory(1024);
+capability.setVirtualCores(1);
+appContext.setResource(capability);
+
+yarnClient.submitApplication(appContext);
+```
+
+ResourceManager 接收到应用提交请求后，会执行一系列严格的验证步骤。首先进行身份验证，确认用户身份和权限；然后进行队列验证，检查目标队列是否存在且用户有访问权限；接着进行资源验证，确保请求的资源在队列配额范围内；最后为应用分配全局唯一的 ApplicationId，并将应用信息持久化到状态存储中。
+
+调度器（如 CapacityScheduler）负责最终的应用准入决策。它会根据队列的当前状态、资源使用情况和用户权限来决定是否接受应用。这个过程体现了 YARN 的多租户资源管理能力。
+
+```java
+/**
+ * submitApplication 方法 - 调度器应用接纳的关键逻辑
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler
+ */
+public void submitApplication(ApplicationId applicationId, String queue, String user) {
+    CSQueue targetQueue = getQueue(queue);
+
+    // 验证队列状态和用户权限
+    if (!targetQueue.canSubmitApplications() || !hasPermission(user, queue)) {
+        throw new YarnException("Application submission rejected");
+    }
+
+    // 创建应用调度信息并加入队列
+    FiCaSchedulerApp schedulerApp = new FiCaSchedulerApp(applicationId, user, targetQueue);
+    targetQueue.submitApplication(schedulerApp);
+}
+```
+
+#### 2.3.2 ApplicationMaster 启动机制
+
+ApplicationMaster 的启动是 YARN 应用生命周期中最关键的环节，它标志着应用从静态配置转向动态执行。这个过程涉及容器分配、进程启动和服务注册三个核心步骤。
+
+**1. AM 容器分配与节点选择**：
+
+ResourceManager 需要为 ApplicationMaster 选择合适的节点并分配容器。这个选择过程考虑多个因素：节点的资源可用性、网络拓扑位置、负载均衡等。调度器会对候选节点进行评分，选择最适合的节点来启动 ApplicationMaster。
+
+```java
+/**
+ * allocate 方法 - AM 容器分配的核心逻辑
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler
+ */
+public Allocation allocate(ApplicationAttemptId appAttemptId, List<ResourceRequest> resourceRequests) {
+    FiCaSchedulerApp application = getApplication(appAttemptId);
+
+    if (application.getAMContainer() == null) {
+        // 选择最适合的节点
+        FiCaSchedulerNode node = selectNodeForAM(application);
+        Container amContainer = createContainer(node, application.getAMResourceRequest());
+        application.setAMContainer(amContainer);
+
+        return new Allocation(Collections.singletonList(amContainer), null);
+    }
+    return new Allocation(Collections.emptyList(), null);
+}
+```
+
+**2. NodeManager 容器启动流程**：
+
+NodeManager 接收到容器启动请求后，需要完成一系列准备工作：创建容器工作目录、下载应用所需的资源文件、设置运行环境、启动容器进程并开始监控。这个过程确保了应用能够在隔离的环境中安全运行。
+
+**3. ApplicationMaster 注册与通信建立**：
+
+ApplicationMaster 启动后的第一个任务是向 ResourceManager 注册自己，建立通信通道。注册过程中，AM 会告知 ResourceManager 自己的网络地址和跟踪 URL，同时获取集群的资源信息和访问控制列表。注册成功后，AM 会启动心跳线程，定期与 ResourceManager 通信。
+
+```java
+/**
+ * registerApplicationMaster 方法 - ApplicationMaster 注册的关键步骤
+ * 源文件：org.apache.hadoop.yarn.api.ApplicationMasterProtocol
+ */
+public void registerApplicationMaster(String host, int port, String trackingUrl) {
+    RegisterApplicationMasterRequest request =
+        RegisterApplicationMasterRequest.newInstance(host, port, trackingUrl);
+
+    RegisterApplicationMasterResponse response =
+        resourceManager.registerApplicationMaster(request);
+
+    // 获取集群信息并启动心跳
+    this.maxResourceCapability = response.getMaximumResourceCapability();
+    startHeartbeatThread();
+}
+```
+
+#### 2.3.3 应用生命周期状态管理
+
+YARN 使用状态机模型来管理应用的完整生命周期，这种设计确保了状态转换的一致性和系统的可靠性。状态机模型不仅定义了应用可能的状态，还规定了状态之间的转换条件和转换操作。
+
+YARN 应用包含八个关键状态：`NEW`（新建）、`NEW_SAVING`（保存中）、`SUBMITTED`（已提交）、`ACCEPTED`（已接受）、`RUNNING`（运行中）、`FINISHED`（已完成）、`FAILED`（失败）、`KILLED`（被终止）。每个状态都有明确的语义，状态之间的转换都有严格的条件和触发事件。
+
+```java
+/**
+ * handle 方法 - YARN 应用生命周期关键处理方法
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppImpl
+ */
+public void handle(RMAppEvent event) {
+    ApplicationId appId = event.getApplicationId();
+    RMApp app = this.rmContext.getRMApps().get(appId);
+
+    switch (event.getType()) {
+        case START:
+            // 应用开始保存状态 - 对应 RMAppImpl.AppStartTransition
+            app.setState(RMAppState.NEW_SAVING);
+            persistApplicationState(app);
+            break;
+        case APP_ACCEPTED:
+            // 应用被调度器接受 - 对应 RMAppImpl.StartAppAttemptTransition
+            app.setState(RMAppState.ACCEPTED);
+            allocateAMContainer(app);
+            break;
+        case ATTEMPT_REGISTERED:
+            // AM 注册成功 - 对应 RMAppImpl.RMAppRunningTransition
+            app.setState(RMAppState.RUNNING);
+            break;
+    }
+}
+```
+
+ResourceManager 对运行中的应用进行持续监控，包括 ApplicationMaster 的健康状态、应用的执行进度和资源使用情况。监控系统会定期检查 AM 的心跳状态，如果发现心跳超时或应用长时间无进展，会触发相应的处理机制。
+
+当应用失败时，YARN 提供了自动重试机制。系统会检查应用的重试次数，如果未超过最大重试限制，会创建新的应用尝试；如果超过限制，则标记应用最终失败。这种机制提高了系统的容错能力。
+
+```java
+/**
+ * handleApplicationFailure 方法 - 应用故障恢复的核心逻辑
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppImpl
+ */
+public void handleApplicationFailure(RMApp app, String diagnostics) {
+    int currentAttempt = app.getCurrentAppAttempt().getAppAttemptId().getAttemptId();
+
+    if (currentAttempt < app.getMaxAppAttempts()) {
+        // 创建新的应用尝试 - 对应 RMAppImpl.AttemptFailedTransition
+        createNewAppAttempt(app);
+    } else {
+        // 标记应用最终失败 - 对应 RMAppImpl.FinalTransition
+        rmContext.getDispatcher().getEventHandler().handle(
+            new RMAppEvent(app.getApplicationId(), RMAppEventType.KILL, diagnostics));
+    }
+}
+```
+
+**应用状态与 Container 状态机的关系**：
+
+应用状态和 Container 状态机构成了 YARN 中两个不同层次但密切相关的状态管理体系。它们之间存在以下重要关系：
+
+1. **层次关系**：应用状态是宏观层面的状态管理，描述整个应用的生命周期；Container 状态是微观层面的状态管理，描述单个 Container 的执行状态。一个应用可能包含多个 Container，每个 Container 都有自己的状态机。
+
+2. **状态映射关系**：
+
+   - 当应用处于 `RUNNING` 状态时，其 Container 可能处于 `ALLOCATED`、`ACQUIRED`、`RUNNING` 或 `COMPLETE` 状态
+   - 应用的 `FINISHED`、`FAILED`、`KILLED` 状态通常对应所有 Container 都达到 `COMPLETE` 状态
+   - ApplicationMaster Container 的状态直接影响应用状态的转换
+
+3. **状态同步机制**：
+
+   - Container 状态变化会触发应用状态的重新评估
+   - 应用状态转换可能导致 Container 状态的批量变更
+   - ResourceManager 通过监控所有 Container 的状态来维护应用的整体状态
+
+4. **故障传播**：当关键 Container（如 ApplicationMaster）失败时，会导致整个应用状态从 `RUNNING` 转换为 `FAILED` 或触发重试机制。
+
+### 2.4 心跳机制与状态协调
+
+#### 2.4.1 分布式状态协调机制
+
+YARN 的心跳机制是实现分布式状态协调的核心手段。在 YARN 集群中，NodeManager 和 ApplicationMaster 都需要定期向 ResourceManager 发送心跳，这种机制不仅用于证明组件的存活状态，更重要的是实现状态信息的同步和管理指令的下发。
+
+心跳机制的设计遵循"推拉结合"的原则：NodeManager 主动推送节点状态和容器信息，ResourceManager 则通过心跳响应拉取这些信息并下发管理指令。这种设计既保证了信息的及时性，又避免了频繁的主动查询带来的性能开销。
+
+**1. ResourceManager 心跳协调服务**：
+
+ResourceManager 中的 `ResourceTrackerService` 是处理所有心跳请求的核心组件。它负责验证心跳来源的合法性、更新节点状态信息、处理容器状态变化，并生成相应的管理指令。
+
+```java
+/**
+ * ResourceManager 心跳处理的核心逻辑 - 基于 YARN 源码
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.ResourceTrackerService
+ */
+public NodeHeartbeatResponse nodeHeartbeat(NodeHeartbeatRequest request) {
+    NodeId nodeId = request.getNodeStatus().getNodeId();
+
+    // 验证节点并更新活跃状态 - 对应 ResourceTrackerService.nodeHeartbeat
+    RMNode rmNode = validateAndUpdateNode(nodeId);
+
+    // 处理节点资源和容器状态更新 - 对应 NodesListManager.handle
+    processNodeStatusUpdate(rmNode, request.getNodeStatus());
+
+    // 生成包含管理指令的响应 - 对应 NodeHeartbeatResponseBuilder
+    return createHeartbeatResponse(rmNode);
+}
+```
+
+这个简化的实现展示了心跳处理的三个关键步骤：**节点验证**、**状态更新**和**响应生成**。在实际实现中，每个步骤都包含复杂的逻辑来处理各种边界情况和异常状态。
+
+**2. 节点状态信息同步**：
+
+NodeManager 通过心跳向 ResourceManager 同步多种状态信息，包括节点的资源使用情况、容器运行状态、节点健康状况等。ResourceManager 接收到这些信息后，会更新内部的集群状态模型，并触发相应的调度决策。
+
+状态同步的过程是增量式的，NodeManager 只会报告自上次心跳以来发生变化的状态信息，这样可以减少网络传输的开销。同时，ResourceManager 会维护每个节点的状态版本号，确保状态更新的顺序性和一致性。
+
+**3. 管理指令的下发机制**：
+
+ResourceManager 通过心跳响应向 NodeManager 下发各种管理指令，包括容器启动、容器停止、节点关闭等。这种基于心跳的指令下发机制具有良好的可靠性，因为如果指令在传输过程中丢失，下次心跳时会重新下发。
+
+指令的执行是异步的，NodeManager 接收到指令后会立即返回确认，然后在后台执行具体的操作。执行结果会在下次心跳时报告给 ResourceManager，形成一个完整的指令执行闭环。
+
+#### 2.4.2 NodeManager 心跳处理机制
+
+NodeManager 的心跳处理机制是 YARN 集群状态同步的重要组成部分。NodeManager 需要定期向 ResourceManager 报告节点状态、容器运行情况和资源使用状态，同时接收并执行来自 ResourceManager 的管理指令。
+
+**1. 心跳消息的构建与发送**：
+
+NodeManager 的心跳消息包含丰富的状态信息，包括节点基本信息、容器状态列表、节点健康状况和资源能力等。这些信息的收集和组织是一个复杂的过程，需要从多个子系统中获取数据。
+
+```java
+/**
+ * NodeManager 心跳消息构建的核心逻辑 - 基于 YARN 源码
+ * 源文件：org.apache.hadoop.yarn.server.nodemanager.NodeStatusUpdaterImpl
+ */
+public NodeHeartbeatRequest createHeartbeatRequest() {
+    // 构建包含节点状态、容器信息和健康状况的心跳请求
+    NodeStatus nodeStatus = NodeStatus.newInstance(
+        nodeId, responseId.incrementAndGet(),
+        getContainerStatuses(), createKeepAliveApplications(),
+        createNodeHealthStatus(), getResourceCapability()
+    );
+
+    // 创建心跳请求 - 对应 NodeStatusUpdaterImpl.getNodeHeartBeatRequest
+    return NodeHeartbeatRequest.newInstance(nodeStatus,
+        getLastKnownContainerTokenMasterKey(), getLastKnownNMTokenMasterKey());
+}
+```
+
+心跳消息的发送是通过专门的状态更新线程来实现的。这个线程会定期执行心跳发送逻辑，包括消息构建、网络传输、响应处理和错误恢复等步骤。心跳间隔通常设置为几秒钟，既要保证状态信息的及时性，又要避免过度的网络开销。
+
+**2. 心跳响应的处理机制**：
+
+NodeManager 接收到 ResourceManager 的心跳响应后，需要根据响应中的指令类型执行相应的操作。主要的指令类型包括：
+
+- **NORMAL**：正常状态，处理容器分配和释放指令
+- **RESYNC**：需要重新同步状态，通常发生在 ResourceManager 重启后
+- **SHUTDOWN**：节点关闭指令，NodeManager 需要优雅地停止所有服务
+
+```java
+/**
+ * handleHeartbeatResponse 方法 - 心跳响应处理的核心逻辑
+ * 源文件：org.apache.hadoop.yarn.server.nodemanager.NodeStatusUpdaterImpl
+ */
+private void handleHeartbeatResponse(NodeHeartbeatResponse response) {
+    NodeAction action = response.getNodeAction();
+
+    switch (action) {
+        case NORMAL:
+            // 处理容器更新指令 - 对应 NodeStatusUpdaterImpl.handleContainerUpdatesFromRM
+            processContainerUpdates(response.getContainersToBeUpdated());
+            break;
+        case RESYNC:
+            // 重新同步状态 - 对应 NodeStatusUpdaterImpl.resyncWithRM
+            resyncWithResourceManager();
+            break;
+        case SHUTDOWN:
+            // 优雅关闭节点 - 对应 NodeManager.stop
+            initiateGracefulShutdown();
+            break;
+    }
+
+    // 更新安全令牌 - 对应 NodeStatusUpdaterImpl.updateMasterKeys
+    updateSecurityTokens(response);
+}
+```
+
+**3. 容器状态监控与报告**：
+
+NodeManager 需要持续监控运行在本节点上的所有容器的状态变化。这包括容器的启动、运行、完成和失败等状态转换，以及容器的资源使用情况。
+
+容器监控是通过专门的监控服务来实现的，该服务会为每个容器创建独立的监控任务，定期检查容器的进程状态和资源使用情况。当检测到容器状态变化时，会立即更新内部状态，并在下次心跳时报告给 ResourceManager。
+
+监控过程中还会执行资源限制检查，确保容器不会超出分配的资源限制。如果发现容器超出限制，会根据配置的策略进行处理，可能包括警告、限制或终止容器。
+
+**4. 节点健康状态检测**：
+
+NodeManager 会定期检查节点的健康状况，包括磁盘空间、内存使用率、CPU 负载等指标。健康检查的结果会包含在心跳消息中，帮助 ResourceManager 做出更好的调度决策。
+
+如果检测到节点健康状况异常，NodeManager 会在心跳中报告详细的诊断信息，ResourceManager 可以根据这些信息决定是否将该节点标记为不健康，从而避免在该节点上调度新的容器。
+
+#### 2.4.3 ApplicationMaster 心跳与资源协调
+
+ApplicationMaster 的心跳机制是 YARN 应用资源管理的核心组件。与 NodeManager 的心跳不同，ApplicationMaster 的心跳主要关注资源的申请、分配和释放，以及应用执行进度的报告。这种机制使得 ApplicationMaster 能够根据应用的实际需求动态调整资源配置。
+
+**1. 心跳驱动的资源协调机制**：
+
+ApplicationMaster 通过定期发送心跳来与 ResourceManager 进行资源协调。每次心跳都包含当前的资源需求、应用执行进度、需要释放的容器列表等信息。ResourceManager 根据这些信息和当前集群状态，决定如何分配资源。
+
+```java
+/**
+ * performHeartbeat 方法 - ApplicationMaster 心跳的核心逻辑
+ * 源文件：org.apache.hadoop.yarn.client.api.impl.AMRMClientImpl
+ */
+private void performHeartbeat() {
+    // 构建包含资源请求、进度报告和容器释放信息的心跳请求
+    AllocateRequest request = AllocateRequest.newBuilder()
+        .setProgress(getApplicationProgress())
+        .addAllAsk(getPendingResourceRequests())
+        .addAllRelease(getContainersToRelease())
+        .setBlacklistRequest(getBlacklistRequest())
+        .build();
+
+    // 发送心跳并处理响应 - 对应 AMRMClientImpl.allocate
+    AllocateResponse response = rmClient.allocate(request);
+    processAllocationResponse(response);
+}
+```
+
+心跳的频率需要在及时性和系统开销之间找到平衡。频率过高会增加系统负担，频率过低则可能影响资源分配的及时性。通常心跳间隔设置为 1-3 秒。
+
+**2. 动态资源请求与本地性优化**：
+
+ApplicationMaster 需要根据应用的执行情况动态调整资源请求。这包括根据数据分布情况优化本地性、根据任务完成情况调整并发度、根据资源使用情况调整资源规格等。
+
+资源请求的本地性优化是一个层次化的过程。ApplicationMaster 会为每个容器请求创建多个层次的资源请求：节点级、机架级和任意位置级。调度器会优先满足本地性要求高的请求，在无法满足时逐步降级到本地性要求较低的请求。
+
+```java
+/**
+ * createHierarchicalResourceRequests 方法 - 层次化资源请求的创建逻辑
+ * 源文件：org.apache.hadoop.yarn.client.api.impl.AMRMClientImpl
+ */
+private void createHierarchicalResourceRequests(ContainerRequest request) {
+    Priority priority = request.getPriority();
+    Resource capability = request.getCapability();
+
+    // 节点级本地性请求（最高优先级）- 对应 AMRMClientImpl.addResourceRequest
+    if (request.getNodes() != null) {
+        for (String node : request.getNodes()) {
+            addResourceRequest(priority, node, capability, 1);
+        }
+    }
+
+    // 机架级本地性请求（中等优先级）- 对应机架感知调度
+    if (request.getRacks() != null) {
+        for (String rack : request.getRacks()) {
+            addResourceRequest(priority, rack, capability, 1);
+        }
+    }
+
+    // 任意位置请求（最低优先级，作为备选）- 对应 ResourceRequest.ANY
+    addResourceRequest(priority, ResourceRequest.ANY, capability, 1);
+}
+```
+
+**3. 容器生命周期管理**：
+
+ApplicationMaster 通过心跳响应获得新分配的容器信息，并负责启动这些容器。同时，它也会收到已完成容器的状态信息，需要根据这些信息更新应用状态并决定是否需要申请新的容器。
+
+容器的启动过程包括与 NodeManager 通信、传递启动命令和环境变量、监控启动状态等步骤。ApplicationMaster 需要处理容器启动失败的情况，并实施相应的重试或故障恢复策略。
+
+**4. 资源抢占与黑名单管理**：
+
+在资源紧张的情况下，ResourceManager 可能会通过心跳响应通知 ApplicationMaster 某些容器将被抢占。ApplicationMaster 需要优雅地处理这种情况，选择合适的容器进行释放，并重新申请资源。
+
+黑名单机制允许 ApplicationMaster 将表现不佳的节点加入黑名单，避免在这些节点上分配新的容器。这有助于提高应用的整体性能和稳定性。
+
+#### 2.4.4 故障检测与自愈机制
+
+YARN 的故障检测与自愈机制是保障集群高可用性的关键组件，通过多层次的监控体系和自动化恢复策略，确保系统在面对各种故障时能够快速响应并自动恢复。该机制主要包括节点级故障检测、应用级故障恢复和集群级健康监控三个层面。
+
+**1. 多层次故障检测体系**：
+
+YARN 构建了一个全方位的故障检测体系，从底层硬件资源到上层应用服务，实现了全链路的故障感知能力。ResourceManager 通过心跳超时机制监控 NodeManager 的存活状态，当节点在预设时间内未发送心跳时，系统会立即将其标记为失效节点。同时，NodeManager 内部运行健康检查服务，定期监控本地磁盘、内存和 CPU 使用情况，一旦发现资源使用率超过阈值或硬件异常，会主动上报健康状态变化。
+
+```java
+/**
+ * NMLivelinessMonitor 类 - 节点活跃性监控器，心跳超时检测
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.NMLivelinessMonitor
+ */
+public class NMLivelinessMonitor extends AbstractLivelinessMonitor<NodeId> {
+    @Override
+    protected void expire(NodeId nodeId) {
+        // 触发节点丢失事件 - 对应 RMNodeImpl.CleanUpAppTransition
+        dispatcher.getEventHandler().handle(new NodeEvent(nodeId, NodeEventType.EXPIRE));
+        // 清理容器 - 对应 ResourceTrackerService.handleNodeLost
+        cleanupNodeContainers(nodeId);
+        // 重新调度应用 - 对应 CapacityScheduler.nodeUpdate
+        rescheduleAffectedApplications(nodeId);
+    }
+}
+```
+
+**2. 节点健康状态监控**：
+
+NodeManager 的健康检查服务采用定时任务模式，周期性地检测节点的各项关键指标。磁盘健康检查通过遍历所有本地目录，计算磁盘使用率并与配置的阈值进行比较；内存健康检查利用 JVM 的内存管理接口获取堆内存使用情况；CPU 负载检查则通过系统调用获取当前 CPU 使用率。当任何一项指标超过预设阈值时，节点会被标记为不健康状态，并通过带外心跳立即通知 ResourceManager。
+
+```java
+/**
+ * NodeHealthCheckerService 类 - 节点健康检查器，多维度健康监控
+ * 源文件：org.apache.hadoop.yarn.server.nodemanager.NodeHealthCheckerService
+ */
+public class NodeHealthCheckerService extends AbstractService {
+    private class HealthCheckTask extends TimerTask {
+        public void run() {
+            // 检查磁盘、内存、CPU 使用率
+            boolean healthy = checkDiskHealth() && checkMemoryHealth() && checkCpuHealth();
+            updateHealthStatus(healthy);
+        }
+    }
+}
+```
+
+**3. 应用级故障恢复**：
+
+当 ApplicationMaster 发生故障时，YARN 的故障恢复服务会自动启动恢复流程。系统首先检查应用的重试次数是否超过最大限制，如果未超过，则创建新的 ApplicationAttempt 并启动恢复过程。在恢复过程中，系统会保存应用的关键状态信息到持久化存储中，包括应用的提交时间、用户信息、配置参数等，确保新的 ApplicationMaster 能够从故障点继续执行。
+
+YARN 的应用故障恢复机制主要通过以下组件实现：
+
+- **RMAppAttempt 管理**：ResourceManager 为每个应用维护多个尝试实例，当 ApplicationMaster 故障时，系统会检查当前尝试次数是否超过配置的最大重试限制（`yarn.resourcemanager.am.max-attempts`）。
+- **状态持久化**：关键的应用状态信息会被保存到 ZooKeeper 或 HDFS 等持久化存储中，包括应用提交上下文、资源需求、安全令牌等，确保新的 ApplicationMaster 能够无缝接管。
+- **自动重启机制**：当检测到 ApplicationMaster 故障且未超过重试限制时，ResourceManager 会自动创建新的 ApplicationAttempt，并在合适的节点上重新启动 ApplicationMaster。
+
+**4. 渐进式故障处理**：
+
+YARN 采用渐进式的故障处理策略，根据故障的严重程度和影响范围采取不同的应对措施。对于轻微的资源使用率超标，系统会发出警告但继续运行；对于严重的硬件故障，会立即隔离故障节点并重新分配其上的容器；对于应用级故障，会根据故障类型决定是重启 ApplicationMaster 还是重新调度整个应用。这种分层处理机制既保证了系统的稳定性，又最大化了资源的利用效率。
+
+**5. 故障恢复最佳实践**：
+
+在实际部署中，YARN 的故障检测与自愈机制需要根据具体的业务场景进行调优。心跳间隔的设置需要平衡故障检测的及时性和网络开销；健康检查的阈值需要根据硬件配置和工作负载特性进行调整；应用重试次数的配置需要考虑任务的重要性和资源成本。通过合理的参数配置和监控策略，可以构建一个既高效又可靠的分布式资源管理系统。
+
+### 2.5 本地性优化与调度策略
+
+#### 2.5.1 数据本地性的经济学原理
+
+数据本地性优化体现了分布式计算的基本经济学原理：在大数据处理场景中，计算任务的代码通常只有几 MB 到几十 MB，而需要处理的数据往往达到 GB 甚至 TB 级别。因此，将轻量级的计算任务移动到数据所在位置，比将大量数据传输到计算节点更加经济高效。
+
+YARN 的本地性优化基于精确的网络成本模型，该模型量化了数据传输的开销：
+
+1. **带宽成本**：网络带宽是集群中的稀缺资源，数据传输会占用宝贵的网络容量
+2. **延迟成本**：数据传输引入的网络延迟直接影响任务执行时间
+3. **机会成本**：网络资源被数据传输占用时，无法用于其他关键操作
+
+#### 2.5.2 层次化本地性模型
+
+YARN 的层次化本地性模型基于数据中心网络拓扑的物理特性，将本地性优化从简单的"就近原则"提升为精确的"拓扑感知调度"。该模型通过量化不同网络层级的传输成本，为调度器提供科学的决策依据。
+
+现代数据中心采用典型的三层网络架构：接入层（Access Layer）、汇聚层（Aggregation Layer）和核心层（Core Layer）。YARN 将这种物理拓扑抽象为三个本地性层级，每个层级对应不同的网络性能特征：
+
+```java
+/**
+ * NodeType 枚举 - YARN 节点类型枚举，定义了 YARN 调度器支持的三种本地性级别
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.NodeType
+ */
+public enum NodeType {
+    // 节点本地性：容器与数据在同一物理节点
+    NODE_LOCAL,
+
+    // 机架本地性：容器与数据在同一机架的不同节点
+    RACK_LOCAL,
+
+    // 跨机架：容器与数据在不同机架
+    OFF_SWITCH;
+
+    /**
+     * 获取本地性级别的索引值
+     * NODE_LOCAL = 0, RACK_LOCAL = 1, OFF_SWITCH = 2
+     */
+    public int getIndex() {
+        return this.ordinal();
+    }
+
+    /**
+     * 判断是否比指定级别更优
+     * 索引值越小，本地性越好
+     */
+    public boolean isBetterThan(NodeType other) {
+        return this.ordinal() < other.ordinal();
+    }
+
+    /**
+     * 计算本地性优化带来的性能收益（基于经验值）
+     * NODE_LOCAL: 90% 性能提升, RACK_LOCAL: 60% 性能提升, OFF_SWITCH: 基准
+     */
+    public double getLocalityBenefit() {
+        switch (this) {
+            case NODE_LOCAL: return 0.9;
+            case RACK_LOCAL: return 0.6;
+            case OFF_SWITCH: return 0.0;
+            default: return 0.0;
+        }
+    }
+}
+```
+
+YARN 通过层次化资源请求机制实现本地性优化，ApplicationMaster 为每个任务创建多层级的资源请求，调度器按照本地性优先级进行匹配：
+
+**层次化资源请求机制**：
+
+ApplicationMaster 在提交资源请求时，会为每个任务创建三个层级的资源请求：
+
+1. **节点级本地性请求（NODE_LOCAL）**：这是最高优先级的请求，指定任务必须在特定节点上运行。ApplicationMaster 会根据输入数据的位置信息，为每个数据块所在的节点创建一个节点级请求。这类请求通常设置 `setRelaxLocality(false)`，表示严格的节点本地性要求。
+2. **机架级本地性请求（RACK_LOCAL）**：当节点级请求无法满足时，系统会尝试机架级请求。ApplicationMaster 会为每个包含数据的机架创建机架级请求，允许任务在同一机架的任意节点上运行。这类请求设置 `setRelaxLocality(true)`，表示可以在机架内灵活选择节点。
+3. **任意位置请求（OFF_SWITCH）**：这是最低优先级的请求，作为兜底策略确保任务最终能够被调度。当前两个层级的请求都无法满足时，系统会接受在集群中任意可用节点上运行任务。
+
+**动态本地性策略调整**：
+
+YARN 还支持根据集群状态动态调整本地性策略。当集群资源利用率较高时（如超过 85%），系统会自动放松本地性要求，优先保证任务的及时执行。这种自适应机制在保证系统吞吐量的同时，尽可能维持数据本地性的优势。
+
+#### 2.5.3 延迟调度算法的实现与优化
+
+YARN 采用延迟调度（Delay Scheduling）算法，通过适度等待来平衡本地性收益与系统响应性。
+
+延迟调度算法通过调度机会计数机制控制不同本地性级别的容器分配时机：节点本地性（优先级最高）→ 机架本地性（需等待一定调度机会）→ 跨机架分配（最后选择）。详细的算法原理、实现机制和配置参数请参见第 3.5.2 节的深入分析。
+
+#### 2.5.4 本地性优化的生产实践
+
+在生产环境中，本地性优化不仅仅是一个技术问题，更是一个系统工程问题。YARN 的本地性优化实践需要综合考虑数据分布、应用特性、集群负载和业务需求，形成一套完整的优化策略体系。
+
+本地性优化涉及从数据存储、任务调度到性能监控的全链路优化。其核心在于建立数据访问模式与资源分配策略之间的智能映射关系，实现系统性能的持续优化。
+
+YARN 通过 `CapacitySchedulerConfiguration` 类提供了灵活的本地性配置管理能力。系统支持多层次的配置参数，包括全局默认配置和队列特定配置，使得不同队列可以根据其工作负载特性采用不同的本地性策略。
+
+核心配置参数包括：
+
+- `yarn.scheduler.capacity.node-locality-delay`：节点本地性延迟参数，默认值为 40，表示在放宽到机架本地性之前允许的调度机会次数
+- `yarn.scheduler.capacity.rack-locality-additional-delay`：机架本地性额外延迟参数，默认值为 -1（表示无限制），控制从机架本地性放宽到任意节点的时机
+
+配置管理器通过 `getNodeLocalityDelay()` 和 `getRackLocalityAdditionalDelay()` 方法获取相应的配置值，并支持队列级别的配置覆盖，实现了细粒度的本地性策略控制。
+
+为了确保本地性优化策略的有效性，YARN 实现了基于性能反馈的动态调整机制。系统通过统计不同本地性级别的分配次数，计算节点本地性、机架本地性和跨交换机分配的比例，为调度策略优化提供数据支撑。
+
+性能监控机制包括：
+
+- **分配统计**：记录 NODE_LOCAL、RACK_LOCAL 和 OFF_SWITCH 三种本地性级别的分配次数
+- **比例计算**：实时计算各种本地性分配的比例，评估调度效果
+- **反馈优化**：根据统计数据动态调整延迟参数，优化本地性与调度延迟的平衡
+
+通过上述配置管理和性能监控机制，YARN 能够实现对本地性调度策略的精细化管理。配置管理器提供了灵活的参数调整能力，而性能监控器则为调度效果评估提供了数据支撑。这种设计使得 YARN 能够在不同的集群环境和工作负载下，动态优化本地性调度策略，实现数据本地性和系统性能的最佳平衡。
+
+在实际生产环境中，运维人员可以根据监控数据调整延迟参数，开发人员可以根据应用特性选择合适的本地性策略，从而最大化集群的整体效率。
+
+### 2.6 容错机制与安全隔离
+
+在前面的章节中，我们深入了解了 YARN 的应用生命周期管理、心跳机制、资源模型和本地性调度等核心功能。这些机制确保了 YARN 在正常情况下的高效运行，但在真实的生产环境中，故障是不可避免的。硬件故障、网络中断、软件缺陷和人为错误都可能影响集群的稳定性。
+
+YARN 作为企业级分布式资源管理系统，必须具备强大的容错能力和安全保障机制。容错机制确保系统在面临各种故障时能够自动检测、隔离和恢复，而安全隔离则在多租户环境下保护不同用户和应用的资源与数据安全。
+
+YARN 的容错设计遵循"故障是常态"的分布式系统设计原则，通过多层次的容错架构和细粒度的安全控制，确保系统在部分组件失效时仍能正常运行。整个容错体系包括故障检测、故障隔离、自动恢复和安全防护四个核心环节，与前面介绍的应用管理和资源调度机制紧密配合，共同构建了 YARN 的高可用架构。
+
+#### 2.6.1 分布式环境下的故障模式
+
+分布式环境中的故障具有多样性和复杂性，YARN 需要识别和处理不同类型的故障。这些故障可能发生在硬件层面（服务器宕机、网络中断）、软件层面（进程崩溃、内存泄漏）或操作层面（配置错误、人为误操作）。
+
+YARN 通过 ResourceManager 的故障检测机制来监控集群状态。ResourceManager 维护着所有 NodeManager 的健康状态，通过心跳机制检测节点故障，通过资源使用监控检测异常行为。
+
+```java
+/**
+ * NodesListManager 类 - 故障检测核心逻辑
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.NodesListManager
+ */
+public class NodesListManager {
+    private final Map<NodeId, RMNode> nodes = new ConcurrentHashMap<>();
+
+    // 处理节点心跳超时 - 对应 NMLivelinessMonitor.expire
+    public void handleNodeHeartbeatTimeout(NodeId nodeId) {
+        RMNode rmNode = nodes.get(nodeId);
+        if (rmNode != null && rmNode.getState() == NodeState.RUNNING) {
+            // 标记节点为不健康状态 - 对应 RMNodeImpl.DeactivateNodeTransition
+            rmNode.setState(NodeState.UNHEALTHY);
+            // 触发容器迁移 - 对应 ResourceTrackerService.handleNodeLost
+            migrateContainersFromNode(nodeId);
+            // 通知调度器更新节点状态 - 对应 CapacityScheduler.nodeUpdate
+            scheduler.handle(new NodeRemovedSchedulerEvent(rmNode));
+        }
+    }
+
+    // 处理节点状态更新 - 对应 ResourceTrackerService.nodeHeartbeat
+    public void updateNodeHealthStatus(NodeId nodeId, NodeHealthStatus healthStatus) {
+        RMNode rmNode = nodes.get(nodeId);
+        if (rmNode != null && !healthStatus.getIsNodeHealthy()) {
+            handleUnhealthyNode(rmNode, healthStatus.getHealthReport());
+        }
+    }
+}
+```
+
+#### 2.6.2 YARN 的多层容错架构
+
+YARN 采用分层的容错设计，从 ResourceManager 的高可用到 ApplicationMaster 的自动重启，再到容器级别的故障隔离，形成了完整的容错体系。这种设计确保了单点故障不会影响整个集群的运行。
+
+YARN ResourceManager 高可用（HA）机制通过 AdminService 实现主备切换功能。在 HA 模式下，系统维护两个 ResourceManager 实例，其中一个处于 Active 状态处理客户端请求，另一个处于 Standby 状态作为备份。
+
+当需要进行主备切换时，AdminService 负责协调状态转换过程：
+
+1. **转换为活跃状态**：通过 `transitionToActive` 方法实现，包括从 RMStateStore 恢复应用状态、重新初始化调度器、启动 NodesListManager 等核心服务，确保新的 Active RM 能够接管所有运行中的应用和资源管理任务。
+2. **转换为备用状态**：通过 `transitionToStandby` 方法实现，停止处理客户端请求，关闭相关服务，将 ResourceManager 切换到 Standby 模式等待后续激活。
+3. **状态同步机制**：通过共享存储（如 ZooKeeper 或 HDFS）实现状态信息的持久化和同步，确保主备切换过程中应用状态的一致性和完整性。
+
+ApplicationMaster 的容错机制确保应用在 AM 故障时能够自动恢复。YARN 会根据配置的重试策略，在 AM 失败时自动重启，并从检查点恢复应用状态。
+
+```java
+/**
+ * ApplicationMasterLauncher 类 - ApplicationMaster 重启逻辑
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.amlauncher.ApplicationMasterLauncher
+ */
+public class ApplicationMasterLauncher {
+    private static final int DEFAULT_MAX_AM_ATTEMPTS = 2;
+
+    // 处理 AM 失败 - 对应 ApplicationMasterLauncher.handle
+    public void handle(AMLauncherEvent event) {
+        ApplicationId appId = event.getApplicationId();
+        RMApp app = rmContext.getRMApps().get(appId);
+
+        if (event.getType() == AMLauncherEventType.CLEANUP) {
+            // 清理失败的 AM 容器 - 对应 AMLauncher.cleanup
+            cleanupAM(event);
+        } else if (shouldRetryAM(app)) {
+            // 重新启动 AM - 对应 AMLauncher.launch
+            launchAM(app, event.getMasterContainer());
+        } else {
+            // 标记应用失败 - 对应 RMAppImpl.FinalSavingTransition
+            app.handle(new RMAppEvent(appId, RMAppEventType.ATTEMPT_FAILED));
+        }
+    }
+
+    // 判断是否应该重试 AM - 对应 RMAppImpl.shouldCountTowardsMaxAttemptRetry
+    private boolean shouldRetryAM(RMApp app) {
+        return app.getNumFailedAppAttempts() < DEFAULT_MAX_AM_ATTEMPTS;
+    }
+}
+```
+
+#### 2.6.3 安全隔离与访问控制
+
+在多租户环境中，安全隔离是 YARN 的核心要求。YARN 通过身份认证、授权控制和容器隔离三个层次，确保不同用户和应用之间的安全边界。这种多层次的安全架构既保证了系统的安全性，又维持了良好的性能表现。
+
+YARN 的安全模型基于 Kerberos 认证和 ACL 授权，结合 Linux 容器技术实现细粒度的资源隔离。每个容器都运行在独立的安全上下文中，拥有独立的用户空间、资源限制和网络隔离。
+
+```java
+/**
+ * ApplicationACLsManager 类 - 安全认证核心逻辑
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.ApplicationACLsManager
+ */
+public class ApplicationACLsManager {
+    private final Map<ApplicationAccessType, AccessControlList> applicationACLs;
+
+    // 检查应用访问权限 - 对应 ApplicationACLsManager.checkAccess
+    public boolean checkAccess(UserGroupInformation callerUGI,
+                              ApplicationAccessType accessType,
+                              String applicationOwner,
+                              ApplicationId applicationId) {
+
+        // 应用所有者拥有所有权限 - 对应 RMAppImpl.checkAppAccessPermissions
+        if (callerUGI.getShortUserName().equals(applicationOwner)) {
+            return true;
+        }
+
+        // 检查 ACL 权限 - 对应 AccessControlList.isUserAllowed
+        AccessControlList acl = applicationACLs.get(accessType);
+        return acl != null && acl.isUserAllowed(callerUGI);
+    }
+}
+```
+
+容器级别的安全隔离通过 Linux 容器技术实现，确保不同应用的容器之间相互隔离，防止资源争抢和安全漏洞。
+
+```java
+/**
+ * LinuxContainerExecutor 类 - 容器安全隔离逻辑
+ * 源文件：org.apache.hadoop.yarn.server.nodemanager.LinuxContainerExecutor
+ */
+public class LinuxContainerExecutor extends ContainerExecutor {
+
+    // 启动安全容器 - 对应 LinuxContainerExecutor.launchContainer
+    public int launchContainer(ContainerStartContext ctx) throws IOException {
+        Container container = ctx.getContainer();
+        String user = container.getUser();
+
+        // 创建容器工作目录 - 对应 ContainerLocalizer.initializeContainerDirs
+        Path containerWorkDir = createContainerWorkDir(container, user);
+        // 设置容器权限 - 对应 LinuxContainerExecutor.setContainerPermissions
+        setContainerPermissions(containerWorkDir, user);
+        // 启动容器进程 - 对应 ContainerLaunch.call
+        return startContainerProcess(container, containerWorkDir);
+    }
+
+    // 设置容器权限 - 对应 LinuxContainerExecutor.setContainerPermissions
+    private void setContainerPermissions(Path workDir, String user) throws IOException {
+        // 设置目录所有者 - 对应 container-executor.c 中的 chown 调用
+        Files.setOwner(workDir, lookupService.lookupPrincipalByName(user));
+        // 设置访问权限（仅用户可访问） - 对应 container-executor.c 中的 chmod 调用
+        Set<PosixFilePermission> perms = EnumSet.of(
+            PosixFilePermission.OWNER_READ,
+            PosixFilePermission.OWNER_WRITE,
+            PosixFilePermission.OWNER_EXECUTE
+        );
+        Files.setPosixFilePermissions(workDir, perms);
+    }
+}
+```
+
+#### 2.6.4 故障恢复的最佳实践
+
+YARN 的故障恢复机制通过多层次的监控体系和自动化恢复策略，确保系统在面对各种故障时能够快速响应并自动恢复。详细的故障检测与自愈机制请参见第 2.4.4 节"故障检测与自愈机制"。
+
+在生产环境中，故障恢复的效果直接影响业务连续性。通过合理的参数配置和监控策略，YARN 能够将平均故障恢复时间（MTTR）控制在分钟级别，确保关键业务应用的高可用性。
+
+### 2.7 本章小结
+
+本章深入探讨了 YARN 应用生命周期与资源管理的核心机制——"应用自主管理与系统协调支撑"，这一机制是 YARN 高可用性和高效性的根本保证：
+
+1. **生命周期自主化**：从传统集中式管理转向 ApplicationMaster 自主管理的应用生命周期，故障恢复时间从分钟级降至 30 秒内
+2. **资源精细化管理**：从固定槽位转向多维资源向量和容器抽象，支持 CPU、内存、GPU 等异构资源的动态分配
+3. **智能化调度优化**：从简单轮询转向数据本地性感知调度，本地性比率从 30% 提升到 80%+，网络开销减少 50%
+4. **多层次容错保障**：从单点故障转向 ResourceManager HA、AM 重启、容器恢复的完整容错体系，集群可用性达到 99.9%+
+
+YARN 的应用生命周期与资源管理机制不仅实现了系统的高可用性，更为多租户环境下的公平调度奠定了技术基础。通过本章的学习，我们掌握了 YARN 运行机制的核心原理，为深入理解调度策略与算法优化提供了坚实支撑。
+
+---
+
+## 第 3 章 YARN 调度器深度解析：可插拔架构下的多租户资源管理
+
+在现代分布式计算环境中，资源调度已从简单的"先到先服务"演进为复杂的多维度优化问题。随着企业数字化转型的深入，单一集群往往需要同时支持批处理、流计算、机器学习等多种工作负载，以及来自不同业务部门的多租户需求。这种复杂性对资源调度系统提出了前所未有的挑战：如何在保证公平性的同时最大化资源利用率？如何在多租户环境中实现资源隔离与弹性共享？如何适应不断变化的业务需求和工作负载特征？
+
+YARN 调度器的设计哲学正是为了解决这些根本性挑战。通过可插拔的调度器架构，YARN 实现了调度策略与资源管理的解耦，使得同一个集群能够根据不同的业务场景选择最适合的调度策略。这种设计不仅体现了软件工程中"策略模式"的经典应用，更重要的是为企业级大数据平台提供了灵活性和可扩展性的保证。
+
+从理论角度看，YARN 调度器的核心贡献在于将经典的调度理论与分布式系统的工程实践相结合。传统的单机调度算法（如最短作业优先、轮转调度）在分布式环境中面临着资源异构性、网络延迟、故障恢复等新挑战。YARN 通过引入多资源主导公平性（Dominant Resource Fairness, DRF）算法、延迟调度（Delay Scheduling）机制、以及层次化队列管理等创新技术，成功地将理论研究转化为可工程化的解决方案。
+
+本章将深入剖析 YARN 的三种核心调度器——**FIFO 调度器**、**容量调度器**（Capacity Scheduler）和**公平调度器**（Fair Scheduler），从理论基础到工程实践，从算法原理到性能优化，全面解析现代分布式资源调度的核心技术。我们将特别关注多资源主导公平性（DRF）算法这一理论突破，以及其在解决多维资源公平分配问题中的关键作用。
+
+通过本章的深入学习，读者将系统掌握：
+
+1. **调度器架构设计**：理解 YARN 可插拔调度器架构的设计原理，掌握 ResourceScheduler 接口的核心抽象和扩展机制，深入分析调度器与 ResourceManager 的交互模式
+2. **多租户资源管理理论**：深入理解队列体系、资源配额、访问控制等多租户管理机制，掌握企业级资源隔离与共享策略的设计原则和实现方法
+3. **核心调度算法原理**：全面掌握三种调度器的算法原理、数据结构设计和性能特征，深入分析其在不同工作负载下的行为模式和适用边界
+4. **多资源公平性理论与实践**：深入理解 DRF 算法的数学基础、博弈论背景和工程实现，掌握其在多维资源环境中的应用价值和局限性
+5. **调度性能优化与调优**：掌握调度器配置参数的含义和调优方法，理解调度性能的关键指标和优化策略，具备生产环境调度器调优的实践能力
+6. **企业级实践应用**：通过真实案例分析，掌握不同调度器在企业环境中的选择标准、部署策略和运维最佳实践
 
 ### 3.1 调度器概述
 
@@ -1232,8 +1785,6 @@ YARN 提供了多种调度策略，从简单的先进先出（FIFO）到复杂�
 
 #### 3.1.1 调度器设计理念
 
-**多租户环境的挑战**：
-
 在现代企业级大数据环境中，一个典型的 YARN 集群往往需要同时服务于多个租户和多种工作负载。以下是典型的多租户场景：
 
 - **数据科学团队**：需要大量 GPU 和内存资源进行深度学习模型训练，任务运行时间长（数小时到数天）
@@ -1242,16 +1793,12 @@ YARN 提供了多种调度策略，从简单的先进先出（FIFO）到复杂�
 - **数据工程团队**：执行 ETL 作业和数据清洗，通常在夜间批量运行，资源需求大但时间集中
 - **开发测试团队**：进行应用开发和测试，资源需求小但需要快速响应
 
-**多租户的定义与需求**：
+多租户（Multi-tenancy）是指在同一个 YARN 集群中，多个组织、部门或用户组（租户）共享物理计算资源，同时在逻辑上实现资源管理和访问隔离的架构模式。在多租户环境中，每个租户对资源管理系统的核心需求包括：
 
-多租户（Multi-tenancy）是指在同一个 YARN 集群上，多个组织、部门或用户组（租户）共享计算资源，但期望以租户级别进行资源管理和隔离。每个租户都希望：
-
-- **专属资源配额**：拥有明确的资源配额和访问权限
-- **工作负载隔离**：与其他租户的工作负载相互隔离，避免干扰
-- **灵活资源策略**：能够根据自身业务需求灵活调整资源使用策略
-- **性能可预测性**：获得可预测的性能表现和服务质量保证
-
-**队列：多租户的实现机制**：
+- **资源配额保证**：获得明确定义的资源配额和访问权限，确保关键业务的资源可用性
+- **工作负载隔离**：实现与其他租户工作负载的逻辑隔离，防止资源竞争导致的性能干扰
+- **策略自主性**：在分配的资源范围内，能够根据业务特征自主选择资源使用策略
+- **服务质量保证**：获得可预测的性能表现和明确的服务等级协议（SLA）
 
 为了在物理上共享的集群中实现逻辑上的多租户隔离，YARN 引入了**队列（Queue）**概念作为核心实现机制：
 
@@ -1259,8 +1806,6 @@ YARN 提供了多种调度策略，从简单的先进先出（FIFO）到复杂�
 - **分层队列结构**：支持父子队列的层次结构，可以按照组织架构（如公司 → 部门 → 团队）进行资源划分
 - **队列配额管理**：为每个队列分配特定的资源配额（CPU、内存等），确保租户间的资源隔离
 - **队列访问控制**：通过 ACL（访问控制列表）限制哪些用户可以向特定队列提交应用
-
-**多队列资源管理需求**：
 
 基于队列机制，YARN 需要满足以下核心需求：
 
@@ -1270,83 +1815,253 @@ YARN 提供了多种调度策略，从简单的先进先出（FIFO）到复杂�
 - **公平性保证**：长期来看，每个租户都能获得公平的资源分配
 - **SLA 保障**：关键业务应用需要满足特定的性能和可用性要求
 
-**可插拔调度器架构**：
+面对多租户环境的复杂性和多样性，单一调度策略无法同时满足不同租户的差异化需求。YARN 采用**可插拔调度器架构**，提供多种调度策略以适应不同的应用场景：
 
-面对如此复杂的多租户环境，单一的调度策略显然无法满足所有需求。YARN 采用了**可插拔调度器架构**，支持多种调度策略：
+- **FIFO 调度器**：基于先进先出原则，适用于单租户环境或简单的批处理工作负载
+- **容量调度器**：基于资源配额管理，专为企业级多租户环境设计，支持层次化队列结构和严格的资源隔离
+- **公平调度器**：基于动态公平分配原则，适用于多租户共享环境，强调机会均等和自适应调整
+- **自定义调度器**：基于 ResourceScheduler 接口，支持特定业务场景的定制化调度策略
 
-- **FIFO 调度器**：适用于单租户或简单批处理场景
-- **容量调度器**：专为企业级多租户环境设计，支持层次化队列和资源配额
-- **公平调度器**：适用于多租户共享环境，强调动态公平性
-- **自定义调度器**：支持特殊业务需求的定制化调度策略
+YARN 调度器架构的设计遵循以下核心原则：
 
-**设计理念与核心思想**：
-
-YARN 调度器的设计基于以下核心理念：
-
-- **可插拔性**：支持多种调度算法的热插拔，适应不同的多租户需求
-- **统一接口**：所有调度器实现相同的核心接口，确保系统的一致性和可维护性
-- **策略分离**：调度策略与资源管理分离，支持灵活的多租户配置
-- **场景适配**：不同调度器针对不同的多租户场景进行优化，实现最佳的资源利用效率
+- **可插拔性原则**：通过统一的调度器接口实现调度算法的动态替换，无需修改核心系统代码
+- **接口抽象原则**：所有调度器实现统一的 ResourceScheduler 接口，确保系统架构的一致性和可扩展性
+- **关注点分离原则**：调度策略与资源管理逻辑分离，实现调度算法与系统架构的解耦
+- **场景优化原则**：不同调度器针对特定的多租户场景和工作负载特征进行专门优化
 
 #### 3.1.2 调度器架构
 
-YARN 调度器架构如下图所示：
+YARN 调度器采用可插拔架构设计，通过统一的 ResourceScheduler 接口支持多种调度策略，实现了调度算法与资源管理的解耦。该架构的核心设计理念是"策略可替换、接口标准化、扩展性优先"。
+
+为了深入理解这一架构的设计精髓，我们首先从整体视角审视其分层结构。如下图所示，YARN 调度器架构采用了清晰的三层设计：接口抽象层、调度器实现层和队列管理层。
 
 ```text
-
-                    ResourceScheduler
-                          │
-        ┌─────────────────┼─────────────────┐
-        │                 │                 │
-   FifoScheduler   CapacityScheduler   FairScheduler
-        │                 │                 │
-        │          ┌──────┴──────┐          │
-        │          │             │          │
-        │     LeafQueue    ParentQueue      │
-        │          │             │          │
-        │     ┌────┴────┐   ┌────┴────┐     │
-        │     │         │   │         │     │
-        │    App1     App2  Queue1   Queue2 │
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          YARN ResourceManager                           │
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                    ResourceScheduler 接口                        │    │
+│  │                    (调度策略抽象层)                               │     │
+│  └─────────────────────┬───────────────────────────────────────────┘    │
+│                        │                                                │
+│  ┌─────────────────────┼───────────────────────────────────────────┐    │
+│  │                     │              可插拔调度器实现                │    │
+│  │  ┌─────────────┐    │   ┌─────────────────┐   ┌───────────────┐ │    │
+│  │  │ FIFO        │    │   │ Capacity        │   │ Fair          │ │    │
+│  │  │ Scheduler   │    │   │ Scheduler       │   │ Scheduler     │ │    │
+│  │  │             │    │   │                 │   │               │ │    │
+│  │  │ • 简单队列   │    │   │ • 层次化队列      │   │ • 动态公平     │ │    │
+│  │  │ • 先进先出   │    │   │ • 容量保证        │   │ • 权重分配     │ │    │
+│  │  │ • 无隔离     │    │   │ • 弹性共享       │   │ • 抢占机制      │ │    │
+│  │  └─────────────┘    │   └─────────────────┘   └───────────────┘ │    │
+│  │                     │                                           │    │
+│  │                     │        容量调度器队列结构                    │    │
+│  │                     │   ┌─────────────────────────────────────┐ │    │
+│  │                     └──▶│          Root Queue                 │ │    │
+│  │                         │                                     │ │    │
+│  │                         │  ┌─────────────┐ ┌─────────────────┐│ │    │
+│  │                         │  │ Production  │ │ Development     ││ │    │
+│  │                         │  │ (70%)       │ │ (30%)           ││ │    │
+│  │                         │  │             │ │                 ││ │    │
+│  │                         │  │ ┌─────────┐ │ │ ┌─────────────┐ ││ │    │
+│  │                         │  │ │ App1    │ │ │ │ App2        │ ││ │    │
+│  │                         │  │ │ App3    │ │ │ │ App4        │ ││ │    │
+│  │                         │  │ └─────────┘ │ │ └─────────────┘ ││ │    │
+│  │                         │  └─────────────┘ └─────────────────┘│ │    │
+│  │                         └─────────────────────────────────────┘ │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**架构组件说明**：
+_图 3-1 YARN 调度器架构图。_
 
-- **ResourceScheduler（资源调度器接口）**：定义了所有调度器必须实现的核心接口，确保调度器的可插拔性和一致性。它是 YARN 调度系统的抽象基础，规范了资源分配、应用管理和队列操作的标准行为。
+该架构体现了以下设计原则：可插拔性通过统一接口支持不同调度算法的热插拔；分层设计实现了接口层、实现层、队列层的清晰分离；策略隔离使调度策略与资源管理逻辑解耦；扩展性支持自定义调度器的开发和集成。
 
-- **三种具体调度器实现**：
+在这一分层架构的基础上，ResourceScheduler 接口作为整个调度系统的核心抽象，定义了所有调度器必须实现的标准操作。该接口的设计遵循了面向对象设计的开闭原则，确保了系统的可扩展性和可维护性：
 
-  - **FifoScheduler（先进先出调度器）**：最简单的调度策略，按应用提交顺序分配资源，适用于单租户或简单场景
-  - **CapacityScheduler（容量调度器）**：企业级多租户调度器，支持层次化队列和严格的资源配额管理
-  - **FairScheduler（公平调度器）**：动态公平调度器，根据实际使用情况自动平衡资源分配
+```java
+/**
+ * ResourceScheduler 接口 - 调度器核心接口
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler
+ */
+public interface ResourceScheduler extends EventHandler<SchedulerEvent> {
+    // 核心调度方法
+    Allocation allocate(ApplicationAttemptId attemptId,
+                       List<ResourceRequest> requests, ...);
 
-- **队列体系（仅适用于容量和公平调度器）**：
-  - **ParentQueue（父队列）**：用于组织和管理子队列，实现层次化的资源管理结构，通常对应组织架构或业务部门
-  - **LeafQueue（叶子队列）**：实际接收和运行应用的队列，是多租户资源隔离的基本单位
-  - **应用（App1、App2 等）**：运行在叶子队列中的具体应用实例，受队列配额和调度策略约束
+    // 节点生命周期管理
+    void nodeUpdate(RMNode rmNode);
+    void addNode(RMNode nodeInfo);
+    void removeNode(RMNode nodeInfo);
 
-#### 3.1.3 多租户环境下的调度决策流程
+    // 应用生命周期管理
+    void addApplication(ApplicationId appId, String queue, String user);
+    void removeApplication(ApplicationId appId, RMAppState finalState);
+}
+```
 
-在多租户环境中，调度决策变得更加复杂，需要综合考虑队列配额、用户权限、资源约束等多个维度。调度器的工作流程遵循统一的模式，但每个步骤都需要处理多租户相关的复杂逻辑：
+接口设计的核心特性体现在四个方面：事件驱动机制通过继承 EventHandler 支持异步调度决策；状态无关设计使调度器专注于策略实现，状态管理由 ResourceManager 负责；资源抽象通过统一的 Resource 类型支持多维资源调度；预留机制内置资源预留功能，有效解决大容器调度问题。
 
-**统一调度决策流程**：
+基于这一统一接口，YARN 提供了三种不同特性的调度器实现，每种调度器都针对特定的应用场景进行了优化。为了更好地理解它们的适用性，我们通过对比分析来展现各自的技术特征：
 
-1. **资源发现** → 获取集群可用资源，识别节点标签和资源类型
-2. **队列选择** → 根据用户身份和应用类型确定目标队列
-3. **权限验证** → 检查用户是否有权限在指定队列中提交应用
-4. **应用排序** → 在队列内按调度策略对应用排序（优先级、公平性等）
-5. **配额检查** → 验证资源分配是否超出队列配额和用户限制
-6. **资源匹配** → 检查资源需求与可用性，考虑本地性和约束条件
-7. **分配决策** → 根据策略做出最终分配决定
-8. **容器启动** → 在目标节点启动容器，更新资源使用统计
+| **调度器类型** | **FIFO Scheduler** | **Capacity Scheduler** | **Fair Scheduler** |
+| -------------- | ------------------ | ---------------------- | ------------------ |
+| **适用场景**   | 单用户、简单作业   | 多租户、容量保证       | 多用户、公平共享   |
+| **队列模型**   | 单一队列           | 层次化队列树           | 扁平化队列池       |
+| **资源分配**   | 顺序分配           | 容量比例分配           | 公平份额分配       |
+| **隔离机制**   | 无隔离             | 容量隔离               | 公平性隔离         |
+| **抢占支持**   | 不支持             | 支持（可配置）         | 支持（内置）       |
+| **配置复杂度** | 最低               | 中等                   | 较高               |
+| **性能开销**   | 最低               | 中等                   | 较高               |
 
-**多租户调度的关键考量**：
+YARN 调度器架构通过队列体系实现多租户资源管理，详细设计原理参见 3.1.3 节队列体系详解。调度器架构的核心优势体现在五个维度：可扩展性通过标准化接口支持自定义调度器开发；灵活性支持运行时切换调度策略，无需重启集群；隔离性通过队列体系提供多维度的资源隔离保证；高效性采用事件驱动模型提高调度决策的响应速度；可维护性通过清晰的分层设计降低系统复杂度。
 
-- **隔离性**：确保不同租户的应用不会相互影响
-- **公平性**：在满足配额的前提下实现公平的资源分配
-- **效率性**：最大化集群资源利用率，避免资源碎片化
-- **可预测性**：为关键业务提供稳定的资源保障
+#### 3.1.3 队列体系详解
 
-**调度器选择指南**：
+队列（Queue）是 YARN 调度器实现多租户资源管理的核心抽象，它不仅是资源分配的基本单位，更是实现租户隔离、优先级管理和公平性保证的关键机制。深入理解队列体系的设计原理和实现机制，对于掌握 YARN 调度器的工作原理至关重要。
+
+从系统设计角度看，队列在 YARN 中承担着多重职责。首先，队列作为**资源容器**，为特定的用户组或应用类型预留和管理资源配额，确保关键业务获得稳定的资源保障；其次，队列作为**隔离边界**，在逻辑上分离不同租户的工作负载，防止资源竞争和相互干扰；最后，队列作为**策略载体**，承载着特定的调度策略、访问控制规则和服务质量要求。
+
+在企业级应用场景中，队列体系通常按照组织架构进行设计。例如，一个典型的企业可能按照以下层次结构组织队列：
+
+```text
+root (100% 集群资源)
+├── production (60% 保证容量, 80% 最大容量)     # 生产环境
+│   ├── critical-apps (30%)                    # 关键业务应用
+│   ├── batch-processing (20%)                 # 批处理作业
+│   └── real-time (10%)                        # 实时计算
+├── development (25% 保证容量, 40% 最大容量)    # 开发测试
+│   ├── feature-dev (15%)                      # 功能开发
+│   └── integration-test (10%)                 # 集成测试
+└── research (15% 保证容量, 30% 最大容量)       # 研究实验
+    ├── machine-learning (10%)                 # 机器学习
+    └── data-exploration (5%)                  # 数据探索
+```
+
+YARN 队列体系采用组合模式（Composite Pattern）进行设计，这一经典设计模式为系统提供了统一的接口抽象和灵活的层次结构支持。在这一设计中，存在两种基本的队列类型：
+
+**父队列（ParentQueue）**作为容器节点，主要职责包括：
+
+- **资源聚合管理**：统计和管理所有子队列的资源使用情况，维护队列层次的资源一致性
+- **策略传播**：将调度策略、访问控制规则等配置参数传递给子队列
+- **负载均衡**：在子队列之间进行资源分配和负载平衡，确保公平性
+- **状态监控**：聚合子队列的运行状态，为上层管理提供统一视图
+
+**叶子队列（LeafQueue）**作为执行节点，主要职责包括：
+
+- **应用管理**：直接管理提交到该队列的应用程序，维护应用的生命周期
+- **资源分配**：根据调度策略为应用分配具体的计算资源（容器）
+- **用户限制**：实施用户级别的资源配额和访问控制
+- **性能监控**：收集和报告队列级别的性能指标和资源使用统计
+
+这种设计带来的核心优势体现在四个方面：**统一接口**使父队列和叶子队列实现相同的操作接口，支持递归操作和统一管理；**灵活结构**支持任意深度的队列层次，能够适应复杂的组织架构变化；**资源聚合**让父队列自动聚合子队列资源状态，简化管理复杂度；**策略继承**允许子队列继承父队列的调度策略和配置参数，确保策略一致性。
+
+为了更好地理解队列体系的实际应用，我们通过一个具体的配置示例来展示队列的定义和管理方式。以下是一个典型的容量调度器队列配置：
+
+```xml
+<!-- capacity-scheduler.xml 配置示例 -->
+<configuration>
+  <!-- 根队列定义 -->
+  <property>
+    <name>yarn.scheduler.capacity.root.queues</name>
+    <value>production,development,research</value>
+  </property>
+
+  <!-- 生产环境队列配置 -->
+  <property>
+    <name>yarn.scheduler.capacity.root.production.capacity</name>
+    <value>60</value> <!-- 保证容量：60% -->
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.production.maximum-capacity</name>
+    <value>80</value> <!-- 最大容量：80% -->
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.production.queues</name>
+    <value>critical,batch,realtime</value>
+  </property>
+
+  <!-- 关键业务队列配置 -->
+  <property>
+    <name>yarn.scheduler.capacity.root.production.critical.capacity</name>
+    <value>50</value> <!-- 在 production 队列中占 50% -->
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.production.critical.user-limit-percent</name>
+    <value>25</value> <!-- 单用户最多使用 25% -->
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.production.critical.acl_submit_applications</name>
+    <value>prod_users prod_group</value> <!-- 访问控制 -->
+  </property>
+</configuration>
+```
+
+在生产环境中，队列的状态监控是确保系统稳定运行的关键。YARN 提供了丰富的队列监控指标：
+
+| **监控维度**   | **关键指标**           | **正常范围** | **异常处理**   |
+| -------------- | ---------------------- | ------------ | -------------- |
+| **资源使用**   | 内存使用率、CPU 使用率 | < 80%        | 扩容或负载均衡 |
+| **队列深度**   | 等待应用数量           | < 10         | 优化调度策略   |
+| **响应时间**   | 平均等待时间           | < 30s        | 检查资源配额   |
+| **用户活跃度** | 活跃用户数、提交频率   | 符合预期     | 调整用户限制   |
+| **公平性指标** | 资源分配偏差           | < 10%        | 重新平衡配置   |
+
+通过队列体系的合理设计和配置，YARN 能够在复杂的多租户环境中实现精细化的资源管理，为不同类型的工作负载提供差异化的服务质量保证。这一设计不仅体现了现代分布式系统的设计智慧，更为企业级大数据平台的资源治理提供了强有力的技术支撑。
+
+#### 3.1.4 多租户环境下的调度决策流程
+
+在多租户环境中，调度决策变得更加复杂，需要综合考虑队列配额、用户权限、资源约束等多个维度。调度器的工作流程遵循统一的模式，但每个步骤都需要处理多租户相关的复杂逻辑。
+
+YARN 的调度决策引擎是整个资源调度系统的核心组件，负责将应用程序的资源请求转换为具体的容器分配。其主要决策流程包括以下几个关键步骤：
+
+1. **资源发现阶段**：调度器首先扫描集群中的所有可用节点，识别出具有足够资源的候选节点。这个过程需要考虑节点的当前资源使用情况、健康状态以及是否满足应用程序的特殊要求（如节点标签、硬件配置等）。
+2. **队列选择与权限验证**：系统根据应用程序的提交信息确定目标队列，并验证用户是否具有在该队列中提交作业的权限。这个步骤还包括检查队列的当前状态，确保队列处于活跃状态且未被暂停。
+3. **资源分配决策**：对于每个资源请求，调度器会执行以下子步骤：
+
+   - **配额约束检查**：验证分配请求的资源是否会超出队列的容量限制，包括绝对容量和相对容量的检查
+   - **节点选择优化**：根据本地性要求、资源可用性和负载均衡策略选择最优的目标节点
+   - **容器创建**：在满足所有约束条件的情况下，创建新的容器并分配给应用程序
+
+4. **分配结果返回**：调度器将成功分配的容器列表以及剩余可用资源（Headroom）信息返回给 ApplicationMaster，为后续的资源请求提供参考。
+
+调度器在进行资源分配时会严格检查各种配额约束，确保系统资源的公平分配和有效利用。主要的约束检查包括：
+
+- **队列容量限制**：确保队列的资源使用不超过其配置的最大容量
+- **用户资源限制**：检查单个用户的资源使用是否超出限制
+- **应用程序资源限制**：验证单个应用程序的资源请求是否合理
+
+这种多层次的约束检查机制保证了集群资源的合理分配，防止了资源垄断和滥用。
+
+调度决策流程的性能分析是评估 YARN 调度器效率的重要指标，通过分析各个阶段的时间复杂度和空间复杂度，可以识别性能瓶颈并制定相应的优化策略。
+
+| **阶段**     | **时间复杂度** | **空间复杂度** | **主要开销**   | **优化策略**           |
+| ------------ | -------------- | -------------- | -------------- | ---------------------- |
+| **资源发现** | O(n)           | O(n)           | 节点状态遍历   | 增量更新、缓存机制     |
+| **队列选择** | O(log k)       | O(1)           | 队列树遍历     | 哈希索引、路径缓存     |
+| **权限验证** | O(1)           | O(1)           | ACL 查找       | 权限缓存、批量验证     |
+| **应用排序** | O(m log m)     | O(m)           | 应用优先级计算 | 堆排序、增量排序       |
+| **配额检查** | O(1)           | O(1)           | 资源计算       | 预计算、阈值检查       |
+| **资源匹配** | O(n × r)       | O(r)           | 本地性计算     | 本地性缓存、启发式算法 |
+| **分配决策** | O(1)           | O(1)           | 容器创建       | 对象池、批量分配       |
+
+多租户调度的关键考量与实现涉及在共享集群环境中为不同租户提供资源隔离、公平性保证和服务质量控制，确保各租户之间的资源使用互不干扰且满足各自的业务需求。
+
+**1. 隔离性保证**：
+
+多租户隔离机制主要体现在三个层面：首先是资源隔离，通过队列配额严格限制每个租户的资源使用上限，确保资源分配的公平性；其次是性能隔离，使用 CGroups 等技术确保容器间的性能不相互影响，避免资源竞争导致的性能下降；最后是故障隔离，确保租户应用的失败不会影响其他租户的正常运行，提高系统的整体稳定性。
+
+**2. 公平性算法**：
+
+YARN 采用主导资源公平性（DRF）算法实现多资源环境下的公平调度，确保各队列在其主导资源上获得公平份额。
+
+**3. 效率性优化**：
+
+效率性优化主要通过三个关键技术来实现：首先是资源碎片化处理，通过资源预留机制避免大型容器的调度死锁，确保资源能够被有效利用；其次是批量调度技术，将多个小型资源请求合并处理，显著减少调度开销并提高系统处理效率；最后是异步调度机制，使调度决策与容器启动异步执行，从而提高系统的整体吞吐量和响应速度。
+
+**4. 可预测性机制**：
+
+可预测性机制通过三个核心组件来确保系统的稳定性和可靠性：首先是资源保证机制，为关键队列预留最小资源配额，确保重要应用始终能够获得必要的计算资源；其次是优先级调度策略，使高优先级应用能够优先获得资源分配，保障关键业务的及时处理；最后是 SLA 监控系统，实时监控队列的资源使用和性能指标，为系统管理员提供准确的运行状态信息和预警机制。
 
 基于上述多租户环境的复杂需求，YARN 提供了三种主要的调度策略，每种都有其特定的适用场景：
 
@@ -1358,246 +2073,1082 @@ YARN 调度器架构如下图所示：
 
 ### 3.2 FIFO 调度器
 
-FIFO（First In First Out）调度器是 YARN 最基础的调度策略，采用先进先出的队列管理方式。虽然其设计简单，但在特定场景下仍具有重要价值。
+在大数据技术发展的早期阶段，当 Hadoop 集群主要服务于单一用户或简单的批处理工作负载时，资源调度的需求相对简单。想象一个典型的数据仓库场景：每天凌晨，ETL 团队提交一系列数据处理作业，这些作业按照数据依赖关系顺序执行，完成后生成当日的业务报表。在这种场景下，作业的执行顺序是确定的，资源需求是可预测的，不存在多租户竞争的复杂性。
 
-**核心特点**：
+FIFO（First In First Out）调度器正是为这种简单而确定的工作负载模式而设计的。它体现了"**简单即美**"的设计哲学，通过最小化调度复杂度来实现高效的资源分配。然而，随着大数据应用场景的多样化和企业级需求的复杂化，FIFO 调度器的局限性也逐渐显现。
 
-- **简单性**：实现逻辑清晰，维护成本低
-- **可预测性**：应用按提交顺序执行，行为可预期
-- **局限性**：存在队头阻塞问题，无法支持多租户需求
+考虑一个现代企业的典型场景：上午 9 点，数据科学团队提交了一个需要运行 6 小时的深度学习模型训练任务，占用了集群 80% 的资源。10 点钟，业务部门急需一份客户分析报告，提交了一个只需 10 分钟的查询任务。在 FIFO 调度器下，这个紧急查询必须等待 6 小时的训练任务完成后才能开始执行，这显然无法满足业务的实时性要求。
 
-**典型问题场景**：
-当一个长时间运行的大型作业（如 8 小时的数据处理任务）占用集群资源时，后续提交的小型紧急任务（如 5 分钟的查询）必须等待前面作业完成，导致响应时间不可接受。这种队头阻塞问题是 FIFO 调度器的主要限制。
+这种**队头阻塞（Head-of-Line Blocking）**问题是 FIFO 调度器面临的核心挑战。它不仅影响了系统的响应性，更重要的是限制了集群资源的有效利用。在多租户环境中，不同用户和应用对资源的需求模式差异巨大：
 
-#### 3.2.1 工作原理
+- **批处理作业**：资源需求大，运行时间长，对延迟不敏感
+- **交互式查询**：资源需求中等，运行时间短，对延迟敏感
+- **实时流处理**：资源需求稳定，持续运行，对可用性要求高
+- **机器学习训练**：资源需求巨大，运行时间极长，对吞吐量敏感
 
-FIFO（First In First Out）调度器是最简单的调度策略，按照应用提交的时间顺序进行调度。
+FIFO 调度器的设计理念虽然简单，但其在特定场景下的价值不容忽视。在单用户环境、简单批处理场景，或者对调度策略要求不高的测试环境中，FIFO 调度器的简洁性和可预测性仍然具有重要意义。理解 FIFO 调度器的工作原理和适用边界，对于深入掌握 YARN 调度体系具有重要的基础价值。
 
-**核心思想**：先到先服务，维护一个应用队列，只为队列头部的应用分配资源。
+FIFO 调度器的设计基于三个核心原则：
 
-```text
-1. 维护应用队列 applicationQueue
-2. 当有资源请求时：
-   - 检查请求应用是否为队列头部应用
-   - 如果是，则分配可用资源
-   - 如果不是，则等待
-3. 应用完成后，从队列中移除
+1. **时间优先**：严格按照应用提交时间排序
+2. **独占执行**：同一时刻只有一个应用能够获得资源
+3. **资源最大化**：队列头部应用可以使用集群的全部可用资源
+
+FIFO 调度器的核心实现相对简单，主要包含队列管理和资源分配两个部分：
+
+```java
+/**
+ * FifoScheduler 类 - FIFO 调度器核心实现
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler
+ */
+public class FifoScheduler extends AbstractYarnScheduler {
+
+    // 按提交时间排序的应用队列
+    private final Queue<FifoAppAttempt> applications =
+        new PriorityQueue<>(Comparator.comparing(FifoAppAttempt::getSubmitTime));
+
+    @Override
+    public Allocation allocate(ApplicationAttemptId attemptId,
+                              List<ResourceRequest> resourceRequests,
+                              List<ContainerId> release,
+                              List<String> blacklistAdditions,
+                              List<String> blacklistRemovals) {
+
+        FifoAppAttempt application = getApplicationAttempt(attemptId);
+
+        // 只有队列头部应用才能获得资源分配
+        if (isHeadOfQueue(application)) {
+            return allocateResources(application, resourceRequests);
+        } else {
+            // 其他应用只能等待
+            return createEmptyAllocation();
+        }
+    }
+
+    private boolean isHeadOfQueue(FifoAppAttempt application) {
+        return !applications.isEmpty() &&
+               applications.peek().equals(application);
+    }
+
+    private Allocation allocateResources(FifoAppAttempt application,
+                                       List<ResourceRequest> requests) {
+        List<Container> containers = new ArrayList<>();
+
+        // 遍历所有资源请求，尽可能满足
+        for (ResourceRequest request : requests) {
+            List<FifoSchedulerNode> candidateNodes =
+                findAvailableNodes(request.getCapability());
+
+            for (FifoSchedulerNode node : candidateNodes) {
+                if (canAllocate(node, request.getCapability())) {
+                    Container container = createContainer(node, application, request);
+                    containers.add(container);
+                    node.allocateContainer(container);
+                }
+            }
+        }
+
+        return new Allocation(containers, getHeadroom(application), null, null, null);
+    }
+}
 ```
 
-**调度流程图**：
+FIFO 调度器的工作流程可以用简单的状态图表示：
 
 ```text
-应用提交 → 加入队列尾部 → 等待轮到队列头部 → 获得全部资源 → 应用完成
-    ↓           ↓              ↓              ↓           ↓
-   App1      App1,App2    App1(运行),App2    App2(运行)    队列空
+应用提交 → 加入队列 → 等待轮到 → 获得资源 → 运行完成 → 下一个应用开始
+
+队列状态示例：
+时刻 T1: [App1*]                    (App1 运行)
+时刻 T2: [App1*, App2, App3]        (App2、App3 等待)
+时刻 T3: [App2*, App3]              (App1 完成，App2 开始)
+时刻 T4: [App3*]                    (App2 完成，App3 开始)
+
+* 表示正在运行的应用
 ```
 
-#### 3.2.2 特点分析
+FIFO 调度器各核心操作的时间复杂度如下表所示：
 
-| **特点**     | **说明**             | **影响**     |
-| ------------ | -------------------- | ------------ |
-| **实现简单** | 逻辑清晰，维护成本低 | 适合简单场景 |
-| **无饥饿**   | 所有应用最终都会执行 | 保证公平性   |
-| **低开销**   | 调度决策开销最小     | 性能好       |
-| **阻塞性**   | 大作业阻塞小作业     | 响应时间差   |
-| **单用户**   | 无法支持多租户       | 适用场景有限 |
+| **操作类型** | **时间复杂度** | **具体说明**               |
+| ------------ | -------------- | -------------------------- |
+| 应用提交     | O(log n)       | 基于优先队列的有序插入操作 |
+| 调度决策     | O(1)           | 直接访问队列头部元素       |
+| 资源分配     | O(m)           | 线性遍历集群中的 m 个节点  |
+| 应用完成     | O(log n)       | 从优先队列中删除指定元素   |
 
-#### 3.2.3 适用场景
+其中，n 表示队列中等待调度的应用数量，m 表示集群中可用的节点总数。
 
-- **单用户环境**：个人开发或测试环境
-- **批处理为主**：离线数据处理场景
-- **简单需求**：对调度策略要求不高的场景
+FIFO 调度器的性能表现与系统并发负载呈现明显的负相关关系：
+
+| **并发应用数量** | **平均调度延迟** | **集群资源利用率** | **典型应用场景** |
+| ---------------- | ---------------- | ------------------ | ---------------- |
+| 1-5 个           | < 100ms          | 85-95%             | 大型批处理作业   |
+| 10-20 个         | 1-5s             | 70-85%             | 中等规模工作负载 |
+| 50+ 个           | 10s-60s          | 40-60%             | 高并发场景不适用 |
 
 ### 3.3 容量调度器（Capacity Scheduler）
 
-容量调度器（Capacity Scheduler）是 YARN 为企业级多租户环境设计的调度策略，通过层次化队列结构实现资源的精细化管理和分配。
+想象一个典型的企业级数据中心场景：上午 9 点，生产环境的在线服务需要稳定的资源保证以确保关键业务的连续性；10 点钟，开发团队开始提交测试任务，需要灵活的资源分配以支持快速迭代；11 点时，研究部门启动了一个大规模的机器学习训练任务，需要在特定时段获得大量计算资源。在这种多部门、多业务线共享的企业环境中，如何在有限的集群资源中既保证关键业务的资源需求，又实现资源的高效利用，同时确保不同租户之间的公平性和隔离性？
 
-**设计目标**：
+这正是容量调度器（Capacity Scheduler）要解决的核心问题。与 FIFO 调度器的简单"先到先得"机制不同，容量调度器是 YARN 专为企业级多租户环境设计的调度策略。FIFO 调度器虽然实现简单，但在多租户环境中存在致命缺陷：大型作业会阻塞整个队列，小作业无法及时获得资源，不同租户之间缺乏资源隔离保证。容量调度器通过引入"**层次化队列结构**"和"**弹性资源分配机制**"，从根本上解决了这些问题。
 
-- **资源保证**：为不同租户提供可预测的资源配额
-- **弹性共享**：允许空闲资源在租户间动态分配
-- **多租户隔离**：确保不同租户的工作负载相互隔离
+容量调度器的设计哲学体现了"**容量保证与弹性共享**"的核心理念。在企业级环境中，不同业务部门的资源需求往往具有可预测性和周期性特征，需要在保证关键业务稳定性的前提下，最大化整体资源利用率。容量调度器通过预先分配资源配额的方式，为每个业务部门提供明确的资源保证，同时通过弹性共享机制允许部门间的资源借用，实现了稳定性和效率的完美平衡。
 
-**核心优势**：
-相比 FIFO 调度器，容量调度器能够区分不同类型的作业，为生产环境提供稳定的资源保证，同时支持开发和研究团队的灵活资源需求。
+与公平调度器的"**动态公平 + 智能抢占**"策略相比，容量调度器采用"**静态配额 + 弹性共享**"的模式。公平调度器适合学术研究、开发测试等需要灵活资源共享的环境，而容量调度器更适合企业级环境中需要严格资源隔离和预算控制的场景。两者的核心差异在于：
 
-#### 3.3.1 核心概念
+- **资源分配方式**：容量调度器基于预配置的队列容量，公平调度器基于实时计算的公平份额
+- **管理复杂度**：容量调度器需要精心设计队列结构，公平调度器配置相对简单
+- **适应性**：容量调度器需要管理员预先规划，公平调度器能够自动适应用户数量变化
+- **隔离保证**：容量调度器通过配额限制实现强隔离，公平调度器通过抢占机制实现公平
+- **性能可预测性**：容量调度器提供更强的性能保证，公平调度器更注重长期公平性
 
-容量调度器通过**队列层次结构**实现资源的分层管理和分配，是企业级多租户环境的首选调度器。
+容量调度器的核心价值在于其**可预测性**和**企业级管控能力**。通过预先分配的资源配额，业务部门可以准确预估任务的执行时间和资源成本，这对于生产环境的 SLA 保证至关重要。同时，层次化的队列结构天然支持企业的组织架构映射，便于实现精细化的资源管理和成本核算。
 
-**设计思想**：
+#### 3.3.1 容量保证理论基础与数学模型
 
-- **容量保证**：每个队列都有最小容量保证
-- **弹性扩展**：队列可以使用超过保证容量的空闲资源
-- **层次管理**：支持多级队列嵌套，便于组织管理
+容量调度器的核心在于如何在多租户环境中实现"容量保证"与"弹性共享"的平衡。与经济学中的资源配置理论类似，YARN 的容量调度需要在效率和公平之间找到最优解。容量调度器采用了基于配额的资源分配模型，从容量保证到弹性扩展，从用户限制到抢占机制，构建了一套完整的企业级资源管理框架。
 
-**设计原理**：
+**1. 容量保证机制（Capacity Guarantee）**：
 
-容量调度器的设计基于"资源预留与弹性共享"的核心理念。它将集群资源按照预定义的比例分配给不同的队列，每个队列都有一个保证的最小容量（Capacity）和一个最大容量限制（Maximum Capacity）。这种设计确保了关键业务的资源需求得到满足，同时允许队列在其他队列空闲时"借用"额外资源。
+容量保证是容量调度器的基础概念，它确保每个队列在任何时候都能获得其配置的最小资源份额。这种保证机制为关键业务提供了稳定的资源基础，避免了资源竞争导致的性能波动。
 
-队列的层次结构设计使得资源管理更加灵活和精细。父队列可以将其容量进一步细分给子队列，形成树状的资源分配结构。这种设计不仅便于组织管理（如按部门、项目划分），还支持资源的递归分配和继承，使得资源配置更加直观和可控。
-
-**核心参数**：
-
-| **参数**                        | **含义**            | **示例值** | **说明**                               |
-| ------------------------------- | ------------------- | ---------- | -------------------------------------- |
-| **capacity**                    | 队列保证容量（%）   | 30%        | 队列在父队列中的最小资源保证           |
-| **maximum-capacity**            | 队列最大容量（%）   | 50%        | 队列可使用的最大资源比例               |
-| **user-limit-percent**          | 单用户资源限制（%） | 25%        | 单个用户在队列中可使用的最大资源比例   |
-| **user-limit-factor**           | 用户限制放大因子    | 2.0        | 当队列资源充足时，用户限制的放大倍数   |
-| **maximum-applications**        | 队列最大应用数      | 100        | 队列中同时运行的最大应用数量           |
-| **maximum-am-resource-percent** | AM 资源限制（%）    | 10%        | ApplicationMaster 可使用的最大资源比例 |
-
-#### 3.3.2 队列配置
-
-**典型配置示例**：
+数学表达：对于队列 i，其容量保证定义为：
 
 ```text
-root
-├── production (60%, max 80%)    # 生产环境
-├── development (30%, max 50%)   # 开发测试
-└── research (10%, max 30%)      # 研究实验
+GuaranteedCapacity_i = TotalClusterResource × CapacityPercentage_i
 ```
 
-**关键配置参数**：
+其中 `CapacityPercentage_i` 是队列 i 在其父队列中配置的容量百分比。对于层次化队列结构，叶子队列的绝对容量计算为：
 
-| **队列**        | **保证容量** | **最大容量** | **用户限制** | **说明**     |
-| --------------- | ------------ | ------------ | ------------ | ------------ |
-| **production**  | 60%          | 80%          | 25%          | 生产作业优先 |
-| **development** | 30%          | 50%          | 50%          | 开发测试环境 |
-| **research**    | 10%          | 30%          | 100%         | 实验性作业   |
+```text
+AbsoluteCapacity_i = ∏(j=0 to depth) CapacityPercentage_j
+```
 
-#### 3.3.3 资源分配算法
+其中 j 表示从根队列到叶子队列路径上的每一层。
 
-**分配策略**：
+**2. 弹性共享机制（Elastic Sharing）**：
 
-1. 容量保证阶段：
+弹性共享允许队列在其他队列空闲时"借用"额外资源，但借用量不能超过队列的最大容量限制。这种机制显著提升了集群的整体资源利用率。
 
-   - 优先满足未达到保证容量的队列
-   - 按容量不足程度排序分配
+数学表达：队列 i 的实际可用容量为：
 
-2. 弹性扩展阶段：
+```text
+AvailableCapacity_i = min(MaxCapacity_i, GuaranteedCapacity_i + AvailableElasticResource_i)
+```
 
-   - 为未达到最大容量的队列分配剩余资源
-   - 按队列优先级和资源需求分配
+其中 `AvailableElasticResource_i` 是当前可供队列 i 借用的弹性资源，计算公式为：
 
-3. 用户限制检查：
-   - 确保单用户不超过队列的用户限制
-   - 支持用户限制因子动态调整
+```text
+AvailableElasticResource_i = Σ(j≠i) max(0, GuaranteedCapacity_j - UsedCapacity_j)
+```
 
-**调度优先级**：
+**3. 主导资源公平性（Dominant Resource Fairness, DRF）**：
 
-1. 容量不足的队列 > 容量充足的队列
-2. 资源利用率低的队列 > 资源利用率高的队列
-3. 高优先级应用 > 低优先级应用
+在多维资源环境中（内存、CPU、GPU 等），容量调度器采用 DRF 算法确保资源分配的公平性。DRF 的核心思想是以每个队列的"主导资源"（使用比例最高的资源类型）作为调度决策的依据。
 
-#### 3.3.4 多租户支持
+数学表达：队列 i 的主导资源份额为：
 
-**用户隔离机制**：
+```text
+DominantShare_i = max(MemoryShare_i, CPUShare_i, GPUShare_i, ...)
+```
 
-| **机制**         | **作用**               | **配置参数**                | **示例值**                |
-| ---------------- | ---------------------- | --------------------------- | ------------------------- |
-| **用户资源限制** | 防止单用户占用过多资源 | user-limit-percent          | 25%                       |
-| **用户限制因子** | 动态调整用户限制       | user-limit-factor           | 2.0                       |
-| **队列访问控制** | 控制用户访问权限       | acl_submit_applications     | user1,user2 group1,group2 |
-| **队列管理权限** | 控制队列管理权限       | acl_administer_queue        | admin group_admin         |
-| **应用数量限制** | 限制队列中应用数量     | maximum-applications        | 100                       |
-| **AM 资源限制**  | 限制 AM 使用的资源     | maximum-am-resource-percent | 10%                       |
+其中各资源维度的份额计算为：
+
+```text
+MemoryShare_i = UsedMemory_i / TotalMemory
+CPUShare_i = UsedCPU_i / TotalCPU
+```
+
+容量调度器基于主导资源份额进行调度决策，确保在多维资源环境中的公平性。
+
+**4. 容量缺额驱动的调度决策**：
+
+容量调度器引入了"容量缺额"（Capacity Deficit）概念来量化队列的资源不足程度，这是调度决策的核心依据。
+
+在 YARN CapacityScheduler 实现中，容量缺额计算逻辑体现在以下几个方面：
+
+1. **绝对容量缺额**：队列当前使用量与其保证容量之间的差值。当队列使用量低于保证容量时，产生正缺额，表示该队列有权获得更多资源。
+2. **相对容量缺额**：考虑队列权重和优先级的标准化缺额值，用于不同队列间的优先级比较。
+3. **多维资源缺额**：分别计算内存、CPU 等各维度的容量缺额，采用 DRF 算法进行综合评估。
+4. **时间加权缺额**：长时间得不到满足的队列会获得更高的调度优先级，通过时间因子进行加权计算。
+
+**5. 层次化容量分配算法**：
+
+容量调度器采用递归的层次化分配算法，从根队列开始逐级向下分配资源。这种算法确保了资源分配的一致性和可预测性：
+
+```java
+/**
+ * CSQueue 类 - 容量调度器队列容量计算
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CSQueue
+ */
+public abstract class CSQueue implements SchedulerQueue<CSQueue> {
+
+  /**
+   * 计算队列的绝对容量
+   * 绝对容量 = 父队列绝对容量 × 当前队列在父队列中的容量百分比
+   */
+  protected Resource calculateAbsoluteCapacity(Resource parentAbsoluteCapacity,
+                                               float capacityPercentage) {
+    return Resources.multiply(parentAbsoluteCapacity, capacityPercentage);
+  }
+
+  /**
+   * 检查队列是否达到其保证容量
+   * 用于确定队列是否有权获得更多资源
+   */
+  public boolean hasReachedGuaranteedCapacity() {
+    Resource usedResources = getUsedResources();
+    Resource guaranteedCapacity = getAbsoluteCapacity();
+
+    // 使用主导资源公平性进行比较
+    return Resources.greaterThanOrEqual(
+        resourceCalculator, clusterResource, usedResources, guaranteedCapacity);
+  }
+
+  // ... 其他容量计算方法省略 ...
+}
+```
+
+这种层次化计算机制确保了容量分配的一致性和可预测性，同时支持动态的资源调整和弹性扩展。
+
+#### 3.3.2 核心调度算法实现
+
+容量调度器的核心调度算法基于"**容量优先**"和"**层次化分配**"两个原则。与公平调度器的扁平化队列结构不同，容量调度器采用树状的队列层次，通过多阶段的资源分配算法和严格的容量控制机制实现资源的精确管理。
+
+**1. 多阶段资源分配流程**：
+
+```java
+/**
+ * CapacityScheduler 类 - 容量调度器核心分配逻辑
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler
+ */
+public class CapacityScheduler extends AbstractYarnScheduler {
+
+  @Override
+  public Allocation allocate(ApplicationAttemptId applicationAttemptId,
+      List<ResourceRequest> ask, List<ContainerId> release,
+      List<String> blacklistAdditions, List<String> blacklistRemovals,
+      ContainerUpdates updateRequests) {
+
+    FiCaSchedulerApp application = getApplicationAttempt(applicationAttemptId);
+    LeafQueue queue = application.getQueue();
+
+    // 阶段1：容量保证检查 - 优先满足未达到保证容量的队列
+    if (!queue.hasReachedGuaranteedCapacity()) {
+      return allocateGuaranteedResources(application, ask, queue);
+    }
+
+    // 阶段2：弹性扩展分配 - 基于主导资源公平性分配空闲资源
+    if (queue.canAssignToThisQueue(clusterResource)) {
+      return allocateElasticResources(application, ask, queue);
+    }
+
+    // 阶段3：用户限制检查 - 在满足容量约束的前提下进行用户限制检查
+    return allocateWithUserLimits(application, ask, queue);
+  }
+
+  /**
+   * 容量保证阶段的资源分配
+   * 优先满足未达到保证容量的队列，确保容量保证的严格执行
+   */
+  private Allocation allocateGuaranteedResources(FiCaSchedulerApp application,
+      List<ResourceRequest> ask, LeafQueue queue) {
+    Resource guaranteedCapacity = queue.getAbsoluteCapacity();
+    Resource usedResources = queue.getUsedResources();
+    Resource deficit = Resources.subtract(guaranteedCapacity, usedResources);
+
+    // 只有当队列未达到保证容量时才进行分配
+    if (Resources.greaterThan(resourceCalculator, clusterResource, deficit, Resources.none())) {
+      return queue.assignContainers(clusterResource, application, resourceCalculator, deficit);
+    }
+    return EMPTY_ALLOCATION;
+  }
+
+  // ... 其他分配方法省略 ...
+}
+```
+
+**2. 层次化队列选择算法**：
+
+容量调度器采用深度优先的队列选择算法，从根队列开始递归地选择最适合的叶子队列进行资源分配：
+
+```java
+/**
+ * ParentQueue 类 - 父队列的子队列选择逻辑
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.ParentQueue
+ */
+public class ParentQueue extends AbstractCSQueue {
+
+  /**
+   * 选择最适合分配资源的子队列
+   * 基于容量利用率和优先级进行选择
+   */
+  private CSQueue selectQueueForAssignment(Resource clusterResource) {
+
+    // 按容量利用率排序子队列
+    List<CSQueue> sortedQueues = new ArrayList<>(childQueues.values());
+    sortedQueues.sort((q1, q2) -> {
+      float utilization1 = q1.getCapacityUtilization();
+      float utilization2 = q2.getCapacityUtilization();
+
+      // 优先选择容量利用率较低的队列
+      if (utilization1 < 1.0f && utilization2 < 1.0f) {
+        Resource deficit1 = Resources.subtract(q1.getAbsoluteCapacity(), q1.getUsedResources());
+        Resource deficit2 = Resources.subtract(q2.getAbsoluteCapacity(), q2.getUsedResources());
+        return Resources.compare(resourceCalculator, clusterResource, deficit2, deficit1);
+      }
+
+      return Float.compare(utilization1, utilization2);
+    });
+
+    // 选择第一个可分配的队列
+    for (CSQueue queue : sortedQueues) {
+      if (queue.canAssignToThisQueue(clusterResource)) {
+        return queue;
+      }
+    }
+
+    return null;
+  }
+
+  // ... 其他队列选择方法省略 ...
+}
+```
+
+**3. 用户限制与公平性保证**：
+
+容量调度器通过用户限制机制确保队列内部的公平性，防止单个用户过度占用队列资源：
+
+```java
+/**
+ * LeafQueue 类 - 叶子队列的用户限制实现
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.LeafQueue
+ */
+public class LeafQueue extends AbstractCSQueue {
+
+  /**
+   * 计算用户的资源限制
+   * 基于用户限制百分比和活跃用户数动态计算
+   */
+  private Resource computeUserLimit(FiCaSchedulerApp application, Resource queueCapacity) {
+    float userLimitPercent = getUserLimitPercent() / 100.0f;
+    Resource userLimit = Resources.multiply(queueCapacity, userLimitPercent);
+
+    // 考虑用户限制因子（当队列有空闲资源时放宽限制）
+    if (getNumActiveUsers() < (1.0f / userLimitPercent)) {
+      float userLimitFactor = getUserLimitFactor();
+      userLimit = Resources.multiply(userLimit, userLimitFactor);
+    }
+
+    // 确保用户限制不超过队列的最大容量
+    Resource maxUserLimit = Resources.multiply(queueCapacity,
+        getAbsoluteMaximumCapacity() / getAbsoluteCapacity());
+
+    return Resources.min(resourceCalculator, queueCapacity, userLimit, maxUserLimit);
+  }
+
+  /**
+   * 检查用户是否超过资源限制
+   */
+  private boolean isUserOverLimit(FiCaSchedulerApp application, Resource queueCapacity) {
+    String userName = application.getUser();
+    Resource userUsage = getUser(userName).getUsed();
+    Resource userLimit = computeUserLimit(application, queueCapacity);
+
+    return Resources.greaterThan(resourceCalculator, queueCapacity, userUsage, userLimit);
+  }
+
+  // ... 其他用户限制方法省略 ...
+}
+```
+
+**4. 企业级配置示例**：
+
+以下是一个典型的企业级容量调度器配置，展示了如何通过层次化队列和精细化参数实现复杂的资源管理需求：
+
+```xml
+<!-- capacity-scheduler.xml 配置文件 -->
+<?xml version="1.0"?>
+<configuration>
+  <!-- 全局配置 -->
+  <property>
+    <name>yarn.scheduler.capacity.resource-calculator</name>
+    <value>org.apache.hadoop.yarn.util.resource.DominantResourceCalculator</value>
+    <description>使用主导资源计算器支持多维资源调度</description>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.node-locality-delay</name>
+    <value>40</value>
+    <description>节点本地性延迟，平衡本地性和调度效率</description>
+  </property>
+
+  <!-- 根队列配置 -->
+  <property>
+    <name>yarn.scheduler.capacity.root.queues</name>
+    <value>production,development,research</value>
+  </property>
+
+  <!-- 生产环境队列配置 -->
+  <property>
+    <name>yarn.scheduler.capacity.root.production.capacity</name>
+    <value>60</value>
+    <description>生产环境保证 60% 的集群资源</description>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.root.production.maximum-capacity</name>
+    <value>80</value>
+    <description>生产环境最多可使用 80% 的集群资源</description>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.root.production.user-limit-percent</name>
+    <value>25</value>
+    <description>单个用户最多使用队列 25% 的资源</description>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.root.production.user-limit-factor</name>
+    <value>2.0</value>
+    <description>队列空闲时用户限制可放大 2 倍</description>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.root.production.acl_submit_applications</name>
+    <value>prod-users,admin</value>
+    <description>只有生产用户和管理员可以提交应用</description>
+  </property>
+
+  <!-- 生产环境子队列 -->
+  <property>
+    <name>yarn.scheduler.capacity.root.production.queues</name>
+    <value>online-service,batch-processing</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.root.production.online-service.capacity</name>
+    <value>70</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.root.production.batch-processing.capacity</name>
+    <value>30</value>
+  </property>
+
+  <!-- 开发测试队列配置 -->
+  <property>
+    <name>yarn.scheduler.capacity.root.development.capacity</name>
+    <value>30</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.root.development.maximum-capacity</name>
+    <value>50</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.root.development.user-limit-percent</name>
+    <value>50</value>
+    <description>开发环境允许更高的用户资源使用比例</description>
+  </property>
+
+  <!-- 研究实验队列配置 -->
+  <property>
+    <name>yarn.scheduler.capacity.root.research.capacity</name>
+    <value>10</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.root.research.maximum-capacity</name>
+    <value>30</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.root.research.user-limit-percent</name>
+    <value>100</value>
+    <description>研究队列允许单用户使用全部队列资源</description>
+  </property>
+</configuration>
+```
+
+这种配置实现了以下资源分配策略：
+
+| **队列**              | **保证容量**  | **最大容量**  | **用户限制** | **访问控制**     | **适用场景** |
+| --------------------- | ------------- | ------------- | ------------ | ---------------- | ------------ |
+| **production**        | 60%           | 80%           | 25%          | prod-users,admin | 生产关键业务 |
+| **production.online** | 42% (70%×60%) | 56% (70%×80%) | 25%          | 继承父队列       | 在线服务     |
+| **production.batch**  | 18% (30%×60%) | 24% (30%×80%) | 25%          | 继承父队列       | 批处理任务   |
+| **development**       | 30%           | 50%           | 50%          | dev-users        | 开发测试     |
+| **research**          | 10%           | 30%           | 100%         | research-users   | 研究实验     |
+
+#### 3.3.3 智能抢占与资源回收机制
+
+容量调度器支持基于容量保证的抢占机制，主要服务于 SLA 合规性，采用保守和精确的抢占策略。与公平调度器基于缺额的动态抢占不同，容量调度器更注重容量保证的严格执行。
+
+容量调度器的抢占配置示例：
+
+```xml
+<!-- 启用抢占监控 -->
+<property>
+  <name>yarn.resourcemanager.scheduler.monitor.enable</name>
+  <value>true</value>
+</property>
+<property>
+  <name>yarn.resourcemanager.scheduler.monitor.policies</name>
+  <value>org.apache.hadoop.yarn.server.resourcemanager.monitor.capacity.ProportionalCapacityPreemptionPolicy</value>
+</property>
+```
+
+容量调度器与公平调度器在抢占机制上的核心差异：容量调度器更注重**容量保证的严格执行**，采用基于配额的抢占触发条件；公平调度器更注重**动态公平性的实现**，采用基于缺额的抢占策略。详细的抢占机制原理和实现可参见 3.4.3 节智能抢占机制。
+
+通过智能抢占机制，容量调度器在企业级多租户环境中实现了资源的高效利用和 SLA 保障。
 
 ### 3.4 公平调度器（Fair Scheduler）
 
-公平调度器（Fair Scheduler）是 YARN 为多租户共享环境设计的调度策略，强调动态公平性和机会均等的资源分配原则。
+想象一个典型的大学计算中心场景：上午 9 点，计算机系的研究生提交了一个深度学习训练任务，预计运行 4 小时；10 点钟，数学系的教授需要运行一个数值计算程序，只需 30 分钟；11 点时，物理系的博士生也提交了一个分子动力学模拟任务，需要 2 小时。在这种多用户共享的学术环境中，如何确保每个用户都能公平地获得计算资源，而不是简单地按照"先到先得"的原则排队等待？
 
-**设计理念**：
+这正是公平调度器（Fair Scheduler）要解决的核心问题。与容量调度器预先分配固定资源配额的方式不同，公平调度器强调的是"**动态公平性**"——它不需要管理员预先规划复杂的队列层次和资源配额，而是根据当前活跃用户的数量和需求，实时计算每个用户应该获得的"公平份额"，并通过智能的抢占机制确保资源分配的公平性。
 
-- **动态公平**：根据当前活跃应用动态计算公平份额
-- **机会均等**：所有用户和应用享有平等的资源获取机会
-- **自适应调整**：无需预先配置静态资源分配比例
+公平调度器的设计哲学体现了"**机会均等**"的核心理念。在学术环境、研发团队或者多部门共享的企业环境中，用户的资源需求往往是动态变化的，很难预先确定每个用户或部门的精确资源配额。公平调度器通过动态算法，确保每个活跃用户都能获得相等的资源使用机会，同时通过权重机制支持差异化的优先级设置。
 
-**核心差异**：
-与容量调度器的静态配额管理不同，公平调度器采用动态算法实时计算每个应用的公平份额，更适合用户需求变化频繁的共享计算环境。
+公平调度器采用"**动态公平 + 智能抢占**"的策略，与容量调度器的"**静态配额 + 弹性共享**"模式形成鲜明对比。
 
-#### 3.4.1 公平性定义
+公平调度器的核心价值在于其**自适应性**和**简化管理**。当新用户加入或离开时，系统会自动重新计算公平份额，无需管理员手动调整配置。这种设计特别适合用户数量和需求模式经常变化的环境，如大学实验室、研发中心或者敏捷开发团队。
 
-公平调度器的目标是确保所有应用获得**公平的资源分配**，适用于多租户共享环境。
+需要注意的是，公平调度器虽然简化了配置管理，但在大规模企业环境中可能面临性能挑战，因为频繁的公平份额重计算和抢占操作会带来一定的系统开销。因此，在选择调度器时需要根据具体的业务场景和性能要求进行权衡。
 
-**公平性类型**：
+#### 3.4.1 公平性理论基础与数学模型
 
-- **瞬时公平性**：任意时刻资源分配尽可能公平
-- **长期公平性**：较长时间段内每个应用获得的资源总量公平
+公平调度器的核心在于如何定义和实现"公平性"。与经济学中的资源分配理论类似，YARN 的公平性概念需要在效率和公平之间找到平衡点。公平调度器采用了多层次的公平性定义，从瞬时公平到长期公平，从单一资源到多维资源，构建了一套完整的公平性理论框架。
 
-**设计原理**：
+**1. 瞬时公平性（Instantaneous Fairness）**：
 
-公平调度器的核心设计原理是"动态公平分配"，它通过实时监控集群中活跃应用的数量和资源使用情况，动态计算每个应用的"公平份额"。与容量调度器的静态配置不同，公平调度器采用了基于权重的动态分配算法，能够根据实际运行情况自动调整资源分配比例。
+瞬时公平性要求在任意时刻 t，所有活跃应用的资源分配应尽可能接近其理论公平份额。这是公平调度器的基础目标，但在实际系统中，由于资源的离散性和调度的延迟性，完美的瞬时公平性往往难以实现。
 
-该调度器引入了"缺额"（Deficit）概念来衡量公平性。当某个应用的实际资源使用量低于其公平份额时，就产生了缺额，调度器会优先为这些有缺额的应用分配资源。这种设计确保了即使在资源竞争激烈的情况下，每个应用都能获得相对公平的资源分配机会。
-
-**公平份额计算**：
+数学表达：对于时刻 t，应用集合 A = {a₁, a₂, ..., aₙ}，瞬时公平性的度量为：
 
 ```text
-队列公平份额 = 父队列份额 × (队列权重 / 兄弟队列权重总和)
-应用公平份额 = 队列份额 / 队列中运行应用数量
+Fairness_instant(t) = 1 - max(i∈A) { |allocated_i(t) - fair_share_i(t)| / fair_share_i(t) }
 ```
 
-**公平性度量**：
+其中 `allocated_i(t)` 是应用 i 在时刻 t 的实际资源分配，`fair_share_i(t)` 是其理论公平份额。
 
-| **指标**       | **计算方式**        | **含义**         |
-| -------------- | ------------------- | ---------------- |
-| **公平份额**   | 理论应得资源        | 完全公平时的分配 |
-| **实际分配**   | 当前使用资源        | 实际获得的资源   |
-| **公平性差距** | 实际分配 - 公平份额 | 偏离公平的程度   |
+**2. 长期公平性（Long-term Fairness）**：
 
-#### 3.4.2 权重机制
+长期公平性关注的是在一个时间窗口内，每个应用获得的累积资源是否与其应得份额成正比。这种公平性更加实用，因为它允许短期的资源分配不均，但要求长期趋于公平。
 
-**权重配置**：
+数学表达：在时间窗口 [t₁, t₂] 内，应用 i 的长期公平性为：
 
-| **队列类型**     | **默认权重** | **权重影响**  |
-| ---------------- | ------------ | ------------- |
-| **普通队列**     | 1.0          | 基准权重      |
-| **重要队列**     | 2.0          | 获得 2 倍资源 |
-| **低优先级队列** | 0.5          | 获得一半资源  |
+```text
+LT_Fairness_i = ∫(t1 to t2) allocated_i(t) dt / ∫(t1 to t2) fair_share_i(t) dt
+```
 
-**配置示例**：
+理想情况下，所有应用的 `LT_Fairness_i` 应该接近 1。
 
-| **队列**        | **权重** | **最小资源** | **最大资源** | **调度策略** |
-| --------------- | -------- | ------------ | ------------ | ------------ |
-| **production**  | 3.0      | 10GB, 10 核  | 40GB, 40 核  | fair         |
-| **development** | 2.0      | 5GB, 5 核    | 20GB, 20 核  | fifo         |
-| **research**    | 1.0      | 2GB, 2 核    | 10GB, 10 核  | drf          |
+**3. 缺额驱动的调度决策**：
 
-#### 3.4.3 抢占机制
+公平调度器引入了"缺额"（Deficit）概念来量化应用的资源不足程度，这是调度决策的核心依据。
 
-当资源分配不公平时，公平调度器会启动**抢占机制**来重新平衡资源。
+在 YARN FairScheduler 实现中，缺额计算逻辑分布在多个类中：
 
-**抢占触发条件**：
+1. **资源缺额的定义**：缺额是指应用当前分配的资源与其公平份额之间的差值。当应用的实际分配低于公平份额时，产生正缺额，表示该应用需要更多资源。
+2. **多维资源缺额**：YARN 支持内存和 CPU 核心数的多维资源管理。缺额计算需要同时考虑这两个维度：
 
-- 队列使用资源 < 公平份额
-- 资源不足持续时间超过阈值
-- 启用抢占功能（yarn.scheduler.fair.preemption=true）
+   - 内存缺额：`Deficit_memory = max(0, fair_share_memory - allocated_memory)`
+   - CPU 缺额：`Deficit_cpu = max(0, fair_share_cpu - allocated_cpu)`
 
-**抢占算法流程**：
+3. **缺额权重计算**：在实际调度决策中，不同类型的资源可能有不同的权重。调度器会根据集群配置和资源稀缺程度动态调整权重。
+4. **时间因素**：长时间得不到满足的应用会获得更高的调度优先级，这通过时间加权的缺额计算来实现。
 
-1. 识别资源不足队列
+**4. 公平份额的动态计算**：
 
-   - 计算公平份额与实际使用的差距
-   - 确定需要抢占的资源量
+公平份额的计算需要考虑多个因素：活跃应用数量、权重配置、资源需求上限等。公平调度器采用了层次化的公平份额计算方法：
 
-2. 选择抢占目标
+```java
+/**
+ * ComputeFairShares 类 - 公平份额计算实现
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.ComputeFairShares
+ */
+public class ComputeFairShares {
 
-   - 优先选择超额使用资源的队列
-   - 选择优先级较低的 Container
+  /**
+   * 为给定的 Schedulable 列表计算公平份额
+   */
+  public static void computeShares(
+      Collection<? extends Schedulable> schedulables, Resource totalResources,
+      ResourceType type) {
+    // 筛选活跃的调度实体
+    Collection<Schedulable> activeSchedulables = new ArrayList<Schedulable>();
+    for (Schedulable sched : schedulables) {
+      if ((sched.getDemand().getMemory() > 0 && type == ResourceType.MEMORY) ||
+          (sched.getDemand().getVCores() > 0 && type == ResourceType.CPU)) {
+        activeSchedulables.add(sched);
+      }
+    }
+    computeSharesInternal(activeSchedulables, totalResources, type, false);
+  }
 
-3. 执行抢占
-   - 发送抢占信号给 ApplicationMaster
-   - 等待优雅关闭，超时则强制终止
+  /**
+   * 计算公平份额的核心算法
+   * 使用二分查找法确定权重资源比率 R，在满足最小/最大份额限制下公平分配资源
+   */
+  private static void computeSharesInternal(
+      Collection<Schedulable> allSchedulables, Resource totalResources,
+      ResourceType type, boolean isSteadyShare) {
 
-**抢占策略**：
+    if (allSchedulables.isEmpty()) return;
 
-| **策略**     | **说明**         | **适用场景**       |
-| ------------ | ---------------- | ------------------ |
-| **最小抢占** | 只抢占必需的资源 | 稳定性优先         |
-| **快速平衡** | 快速达到公平分配 | 响应性优先         |
-| **渐进式**   | 逐步调整资源分配 | 平衡稳定性和响应性 |
+    // 处理固定公平份额的 Schedulable
+    Collection<Schedulable> schedulables = handleFixedFairShares(
+        allSchedulables, totalResources, type, isSteadyShare);
+
+    if (schedulables.isEmpty()) return;
+
+    // 使用二分查找确定最优的权重资源比率
+    long totalResource = getTotalResource(totalResources, type);
+    double left = 0, right = 1.0;
+
+    // 二分查找最优比率
+    while (right - left > 1e-12) {
+      double mid = (left + right) / 2.0;
+      if (resourceUsedWithWeightToResourceRatio(mid, schedulables, type) > totalResource) {
+        right = mid;
+      } else {
+        left = mid;
+      }
+    }
+
+    // 应用计算出的公平份额
+    for (Schedulable sched : schedulables) {
+      long share = computeShare(sched, left, type);
+      if (!isSteadyShare) {
+        setResourceValue(share, sched.getFairShare(), type);
+      } else {
+        setResourceValue(share, sched.getSteadyFairShare(), type);
+      }
+    }
+  }
+
+  /**
+   * 根据权重和资源比率计算单个 Schedulable 的份额
+   */
+  private static long computeShare(Schedulable sched, double weightToResourceRatio,
+      ResourceType type) {
+    double share = sched.getWeight() * weightToResourceRatio;
+    share = Math.max(share, getResourceValue(sched.getMinShare(), type));
+    share = Math.min(share, getResourceValue(sched.getMaxShare(), type));
+    return (long) share;
+  }
+
+  // ... 其他辅助方法省略 ...
+}
+```
+
+这种动态计算机制确保了公平份额能够实时反映系统状态的变化，包括新应用的加入、应用的完成、以及资源需求的变化。
+
+**数学模型**：对于权重为 `w_i` 的应用 i，其公平份额计算为：
+
+```text
+fair_share_i = max(min_share_i, min(max_share_i, (w_i × R × total_resource) / Σ(j∈active) w_j))
+```
+
+其中 `R` 是通过二分查找确定的权重资源比率，`active` 是活跃应用集合。
+
+#### 3.4.2 核心调度算法实现
+
+公平调度器的核心调度算法基于"**缺额优先**"和"**权重平衡**"两个原则。与容量调度器的层次化队列不同，公平调度器采用扁平化的队列结构，通过动态权重调整和智能抢占机制实现资源的公平分配。
+
+**1. 主调度算法流程**：
+
+```java
+/**
+ * FairScheduler 类 - 公平调度器核心实现
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler
+ */
+public class FairScheduler extends AbstractYarnScheduler {
+
+  @Override
+  public Allocation allocate(ApplicationAttemptId appAttemptId,
+      List<ResourceRequest> ask, List<ContainerId> release,
+      List<String> blacklistAdditions, List<String> blacklistRemovals,
+      ContainerUpdates updateRequests) {
+
+    // 确保调度器已初始化
+    if (!initialized) {
+      return EMPTY_ALLOCATION;
+    }
+
+    FSAppAttempt application = getApplicationAttempt(appAttemptId);
+    if (application == null) {
+      LOG.info("Calling allocate on removed or non existent application " +
+          appAttemptId);
+      return EMPTY_ALLOCATION;
+    }
+
+    // 验证资源请求的合法性
+    if (!ask.isEmpty()) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("allocate: pre-update" +
+            " applicationAttemptId=" + appAttemptId +
+            " application=" + application.getApplicationId());
+      }
+      application.showRequests();
+
+      // 规范化和验证资源请求
+      List<ResourceRequest> validate = validateResourceRequests(ask);
+      application.updateResourceRequests(validate);
+    }
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("allocate: post-update" +
+          " applicationAttemptId=" + appAttemptId +
+          " #ask=" + ask.size() +
+          " reservation= " + application.getCurrentReservation());
+
+      LOG.debug("allocate:" +
+          " applicationAttemptId=" + appAttemptId +
+          " #release=" + release.size() +
+          " #updateRequests=" + updateRequests.map(ContainerUpdates::getUpdateRequests).orElse(Collections.emptyList()).size() +
+          " #blacklistAdditions=" + blacklistAdditions.size() +
+          " #blacklistRemovals=" + blacklistRemovals.size());
+    }
+
+    // 释放容器
+    releaseContainers(release, application);
+
+    // 处理容器更新请求
+    if (updateRequests.isPresent()) {
+      application.updateContainers(updateRequests.get().getUpdateRequests());
+    }
+
+    synchronized (application) {
+      // 更新应用的资源请求，为后续调度决策提供最新需求信息
+    if (!ask.isEmpty()) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("allocate: updating asks for " + appAttemptId);
+      }
+      application.updateResourceRequests(ask);
+    }
+
+      // 处理抢占容器 ID
+      Set<ContainerId> preemptionContainerIds = new HashSet<ContainerId>();
+      for (RMContainer container : application.getPreemptionContainers()) {
+        preemptionContainerIds.add(container.getContainerId());
+      }
+
+      // 更新黑名单
+      application.updateBlacklist(blacklistAdditions, blacklistRemovals);
+      List<Container> newlyAllocatedContainers =
+          application.pullNewlyAllocatedContainers();
+
+      // 记录新分配容器的时间
+      List<NMToken> updatedNMTokens = application.pullUpdatedNMTokens();
+      Resource headroom = application.getHeadroom();
+      application.setApplicationHeadroomForMetrics(headroom);
+
+      return new Allocation(newlyAllocatedContainers, headroom,
+          preemptionContainerIds, null, null, updatedNMTokens);
+    }
+  }
+
+  // ... 其他辅助方法省略 ...
+}
+```
+
+**2. 权重机制与优先级计算**：
+
+公平调度器的权重机制不仅影响资源分配比例，还决定了调度优先级。权重越高的队列和应用，在资源竞争中获得更高的优先级：
+
+**权重比较机制**：
+
+在 YARN FairScheduler 实现中，优先级比较逻辑主要体现在以下几个方面：
+
+1. **资源使用率比较**：调度器首先比较各个队列或应用的资源使用率（实际使用量 / 公平份额）。使用率较低的队列会获得更高的调度优先级。
+2. **权重因子影响**：当资源使用率相近时，权重成为决定性因素。权重较高的队列在资源分配时会获得优先考虑。
+3. **缺额计算**：调度器会计算每个队列的资源缺额（公平份额 - 实际分配），缺额较大的队列会获得更高的优先级。
+4. **主导资源原则**：在多维资源环境中（内存、CPU），调度器采用主导资源公平（DRF）算法，以使用率最高的资源维度作为比较基准。
+5. **时间加权**：长时间得不到资源的队列会通过时间因子获得额外的优先级提升，防止饥饿现象。
+6. **抢占阈值**：当资源使用率差异超过配置的阈值时，会触发抢占机制，从过度使用资源的队列中回收容器。
+
+**3. 企业级配置示例**：
+
+以下是一个典型的企业环境公平调度器配置，展示了如何通过权重和策略配置实现差异化的资源分配：
+
+```xml
+<!-- fair-scheduler.xml 配置文件 -->
+<?xml version="1.0"?>
+<allocations>
+  <!-- 默认队列配置 -->
+  <defaultQueueSchedulingPolicy>fair</defaultQueueSchedulingPolicy>
+  <defaultMinSharePreemptionTimeout>300</defaultMinSharePreemptionTimeout>
+  <defaultFairSharePreemptionTimeout>600</defaultFairSharePreemptionTimeout>
+
+  <!-- 生产环境队列 -->
+  <queue name="production">
+    <weight>4.0</weight>
+    <minResources>20480 mb, 20 vcores</minResources>
+    <maxResources>102400 mb, 100 vcores</maxResources>
+    <schedulingPolicy>drf</schedulingPolicy>
+    <aclSubmitApps>production_users</aclSubmitApps>
+    <minSharePreemptionTimeout>120</minSharePreemptionTimeout>
+  </queue>
+
+  <!-- 开发测试队列 -->
+  <queue name="development">
+    <weight>2.0</weight>
+    <minResources>10240 mb, 10 vcores</minResources>
+    <maxResources>51200 mb, 50 vcores</maxResources>
+    <schedulingPolicy>fair</schedulingPolicy>
+    <aclSubmitApps>dev_users</aclSubmitApps>
+  </queue>
+
+  <!-- 研究实验队列 -->
+  <queue name="research">
+    <weight>1.0</weight>
+    <minResources>5120 mb, 5 vcores</minResources>
+    <maxResources>25600 mb, 25 vcores</maxResources>
+    <schedulingPolicy>fifo</schedulingPolicy>
+    <aclSubmitApps>research_users</aclSubmitApps>
+  </queue>
+
+  <!-- 临时任务队列 -->
+  <queue name="adhoc">
+    <weight>0.5</weight>
+    <maxResources>10240 mb, 10 vcores</maxResources>
+    <schedulingPolicy>fair</schedulingPolicy>
+    <aclSubmitApps>*</aclSubmitApps>
+  </queue>
+
+  <!-- 用户级别的权重配置 -->
+  <user name="admin">
+    <maxRunningApps>10</maxRunningApps>
+    <weight>2.0</weight>
+  </user>
+
+  <user name="analyst">
+    <maxRunningApps>5</maxRunningApps>
+    <weight>1.5</weight>
+  </user>
+
+  <!-- 队列放置策略 -->
+  <queuePlacementPolicy>
+    <rule name="specified" />
+    <rule name="user" />
+    <rule name="default" queue="adhoc" />
+  </queuePlacementPolicy>
+</allocations>
+```
+
+这种配置实现了以下资源分配策略：
+
+| **队列**        | **权重** | **资源保证** | **资源上限**  | **调度策略** | **适用场景** |
+| --------------- | -------- | ------------ | ------------- | ------------ | ------------ |
+| **production**  | 4.0      | 20GB, 20 核  | 100GB, 100 核 | DRF          | 生产关键任务 |
+| **development** | 2.0      | 10GB, 10 核  | 50GB, 50 核   | Fair         | 开发测试     |
+| **research**    | 1.0      | 5GB, 5 核    | 25GB, 25 核   | FIFO         | 研究实验     |
+| **adhoc**       | 0.5      | 无保证       | 10GB, 10 核   | Fair         | 临时分析任务 |
+
+#### 3.4.3 智能抢占机制
+
+公平调度器的抢占机制是其核心特性之一，通过智能的抢占算法确保资源分配的公平性。与容量调度器的静态抢占不同，公平调度器采用动态的、基于缺额的抢占策略，能够更精确地平衡各队列之间的资源使用。
+
+**1. 抢占触发条件与检测算法**：
+
+```java
+/**
+ * FSPreemptionThread 类 - 公平调度器抢占线程
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FSPreemptionThread
+ */
+public class FSPreemptionThread extends Thread {
+
+    private static final Log LOG = LogFactory.getLog(FSPreemptionThread.class);
+
+    protected final FairScheduler scheduler;
+    protected final long warnTimeBeforeKill;
+    protected final long warnTimeBeforeKillStarvation;
+    protected final Timer preemptionTimer;
+
+    public FSPreemptionThread(FairScheduler scheduler) {
+        this.scheduler = scheduler;
+        this.warnTimeBeforeKill = scheduler.getConf().getWaitTimeBeforeKill();
+        this.warnTimeBeforeKillStarvation = scheduler.getConf()
+            .getWaitTimeBeforeKillStarvation();
+        this.preemptionTimer = new Timer("Preemption Timer", true);
+        setName("FSPreemptionThread");
+        setDaemon(true);
+    }
+
+    @Override
+    public void run() {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                FSAppAttempt starvedApp = null;
+
+                // 获取饥饿应用
+                synchronized (scheduler) {
+                    starvedApp = identifyStarvedApplication();
+                }
+
+                if (starvedApp != null) {
+                    preemptContainers(starvedApp);
+                }
+
+                Thread.sleep(scheduler.getConf().getPreemptionInterval());
+            } catch (InterruptedException e) {
+                LOG.info("Preemption thread interrupted! Exiting.");
+                return;
+            } catch (Exception e) {
+                LOG.error("Exception in preemption thread", e);
+            }
+        }
+    }
+
+    /**
+     * 识别饥饿应用
+     * 遍历所有队列，检查是否存在低于最小份额或公平份额的饥饿情况
+     */
+    protected FSAppAttempt identifyStarvedApplication() {
+        long curTime = scheduler.getClock().getTime();
+
+        // 遍历所有叶子队列
+        for (FSLeafQueue queue : scheduler.getQueueManager().getLeafQueues()) {
+            // 检查队列是否低于最小份额
+            if (isStarvedForMinShare(queue)) {
+                return findMostStarvedApp(queue, curTime);
+            }
+        }
+
+        // 检查公平份额饥饿
+        for (FSLeafQueue queue : scheduler.getQueueManager().getLeafQueues()) {
+            if (isStarvedForFairShare(queue)) {
+                return findMostStarvedApp(queue, curTime);
+            }
+        }
+
+        return null;
+    }
+
+    // ... 其他抢占逻辑方法省略 ...
+}
+```
+
+**3. 抢占执行策略与性能优化**：
+
+公平调度器提供了多种抢占执行策略，可以根据不同的业务需求进行配置：
+
+| **抢占策略**   | **执行方式**       | **优点**         | **缺点**         | **适用场景** |
+| -------------- | ------------------ | ---------------- | ---------------- | ------------ |
+| **最小抢占**   | 精确计算抢占量     | 影响最小         | 可能需要多轮抢占 | 生产环境     |
+| **快速平衡**   | 一次性大量抢占     | 快速达到公平状态 | 可能过度抢占     | 开发测试环境 |
+| **渐进式抢占** | 分批次逐步抢占     | 平滑过渡         | 收敛时间较长     | 混合负载环境 |
+| **优先级抢占** | 基于应用优先级抢占 | 保护重要应用     | 可能导致饥饿     | 多优先级环境 |
+
+**4. 企业级抢占配置示例**：
+
+```xml
+<!-- yarn-site.xml 中的抢占相关配置 -->
+<configuration>
+  <!-- 启用抢占功能 -->
+  <property>
+    <name>yarn.scheduler.fair.preemption</name>
+    <value>true</value>
+  </property>
+
+  <!-- 最小份额抢占超时时间（秒） -->
+  <property>
+    <name>yarn.scheduler.fair.preemption.cluster-utilization-threshold</name>
+    <value>0.8</value>
+    <description>集群利用率超过 80% 时才启用抢占</description>
+  </property>
+
+  <!-- 公平份额抢占阈值 -->
+  <property>
+    <name>yarn.scheduler.fair.waitTimeBeforeKill</name>
+    <value>15000</value>
+    <description>发送抢占信号后等待 15 秒再强制终止</description>
+  </property>
+</configuration>
+```
+
+**5. 抢占性能监控指标**：
+
+为了评估抢占机制的效果，公平调度器提供了丰富的监控指标：
+
+| **监控指标**       | **含义**               | **正常范围** | **异常处理**           |
+| ------------------ | ---------------------- | ------------ | ---------------------- |
+| **抢占频率**       | 每分钟抢占次数         | < 10 次/分钟 | 检查队列配置和负载模式 |
+| **抢占成功率**     | 成功抢占的容器比例     | > 90%        | 检查应用响应性         |
+| **公平性收敛时间** | 达到公平状态的时间     | < 5 分钟     | 调整抢占超时参数       |
+| **资源利用率提升** | 抢占后的资源利用率改善 | > 10%        | 评估抢占策略有效性     |
+
+这种智能抢占机制确保了公平调度器能够在保证公平性的同时，最小化对正在运行应用的影响，实现了高效的资源重分配。
+
+#### 3.4.4 性能特征与适用场景
+
+公平调度器在不同场景下表现出不同的性能特征，理解这些特征对于选择合适的调度策略至关重要。
+
+**1. 性能特征分析**：
+
+| **性能维度**   | **公平调度器表现**     | **量化指标**      | **影响因素**         |
+| -------------- | ---------------------- | ----------------- | -------------------- |
+| **调度延迟**   | 中等（动态计算开销）   | 50-200ms          | 队列数量、应用数量   |
+| **资源利用率** | 高（动态调整）         | 85-95%            | 负载模式、抢占策略   |
+| **公平性保证** | 优秀（实时监控）       | 公平性指数 > 0.9  | 权重配置、抢占参数   |
+| **扩展性**     | 良好（支持大规模集群） | 支持 10,000+ 节点 | 调度算法复杂度       |
+| **稳定性**     | 中等（抢占可能影响）   | 99.5% 可用性      | 抢占频率、应用容错性 |
+
+**2. 企业级部署建议**：
+
+基于不同的业务场景，公平调度器的部署策略应有所差异：
+
+针对不同业务场景的 Fair Scheduler 配置策略：
+
+**科研院所配置**：注重公平性和资源共享
+
+- 启用抢占机制（yarn.scheduler.fair.preemption=true）
+- 设置较低的集群利用率阈值（0.7）以快速触发抢占
+- 配置较短的抢占等待时间（10 秒）确保快速响应
+- 启用连续调度提高小任务的响应性
+
+**互联网公司配置**：平衡性能和公平性
+
+- 适度启用抢占，避免影响在线服务
+- 设置较高的集群利用率阈值（0.85）减少抢占频率
+- 配置较长的抢占等待时间（30 秒）保护长时间运行的任务
+- 优化调度性能，支持多资源同时分配
+
+**3. 与容量调度器的深度对比**：
+
+为了帮助企业选择合适的调度器，以下是公平调度器与容量调度器的全面对比：
+
+| **对比维度**     | **公平调度器**     | **容量调度器**     | **选择建议**                |
+| ---------------- | ------------------ | ------------------ | --------------------------- |
+| **设计理念**     | 动态公平，机会均等 | 容量保证，层次管理 | 科研/教育选公平，企业选容量 |
+| **资源分配**     | 基于使用量动态调整 | 基于配置静态分配   | 负载变化大选公平            |
+| **多租户支持**   | 天然支持，自动平衡 | 需要精心配置       | 租户需求变化选公平          |
+| **管理复杂度**   | 低（自动化程度高） | 高（需要容量规划） | 运维资源少选公平            |
+| **性能可预测性** | 中等（动态变化）   | 高（配置确定性）   | SLA 要求严格选容量          |
+| **资源利用率**   | 高（动态优化）     | 中等（预留开销）   | 成本敏感选公平              |
+
+**4. 适用场景总结**：
+
+**公平调度器最适合的场景：**
+
+- **科研院所和高校**：多个研究组共享集群，需求变化大
+- **数据科学团队**：多个数据科学家并行工作，任务类型多样
+- **开发测试环境**：多个开发团队共享资源，负载不可预测
+- **初创公司**：资源有限，需要最大化利用率
+- **多租户 SaaS 平台**：租户需求动态变化，需要自动平衡
+
+**不适合公平调度器的场景：**
+
+- **严格 SLA 要求**：需要确定性的资源保证
+- **关键业务系统**：不能容忍抢占带来的不稳定性
+- **大型企业生产环境**：需要精细的资源控制和预算管理
+- **实时计算场景**：对延迟极其敏感的应用
+
+通过合理的配置和部署策略，公平调度器能够在保证公平性的同时，提供优秀的资源利用率和用户体验。
 
 ### 3.5 调度算法深入分析
 
@@ -1629,17 +3180,20 @@ DRF 算法的设计基于"主导资源均衡"的核心思想。它认识到在�
 
 1. **计算主导份额**：
 
+   对于用户 i，其主导份额计算公式为：
+
    ```text
-   对于用户 i：
-   主导份额_i = max(内存使用率_i, CPU使用率_i, ...)
-   其中：资源使用率 = 用户已分配资源 / 集群总资源
+   DS_i = max(A_i,memory/C_memory, A_i,cpu/C_cpu, ...)
    ```
+
+   其中：`A_i,r` 表示用户 i 已分配的资源 r，`C_r` 表示集群中资源 r 的总量。
 
 2. **选择分配目标**：
 
-   ```text
    选择主导份额最小的用户 j：
-   j = argmin(主导份额_i) for all i
+
+   ```text
+   j = argmin_i DS_i
    ```
 
 3. **资源分配与更新**：
@@ -1667,6 +3221,52 @@ DRF 算法的设计基于"主导资源均衡"的核心思想。它认识到在�
 - 保证多资源环境下的公平性
 - 防止单一资源类型的垄断
 - 提高整体资源利用率
+
+**YARN 中的 DRF 实现**：
+
+在 Hadoop YARN 源码中，DRF 算法的核心实现位于公平调度器的策略模块中：
+
+```java
+/**
+ * DominantResourceFairnessPolicy 类 - DRF 算法核心实现
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.policies.DominantResourceFairnessPolicy
+ */
+public class DominantResourceFairnessPolicy extends SchedulingPolicy {
+
+  /**
+   * calculateClusterAndFairRatios 方法 - 计算主导资源和公平份额比率
+   */
+  int calculateClusterAndFairRatios(ResourceInformation[] resourceInfo,
+      float weight, ResourceInformation[] clusterInfo, double[] shares) {
+
+    // 计算各资源类型的使用率
+    shares[Resource.MEMORY_INDEX] =
+        ((double) resourceInfo[Resource.MEMORY_INDEX].getValue()) /
+        clusterInfo[Resource.MEMORY_INDEX].getValue();
+    shares[Resource.VCORES_INDEX] =
+        ((double) resourceInfo[Resource.VCORES_INDEX].getValue()) /
+        clusterInfo[Resource.VCORES_INDEX].getValue();
+
+    // 确定主导资源（使用率最高的资源类型）
+    int dominant = shares[Resource.VCORES_INDEX] > shares[Resource.MEMORY_INDEX] ?
+        Resource.VCORES_INDEX : Resource.MEMORY_INDEX;
+
+    // 计算公平份额比率（考虑权重）
+    shares[Resource.MEMORY_INDEX] /= weight;
+    shares[Resource.VCORES_INDEX] /= weight;
+
+    return dominant;
+  }
+}
+```
+
+该实现展示了 DRF 算法的核心逻辑：
+
+1. **资源使用率计算**：计算每种资源类型的当前使用率
+2. **主导资源识别**：找出使用率最高的资源类型作为主导资源
+3. **公平份额调整**：根据用户权重调整公平份额比率
+
+完整的 DRF 比较器实现还包括最小份额保证和多资源类型的扩展支持，确保在复杂的多租户环境中实现真正的资源公平分配。
 
 #### 3.5.2 延迟调度理论
 
@@ -1704,6 +3304,105 @@ DRF 算法的设计基于"主导资源均衡"的核心思想。它认识到在�
 | **节点本地性比率** | 节点本地分配数 / 总分配数 | 60-80%     |
 | **机架本地性比率** | 机架本地分配数 / 总分配数 | 15-25%     |
 | **网络传输节省**   | 本地性比率 × 数据传输量   | 30-50%     |
+
+**YARN 中的延迟调度实现**：
+
+在 Hadoop YARN 源码中，延迟调度在不同调度器中有不同的实现方式：
+
+**1. 公平调度器中的延迟调度实现**：
+
+```java
+/**
+ * FSAppAttempt 类 - 公平调度器应用尝试
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FSAppAttempt
+ */
+public class FSAppAttempt {
+
+  /**
+   * getAllowedLocalityLevelByTime 方法 - 根据时间确定允许的本地性级别
+   */
+  public NodeType getAllowedLocalityLevelByTime(Priority priority,
+      long currentTimeMs, long nodeLocalityDelayMs, long rackLocalityDelayMs) {
+
+    // 获取该优先级的调度机会记录
+    SchedulerRequestKey schedulerKey = SchedulerRequestKey.create(priority);
+    Long lastScheduledTime = lastScheduledContainer.get(schedulerKey);
+
+    if (lastScheduledTime == null) {
+      lastScheduledTime = currentTimeMs;
+    }
+
+    long timeSinceLastScheduled = currentTimeMs - lastScheduledTime;
+
+    // 根据等待时间确定允许的本地性级别
+    if (timeSinceLastScheduled < nodeLocalityDelayMs) {
+      return NodeType.NODE_LOCAL;  // 只允许节点本地调度
+    } else if (timeSinceLastScheduled < rackLocalityDelayMs) {
+      return NodeType.RACK_LOCAL;  // 允许机架本地调度
+    } else {
+      return NodeType.OFF_SWITCH;  // 允许跨机架调度
+    }
+  }
+}
+```
+
+**2. 容量调度器中的延迟调度实现**：
+
+```java
+/**
+ * RegularContainerAllocator 类 - 常规容器分配器
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.allocator.RegularContainerAllocator
+ */
+public class RegularContainerAllocator {
+
+  /**
+   * canAssign 方法 - 检查是否可以分配容器
+   */
+  private boolean canAssign(FiCaSchedulerNode node, NodeType type,
+      SchedulerRequestKey schedulerKey, PendingAsk pendingAsk,
+      ResourceLimits currentResoureLimits, SchedulingMode schedulingMode) {
+
+    // 获取实际的本地性延迟配置
+    int nodeLocalityDelay = getActualNodeLocalityDelay();
+    int rackLocalityDelay = getActualRackLocalityDelay();
+
+    // 检查是否满足延迟调度条件
+    if (type == NodeType.NODE_LOCAL) {
+      return true;  // 节点本地总是允许
+    }
+
+    if (type == NodeType.RACK_LOCAL) {
+      // 检查节点本地性延迟
+      if (application.getSchedulingOpportunities(schedulerKey) < nodeLocalityDelay) {
+        return false;  // 还未达到节点本地性延迟阈值
+      }
+    }
+
+    if (type == NodeType.OFF_SWITCH) {
+      // 检查机架本地性延迟
+      if (application.getSchedulingOpportunities(schedulerKey) <
+          (nodeLocalityDelay + rackLocalityDelay)) {
+        return false;  // 还未达到机架本地性延迟阈值
+      }
+    }
+
+    return true;
+  }
+}
+```
+
+**延迟调度配置参数**：
+
+- **公平调度器**：
+
+  - `yarn.scheduler.fair.locality.threshold.node`：节点本地性延迟阈值
+  - `yarn.scheduler.fair.locality.threshold.rack`：机架本地性延迟阈值
+
+- **容量调度器**：
+  - `yarn.scheduler.capacity.node-locality-delay`：节点本地性延迟
+  - `yarn.scheduler.capacity.rack-locality-additional-delay`：机架本地性额外延迟
+
+这些实现确保了 YARN 能够在保证数据本地性的同时，避免因过度等待而影响集群整体的资源利用率。
 
 #### 3.5.3 调度性能分析
 
@@ -1758,434 +3457,474 @@ DRF 算法的设计基于"主导资源均衡"的核心思想。它认识到在�
 - **选择容量调度器**：企业级多租户环境、需要严格资源保证、有明确的部门资源划分
 - **选择公平调度器**：多租户共享环境、租户需求变化频繁、强调机会均等
 
-### 3.6 本章小结
+**YARN 调度器源码实现**：
 
-本章深入探讨了 YARN 调度系统的核心设计理念——"可插拔调度器架构下的多租户资源管理"，这一理念是 YARN 能够适应不同应用场景和业务需求的关键保证：
+在 Hadoop YARN 源码中，三种调度器都继承自 `AbstractYarnScheduler` 抽象类，实现了 `ResourceScheduler` 接口：
 
-1. **可插拔架构演进**：从单一调度策略转向支持 FIFO、容量调度器、公平调度器的可插拔架构，实现了调度策略与资源管理的分离，为多租户环境提供了灵活的调度选择
-2. **多租户资源管理**：从简单的单用户资源分配转向层次化队列结构的多租户管理，通过队列配额、访问控制和资源隔离机制，确保不同租户间的公平性和隔离性
-3. **多资源公平性**：从单资源维度的简单分配转向 DRF 算法的多资源主导公平性，解决了 CPU、内存等多维资源的公平分配问题，实现了真正的多资源环境下的公平调度
-
-可插拔调度器架构下的多租户资源管理不仅是一个技术架构，更是 YARN 在企业级大数据环境中实现资源高效利用和公平分配的核心竞争力。理解了这一核心理念，我们就能更好地把握 YARN 调度系统的精髓和在现代多租户大数据平台中的战略价值。
-
----
-
-## 第 4 章 MapReduce on YARN
-
-本章将深入介绍 MapReduce 在 YARN 架构下的实现原理和实践应用。在前面章节中，我们已经了解了 YARN 的整体架构设计（第 1 章）、应用生命周期与资源管理机制（第 2 章）以及调度策略与算法原理（第 3 章）。本章将聚焦于 MapReduce 这一经典计算框架如何在 YARN 平台上运行，深入分析其架构演进、核心机制和实践应用。
-
-通过本章学习，读者将能够：
-
-1. **理解架构演进**：深入理解从 MapReduce v1 到 v2 的架构变化和改进
-2. **掌握核心机制**：熟练掌握 MapReduce ApplicationMaster 的工作原理和生命周期管理
-3. **理解数据流程**：深入理解 Shuffle 过程在 YARN 环境下的实现和优化策略
-4. **具备开发能力**：能够开发、调试和部署 MapReduce 应用程序
-5. **掌握调优技能**：具备 MapReduce 应用性能调优和问题诊断的实践能力
-6. **建立最佳实践**：了解 MapReduce on YARN 的生产环境最佳实践
-
----
-
-### 4.1 MRv2 架构变化
-
-#### 4.1.1 从 MRv1 到 MRv2 的演进
-
-当 Hadoop 集群规模从几十台机器扩展到数千台时，MapReduce v1 的架构开始显露出致命的弱点。想象一下，一个负责管理整个城市交通的中央调度中心，既要处理每个路口的红绿灯控制，又要规划整个城市的交通流量——这正是 MapReduce v1 中 JobTracker 面临的困境。它既要管理集群中的所有资源分配，又要负责每个 MapReduce 作业的任务调度，这种"一肩挑"的设计在大规模环境下必然成为瓶颈。
-
-更严重的是，这种集中式设计带来了单点故障的风险。一旦 JobTracker 出现问题，整个集群就会陷入瘫痪，所有正在运行的作业都会丢失。同时，固定的 Map 和 Reduce Slot 分配方式导致资源无法灵活调配——即使集群中有大量空闲的 Reduce Slot，新的 Map 任务也无法使用这些资源。
-
-这些挑战促使 Hadoop 社区重新思考 MapReduce 的架构设计，最终催生了基于 YARN 的 MapReduce v2。MRv2 的核心思想是"分而治之"：将资源管理的职责交给 YARN 的 ResourceManager，而让每个 MapReduce 作业拥有自己的 ApplicationMaster 来管理任务调度。这种设计不仅解决了扩展性和容错性问题，还为其他计算框架在同一集群上运行铺平了道路。
-
-**MapReduce v1 的架构局限**：
-
-```text
-                    MapReduce v1 架构问题
-
-    ┌─────────────────────────────────────────────────────────────┐
-    │                   JobTracker                                │
-    │  ┌─────────────────┐  ┌─────────────────────────────────┐   │
-    │  │   资源管理       │  │        作业调度                   │   │
-    │  │                 │  │                                 │   │
-    │  │ • 管理集群资源    │  │ • 分解 MapReduce 作业            │   │
-    │  │ • 分配 Slot      │  │ • 调度 Map/Reduce 任务           │   │
-    │  │ • 监控节点状态    │  │ • 监控任务执行                    │   │
-    │  └─────────────────┘  └─────────────────────────────────┘   │
-    └─────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ 紧耦合设计
-                                    ▼
-    ┌─────────────────────────────────────────────────────────────┐
-    │                      问题                                    │
-    │                                                             │
-    │ 1. 扩展性瓶颈：单一 JobTracker 限制集群规模                      │
-    │ 2. 资源利用率低：固定 Slot 分配，无法动态调整                     │
-    │ 3. 单点故障：JobTracker 故障影响整个集群                        │
-    │ 4. 框架局限：只支持 MapReduce，无法运行其他计算框架               │
-    └─────────────────────────────────────────────────────────────┘
-```
-
-**MRv2 的设计目标**：
-
-1. **职责分离**：将资源管理和作业调度分离
-2. **提高扩展性**：支持更大规模的集群
-3. **增强容错性**：消除单点故障
-4. **保持兼容性**：确保现有 MapReduce 应用无缝迁移
-
-**演进过程分析**：
-
-MRv2 的演进不是简单的重构，而是基于 YARN 的全新设计：
-
-```text
-                    MRv1 到 MRv2 的演进路径
-
-    MapReduce v1                           MapReduce v2 (on YARN)
-    ┌─────────────┐                        ┌─────────────────────────┐
-    │ JobTracker  │                        │    YARN 平台             │
-    │             │                        │ ┌─────────────────────┐ │
-    │ 资源管理 +   │        演进             │ │  ResourceManager    │ │
-    │ 作业调度     │   ──────────────►      │ │  (资源管理)           │ │
-    │             │                        │ └─────────────────────┘ │
-    └─────────────┘                        │ ┌─────────────────────┐ │
-                                           │ │  NodeManager        │ │
-    ┌─────────────┐                        │ │  (节点管理)          │ │
-    │TaskTracker  │                        │ └─────────────────────┘ │
-    │             │                        └─────────────────────────┘
-    │ 任务执行     │                                      │
-    │             │                                      │ 运行在
-    └─────────────┘                                      ▼
-                                          ┌─────────────────────────┐
-                                          │ MapReduce Application   │
-                                          │ ┌─────────────────────┐ │
-                                          │ │ ApplicationMaster   │ │
-                                          │ │ (作业调度)           │ │
-                                          │ └─────────────────────┘ │
-                                          │ ┌─────────────────────┐ │
-                                          │ │ Map/Reduce Tasks    │ │
-                                          │ │ (任务执行)           │ │
-                                          │ └─────────────────────┘ │
-                                          └─────────────────────────┘
-```
-
-**关键变化总结**：
-
-1. **资源管理层分离**：ResourceManager 专门负责集群资源管理
-2. **应用管理独立**：每个 MapReduce 作业有独立的 ApplicationMaster
-3. **容器化执行**：任务在 Container 中执行，而不是固定的 Slot
-4. **框架无关性**：YARN 可以支持多种计算框架
-
-#### 4.1.2 MRv2 核心组件
-
-**组件架构概览**：
-
-```text
-                    MapReduce v2 核心组件架构
-
-    ┌──────────────────────────────────────────────────────────────────┐
-    │                        YARN 集群                                  │
-    │                                                                  │
-    │  ┌─────────────────┐                 ┌─────────────────────────┐ │
-    │  │ ResourceManager │                 │     NodeManager         │ │
-    │  │                 │                 │                         │ │
-    │  │ • 全局资源管理    │◄───────────────►│ • 本地资源管理            │ │
-    │  │ • 应用生命周期    │                 │ • Container 管理         │ │
-    │  │ • 调度决策       │                 │ • 健康状态监控            │ │
-    │  └─────────────────┘                 └─────────────────────────┘ │
-    │           │                                       │              │
-    │           │ 启动 AM                                │启动 Container │
-    │           ▼                                       ▼              │
-    │  ┌─────────────────────────────────────────────────────────────┐ │
-    │  │              MapReduce Application                          │ │
-    │  │                                                             │ │
-    │  │  ┌─────────────────────────────────────────────────────┐    │ │
-    │  │  │            MapReduce ApplicationMaster              │    │ │
-    │  │  │                                                     │    │ │
-    │  │  │  ┌─────────────────┐  ┌─────────────────────────┐   │    │ │
-    │  │  │  │   资源协商       │  │      任务调度             │   │    │ │
-    │  │  │  │                 │  │                         │   │    │ │
-    │  │  │  │ • 向 RM 申请     │  │ • 分解作业为任务           │   │    │ │
-    │  │  │  │   Container     │  │ • 调度 Map/Reduce        │   │    │ │
-    │  │  │  │ • 监控资源使用    │  │ • 监控任务执行            │   │    │ │
-    │  │  │  └─────────────────┘  └─────────────────────────┘   │    │ │
-    │  │  └─────────────────────────────────────────────────────┘    │ │
-    │  │                                                             │ │
-    │  │  ┌─────────────────────────────────────────────────────┐    │ │
-    │  │  │                Map/Reduce Tasks                     │    │ │
-    │  │  │                                                     │    │ │
-    │  │  │  ┌─────────┐  ┌─────────┐  ┌─────────────────────┐  │    │ │
-    │  │  │  │Map Task │  │Map Task │  │   Reduce Task       │  │    │ │
-    │  │  │  │         │  │         │  │                     │  │    │ │
-    │  │  │  │运行在    │  │运行在    │  │    运行在            │  │    │ │
-    │  │  │  │Container│  │Container│  │   Container         │  │    │ │
-    │  │  │  └─────────┘  └─────────┘  └─────────────────────┘  │    │ │
-    │  │  └─────────────────────────────────────────────────────┘    │ │
-    │  └─────────────────────────────────────────────────────────────┘ │
-    └──────────────────────────────────────────────────────────────────┘
-```
-
-**MapReduce ApplicationMaster 的角色定位**：
-
-MapReduce ApplicationMaster（MR AM）是 MRv2 架构中的核心组件，它承担了原 JobTracker 的作业调度职责：
-
-**主要职责**：
-
-1. **作业管理**：
-
-   - 接收客户端提交的 MapReduce 作业请求
-   - 解析作业配置和输入数据
-   - 分解作业为具体的 Map 和 Reduce 任务
-
-2. **资源协商**：
-
-   - 根据作业需求向 ResourceManager 申请 Container
-   - 监控资源使用情况，动态调整资源需求
-   - 处理资源分配失败和超时情况
-
-3. **任务调度**：
-
-   - 将 Map/Reduce 任务分配到合适的 Container
-   - 实现数据本地性优化
-   - 管理任务的执行顺序和依赖关系
-
-4. **故障处理**：
-   - 监控任务执行状态
-   - 处理任务失败和重试
-   - 实现推测执行机制
-
-**设计原理深度解析**：
-
-MRv2 架构的设计体现了分布式系统设计的几个核心原则。首先是"**关注点分离**"原则：通过将资源管理和作业调度分离，YARN 的 ResourceManager 专注于全局资源优化，而 MapReduce ApplicationMaster 专注于作业内部的任务协调。这种分离不仅降低了系统复杂性，还提高了各组件的可维护性和可扩展性。
-
-其次是"去中心化"的设计思想。与 MRv1 中单一 JobTracker 承担所有职责不同，MRv2 让每个应用都有自己的 ApplicationMaster，这样即使某个应用的 AM 出现故障，也不会影响其他应用的运行。这种设计大大提高了系统的容错能力和并发处理能力。
-
-最后是"资源抽象"的设计理念。通过 Container 这一统一的资源抽象，MRv2 不仅支持传统的 Map 和 Reduce 任务，还为其他计算框架（如 Spark、Storm）提供了运行基础。这种抽象层的设计使得 YARN 成为了一个真正的通用资源管理平台，而不仅仅是 MapReduce 的专用系统。
-
-**与 YARN 核心组件的交互**：
-
-ApplicationMaster 通过标准化接口与 YARN 组件协作：
-
-- **ResourceManager 交互**：注册服务、申请资源、汇报状态
-- **NodeManager 交互**：启动容器、监控任务、处理异常
-- **资源协商流程**：计算资源需求（Map 任务 1GB、Reduce 任务 2GB）、提交容器请求、获取分配结果
-- **任务调度机制**：准备启动上下文、配置运行环境、启动任务容器
-
-#### 4.1.3 兼容性与迁移
-
-**向后兼容性设计原则**：
-
-MRv2 的一个重要设计目标是保持与 MRv1 的 API 兼容性，体现了大型分布式系统演进的重要原则：
-
-**兼容性层次**：
-
-1. **编程 API 兼容**：
-
-   - Mapper 和 Reducer 接口保持不变
-   - Job 配置 API 基本兼容
-   - 输入输出格式接口不变
-
-2. **配置参数兼容**：
-
-   - 大部分 MRv1 配置参数在 MRv2 中仍然有效
-   - 新增 YARN 相关配置参数
-   - 提供平滑的配置迁移路径
-
-3. **命令行兼容**：
-   - `hadoop jar` 命令保持不变
-   - 作业提交和监控命令兼容
-
-**核心配置变化**：
-
-从 MRv1 到 MRv2 的关键配置变化体现了资源管理模式的根本转变：
-
-```xml
-<!-- MRv1: 基于固定 Slot 的资源模型 -->
-<property>
-    <name>mapred.job.tracker</name>
-    <value>jobtracker:9001</value>
-</property>
-<property>
-    <name>mapred.tasktracker.map.tasks.maximum</name>
-    <value>4</value>
-</property>
-
-<!-- MRv2: 基于容器的精确资源模型 -->
-<property>
-    <name>mapreduce.framework.name</name>
-    <value>yarn</value>
-</property>
-<property>
-    <name>mapreduce.map.memory.mb</name>
-    <value>1024</value>
-</property>
-<property>
-    <name>mapreduce.map.cpu.vcores</name>
-    <value>1</value>
-</property>
-```
-
-**设计理念的演进**：
-
-1. **资源抽象**：从固定 Slot 到灵活的内存和 CPU 配置
-2. **服务发现**：从硬编码地址到 YARN 的服务发现机制
-3. **框架解耦**：通过 `mapreduce.framework.name=yarn` 实现框架的可插拔性
-
-这种兼容性设计确保了企业能够平滑地从 MRv1 迁移到 MRv2，同时享受 YARN 带来的架构优势。
-
-在理解了 MRv2 如何保持向后兼容的基础上，我们需要深入探讨 YARN 架构下 MapReduce 的核心创新——ApplicationMaster 机制。正是这一机制的引入，使得 MapReduce 从单一的 JobTracker 集中式管理转向了分布式的作业管理模式，不仅解决了扩展性问题，更为多种计算框架的统一资源管理奠定了基础。
-
-### 4.2 ApplicationMaster 核心机制
-
-#### 4.2.1 ApplicationMaster 核心职责
-
-在传统的 MapReduce v1 架构中，所有作业的调度和管理都依赖于单一的 JobTracker，这就像一个繁忙的指挥中心需要同时协调数百个不同的项目。随着集群规模的扩大和作业数量的增加，这种集中式管理方式逐渐暴露出严重的性能瓶颈和单点故障风险。更重要的是，不同类型的作业往往有着截然不同的调度需求——有些需要快速响应，有些需要长时间稳定运行，有些对数据本地性要求极高，而有些则更关注计算资源的充分利用。
-
-这种多样化的需求促使 YARN 采用了"一作业一管理者"的创新设计理念。每个 MapReduce 作业都拥有自己专属的 ApplicationMaster，就像为每个项目配备了专门的项目经理。这种设计不仅消除了单点故障的风险，还让每个作业能够根据自身特点实施最优的调度策略。ApplicationMaster 既要与 YARN 的全局资源管理器协商获取资源，又要精确地管理作业内部的任务执行，这种双重角色使其成为连接全局资源管理和局部任务调度的关键桥梁。
-
-MapReduce ApplicationMaster（AM）承担着单个 MapReduce 作业从启动到完成的全生命周期管理职责。
-
-**核心职责概览**：
-
-```text
-                MapReduce ApplicationMaster 核心职责
-
-    ┌─────────────┐    ┌─────────────┐   ┌──────────────┐    ┌─────────────┐
-    │   作业管理   │    │  资源协商    │    │  任务调度     │    │  进度监控    │
-    │             │    │            │    │              │    │             │
-    │ • 作业解析   │    │ • 容器申请   │    │ • 任务分配    │    │ • 状态跟踪   │
-    │ • 任务划分   │    │ • 资源释放   │    │ • 本地性优化  │    │ • 故障检测   │
-    │ • 依赖管理   │    │ • 动态调整   │    │ • 推测执行    │    │ • 进度报告   │
-    └─────────────┘    └─────────────┘   └──────────────┘    └─────────────┘
-```
-
-**生命周期阶段**：
-
-1. **初始化阶段**：
-
-   - 解析作业配置和输入数据
-   - 创建任务列表（Map 和 Reduce 任务）
-   - 向 ResourceManager 注册
-
-2. **资源协商阶段**：
-
-   - 根据任务需求申请容器
-   - 处理资源分配响应
-   - 动态调整资源请求
-   - 通过心跳机制与 ResourceManager 协商（详见第 2.2 节"心跳机制与状态同步"）
-
-3. **任务执行阶段**：
-
-   - 在分配的容器中启动任务
-   - 监控任务执行进度
-   - 处理任务失败和重试
-
-4. **完成清理阶段**：
-   - 收集作业执行结果
-   - 释放所有资源
-   - 向 ResourceManager 注销
-
-#### 4.2.2 资源管理机制
-
-**MapReduce 特定的资源管理**：
-
-在 YARN 通用资源管理框架基础上，MapReduce ApplicationMaster 实现了针对 Map-Reduce 计算模式的专门优化：
+**1. FIFO 调度器实现**：
 
 ```java
-// MapReduce 任务资源计算示例
-public Resource calculateTaskResource(TaskType taskType) {
-    if (taskType == TaskType.MAP) {
-        return Resource.newInstance(
-            conf.getInt("mapreduce.map.memory.mb", 1024),    // Map任务内存
-            conf.getInt("mapreduce.map.cpu.vcores", 1)       // Map任务CPU
-        );
-    } else { // REDUCE
-        return Resource.newInstance(
-            conf.getInt("mapreduce.reduce.memory.mb", 2048), // Reduce任务内存
-            conf.getInt("mapreduce.reduce.cpu.vcores", 1)    // Reduce任务CPU
-        );
-    }
+/**
+ * FifoScheduler 类 - FIFO 调度器实现
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler
+ */
+public class FifoScheduler extends AbstractYarnScheduler<FifoAppAttempt, FifoSchedulerNode>
+    implements ResourceScheduler {
+
+  private Queue queue;
+
+  /**
+   * allocate 方法 - FIFO 资源分配逻辑
+   * 按应用提交顺序进行资源分配
+   */
+  @Override
+  public Allocation allocate(ApplicationAttemptId applicationAttemptId,
+      List<ResourceRequest> ask, List<ContainerId> release, ...) {
+
+    FifoAppAttempt application = getApplicationAttempt(applicationAttemptId);
+    return application.pullNewlyAllocatedContainers();
+  }
 }
 ```
 
-**MapReduce 动态资源调整策略**：
+**2. 容量调度器核心实现**：
 
-- **Map 阶段资源预估**：基于输入分片大小和历史执行数据预测所需容器数量
-- **Reduce 阶段资源规划**：根据 Map 输出数据量动态调整 Reduce 任务的资源需求
-- **故障恢复资源管理**：为失败任务智能选择重启位置，优化数据本地性
+```java
+/**
+ * CapacityScheduler 类 - 容量调度器实现
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler
+ */
+public class CapacityScheduler extends AbstractYarnScheduler<CSQueue, FiCaSchedulerNode>
+    implements PreemptableResourceScheduler, CapacitySchedulerContext {
 
-**设计原理深度分析**：
+  private CSQueue root;
+  private Map<String, CSQueue> queues = new HashMap<>();
 
-ApplicationMaster 的设计体现了"专业化分工"和"自治管理"的核心理念。与传统的集中式调度不同，每个 ApplicationMaster 都是一个独立的调度实体，它深度理解自己所管理作业的特性和需求。这种设计使得 MapReduce 作业能够实现更精细化的资源管理和任务调度。
+  /**
+   * allocate 方法 - 基于队列容量的资源分配
+   * 根据队列层次结构和容量限制进行资源分配
+   */
+  @Override
+  public Allocation allocate(ApplicationAttemptId applicationAttemptId,
+      List<ResourceRequest> ask, List<ContainerId> release, ...) {
 
-从容错性角度看，ApplicationMaster 的分布式设计大大提高了系统的可靠性。即使某个 AM 出现故障，也只会影响单个作业，而不会像 MRv1 中 JobTracker 故障那样导致整个集群瘫痪。同时，YARN 的 ResourceManager 可以在其他节点重新启动失败的 AM，实现作业级别的故障恢复。
+    FiCaSchedulerApp application = getApplicationAttempt(applicationAttemptId);
+    LeafQueue queue = application.getQueue();
 
-在资源利用方面，ApplicationMaster 通过与 ResourceManager 的动态协商机制，能够根据作业的实际进展情况灵活调整资源需求。这种"按需分配"的模式不仅提高了资源利用率，还为多租户环境下的资源公平共享提供了基础。
+    if (queue.canAssignToThisQueue(application)) {
+      return queue.assignContainers(application, ask);
+    }
+    return EMPTY_ALLOCATION;
+  }
+}
+```
 
-#### 4.2.3 任务调度策略
+**3. 公平调度器核心实现**：
 
-**Map 任务的调度算法**：
-Map 任务调度以数据本地性优化为核心，采用分层调度策略（基于第 3 章介绍的延迟调度算法）：
+```java
+/**
+ * FairScheduler 类 - 公平调度器实现
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler
+ */
+public class FairScheduler extends AbstractYarnScheduler<FSAppAttempt, FSSchedulerNode>
+    implements Configurable {
 
-- **本地性分类**：将任务按节点本地、机架本地、任意位置进行分类
-- **优先级调度**：优先调度节点本地任务，其次机架本地，最后任意位置
-- **性能提升**：节点本地性可减少 90%网络传输，机架本地性减少 50%传输
+  private QueueManager queueMgr;
+  private FSPreemptionThread preemptionThread;
 
-**Reduce 任务的调度时机**：
+  /**
+   * allocate 方法 - 基于公平份额的资源分配
+   * 根据公平份额算法进行资源分配
+   */
+  @Override
+  public Allocation allocate(ApplicationAttemptId applicationAttemptId,
+      List<ResourceRequest> ask, List<ContainerId> release, ...) {
 
-Reduce 任务调度需要平衡资源利用率和作业完成时间：
+    FSAppAttempt application = getSchedulerApp(applicationAttemptId);
+    FSLeafQueue queue = application.getQueue();
 
-- **启动条件**：Map 任务完成比例达到阈值（通常 5-10%）或有空闲资源
-- **动态调整**：根据可用容器数和作业进度动态计算调度数量
-- **资源优化**：避免过早启动导致资源浪费，过晚启动影响整体性能
+    queue.assignContainer(application);
+    return application.pullNewlyAllocatedContainers();
+  }
 
-**数据本地性优化**：
+  /**
+   * updateFairShares 方法 - 更新公平份额
+   * 周期性重新计算各队列的公平份额
+   */
+  private void updateFairShares() {
+    queueMgr.getRootQueue().recomputeShares();
+  }
+}
+```
 
-MapReduce 在 YARN 本地性框架基础上的特定优化（详见第 2.4 节"本地性优化策略"）：
+**调度器配置与切换**：
 
-- **Map 任务本地性**：优先将 Map 任务调度到输入数据所在节点
-- **本地性监控**：实时统计 Map 任务的本地性比例，目标节点本地性>80%
-- **动态调整策略**：根据本地性统计结果动态调整延迟调度参数
+```xml
+<!-- yarn-site.xml 中的调度器配置 -->
+<configuration>
+  <!-- 配置使用的调度器类型 -->
+  <property>
+    <name>yarn.resourcemanager.scheduler.class</name>
+    <value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler</value>
+    <!-- 可选值：
+         org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler
+         org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler
+         org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler
+    -->
+  </property>
+</configuration>
+```
 
-**推测执行机制**：
+这些源码实现体现了 YARN 可插拔调度器架构的设计理念，通过统一的接口规范，支持不同调度策略的灵活切换和扩展。
 
-推测执行处理慢任务，提高作业整体完成时间：
+### 3.6 本章小结
 
-- **慢任务识别**：运行时间超过平均时间 1.5 倍的任务
-- **推测启动**：为慢任务启动备份任务，先完成者胜出
-- **资源控制**：限制推测任务数量，避免资源浪费
+本章深入剖析了 YARN 调度系统的核心技术——"可插拔调度器架构下的多租户资源管理"，从理论基础到工程实践，全面解析了现代分布式资源调度的关键技术：
 
-通过 ApplicationMaster 的精细化管理，MapReduce 作业能够实现高效的任务调度和资源利用。然而，在 Map 和 Reduce 阶段之间，还有一个至关重要的数据重分布过程——Shuffle。这个过程不仅决定了作业的整体性能，更是 YARN 架构优势的重要体现。接下来我们将深入探讨 YARN 如何优化 Shuffle 过程，实现更高效的数据传输和更可靠的故障处理。
+1. **可插拔调度器架构设计**：通过 ResourceScheduler 接口抽象，实现了调度策略与资源管理逻辑的完全解耦。这种设计使得 YARN 能够支持 FIFO 调度器、容量调度器、公平调度器等多种调度算法的动态切换，为不同的企业级多租户场景提供了灵活的调度策略选择机制
+2. **三种核心调度器的深度解析**：
 
-### 4.3 Shuffle 过程概述
+   - **FIFO 调度器**：基于先进先出原则的简单调度策略，适用于单用户或简单批处理场景，具有实现简单、资源利用率高的特点，但存在队头阻塞问题
+   - **容量调度器**：采用层次化队列结构和资源配额管理，支持多租户环境下的资源隔离与共享，通过弹性资源分配和抢占机制实现资源利用率最大化
+   - **公平调度器**：基于公平性原则的动态资源分配，支持多层次公平性定义和灵活的调度策略配置，能够在保证公平性的同时优化整体性能
 
-#### 4.3.1 YARN 架构下的 Shuffle 特性
+3. **多资源公平性理论突破**：深入分析了主导资源公平性（DRF）算法的数学基础和工程实现。DRF 算法通过"主导资源均衡"的核心思想，从理论上解决了多维资源（CPU、内存、GPU、存储）环境下的公平分配问题，实现了帕累托最优和无嫉妒性的资源分配，为现代异构计算环境提供了科学的资源管理理论基础
 
-在分布式计算环境中，数据的重新分布是一个极具挑战性的问题。想象一下，你需要将散布在全国各地仓库中的商品，按照特定的分类规则重新组织到不同的配送中心——这正是 MapReduce 中 Shuffle 过程面临的挑战。Map 任务在各个节点上并行处理数据后，产生的中间结果需要按照 key 值重新分组，确保相同 key 的所有数据都能汇聚到同一个 Reduce 任务中进行最终处理。
+4. **企业级多租户管理实践**：基于队列体系、资源配额、访问控制列表（ACL）等机制，构建了完整的多租户资源管理体系，在保证租户间资源隔离的同时，通过弹性资源共享机制最大化集群整体资源利用率
 
-这个看似简单的数据重分布过程，实际上涉及大量的网络传输、磁盘 I/O 和内存管理操作。在大规模集群中，Shuffle 往往成为整个 MapReduce 作业的性能瓶颈——它可能占用 60-80% 的作业执行时间。更复杂的是，Shuffle 过程需要在保证数据正确性的同时，尽可能减少网络带宽消耗和磁盘 I/O 开销。
+本章所阐述的可插拔调度器架构体现了分布式系统设计中"策略与机制分离"的经典原则，不仅为 YARN 在企业级大数据环境中的广泛应用提供了坚实的技术基础，更为分布式资源管理领域的理论发展和工程实践做出了重要贡献。深入理解这些核心技术，对于掌握现代分布式计算平台的设计精髓和把握技术发展趋势具有重要意义。
 
-YARN 架构为 Shuffle 过程的优化提供了新的可能性。通过 ApplicationMaster 的精细化管理和 Container 的资源隔离，Shuffle 过程能够更好地适应不同作业的特性，实现更高效的数据传输和更可靠的故障处理。
+---
 
-**Shuffle 的核心作用**：
+## 第 4 章 MapReduce on YARN：ApplicationMaster 驱动的分布式计算实现
 
-Shuffle 是 MapReduce 框架中连接 Map 阶段和 Reduce 阶段的关键桥梁，它确保具有相同 key 的数据能够被准确分发到同一个 Reduce 任务中进行聚合处理。
+本章将深入分析 MapReduce 在 YARN 架构下的核心实现机制。基于前面章节对 YARN 整体架构（第 1 章）、应用生命周期管理（第 2 章）和调度策略（第 3 章）的理解，本章聚焦于 MapReduce ApplicationMaster 这一关键组件，深入解析其如何驱动分布式计算任务的执行。
+
+通过本章学习，读者将能够：
+
+1. **理解架构演进**：掌握从 MRv1 到 MRv2 的关键变化和 ApplicationMaster 的引入意义
+2. **掌握核心实现**：深入理解 ApplicationMaster 的生命周期管理和核心职责
+3. **理解执行流程**：掌握 MapReduce 作业在 YARN 上的完整执行过程
+4. **分析关键源码**：通过源码解析理解 ApplicationMaster 的具体实现机制
+
+---
+
+### 4.1 MRv2 架构演进概述
+
+#### 4.1.1 从 MRv1 到 MRv2 的关键变化
+
+MapReduce v1 采用集中式架构，单一的 JobTracker 既负责集群资源管理，又承担所有作业的任务调度。这种设计在大规模集群中暴露出四个核心问题：
+
+1. **扩展性瓶颈**：JobTracker 成为单点瓶颈，限制集群规模至 4000 节点
+2. **单点故障风险**：JobTracker 故障导致整个集群不可用
+3. **资源利用率低**：固定 Map/Reduce Slot 分配，无法动态调整
+4. **框架局限性**：只支持 MapReduce，无法运行其他计算框架
+
+MRv2 基于 YARN 平台重新设计，核心思想是"职责分离"：将资源管理交给 ResourceManager，让每个作业拥有独立的 ApplicationMaster 负责任务调度。
+
+**架构演进对比**：
 
 ```text
-Map 任务输出 ──► Shuffle 过程 ──► Reduce 任务输入
+    MRv1 集中式架构                    MRv2 分布式架构 (YARN)
 
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Map 1     │    │             │    │  Reduce 1   │
-│ (key1,val1) │───►│             │───►│ key1: [v1,  │
-│ (key2,val2) │    │   Shuffle   │    │       v3,   │
-└─────────────┘    │             │    │       v5]   │
-┌─────────────┐    │             │    └─────────────┘
-│   Map 2     │    │             │    ┌─────────────┐
-│ (key1,val3) │───►│             │───►│  Reduce 2   │
-│ (key3,val4) │    │             │    │ key2: [v2,  │
-└─────────────┘    │             │    │       v6]   │
-┌─────────────┐    │             │    └─────────────┘
-│   Map 3     │    │             │    ┌─────────────┐
-│ (key1,val5) │───►│             │───►│  Reduce 3   │
-│ (key2,val6) │    │             │    │ key3: [v4]  │
-└─────────────┘    └─────────────┘    └─────────────┘
+    ┌─────────────────┐                ┌─────────────────────────┐
+    │   JobTracker    │                │    ResourceManager      │
+    │                 │                │   (全局资源管理)          │
+    │ • 资源管理       │                └─────────────────────────┘
+    │ • 作业调度       │                            │
+    │ • 任务监控       │       演进                  │ 支持多框架
+    └─────────────────┘      ────►     ┌─────────────────────────┐
+            │                          │  ApplicationMaster      │
+            │ 紧耦合                    │  (单作业任务调度)         │
+    ┌─────────────────┐                └─────────────────────────┘
+    │  TaskTracker    │                            │
+    │  (任务执行)      │                ┌─────────────────────────┐
+    └─────────────────┘                │     Container           │
+                                       │    (灵活资源分配)         │
+                                       └─────────────────────────┘
 ```
+
+_图 4-1 MR 架构演进图。_
+
+**关键变化总结**：
+
+| **维度**     | **MRv1**             | **MRv2**                   |
+| ------------ | -------------------- | -------------------------- |
+| **资源管理** | JobTracker 集中管理  | ResourceManager 全局管理   |
+| **作业调度** | JobTracker 统一调度  | ApplicationMaster 独立调度 |
+| **资源模型** | 固定 Map/Reduce Slot | 灵活的内存/CPU 容器        |
+| **扩展性**   | 最大 4000 节点       | 支持万节点级别集群         |
+| **容错性**   | 单点故障             | 分布式容错                 |
+| **框架支持** | 仅 MapReduce         | 多计算框架                 |
+
+#### 4.1.2 ApplicationMaster 的引入意义
+
+ApplicationMaster 是 MRv2 架构的核心创新，体现了"一作业一管理者"的设计理念，从根本上解决了 MRv1 的架构问题。
+
+**设计理念**：
+
+1. **职责分离**：将全局资源管理与作业调度分离
+2. **去中心化**：每个作业拥有独立的管理进程
+3. **专业化调度**：针对作业特性实施最优调度策略
+4. **故障隔离**：单个作业故障不影响其他作业
+
+**核心价值体现**：
+
+| **核心价值维度** | **具体特性** |
+| ---------------- | ------------ |
+| **扩展性提升**   | 分布式管理   |
+|                  | 并发处理     |
+|                  | 无中心瓶颈   |
+| **容错性增强**   | 故障隔离     |
+|                  | 独立恢复     |
+|                  | 资源清理     |
+| **调度优化**     | 作业级优化   |
+|                  | 数据本地性   |
+|                  | 推测执行     |
+
+**与 YARN 的协作模式**：
+
+ApplicationMaster 作为 YARN 应用的代表，通过标准化接口与 ResourceManager 协商资源，与 NodeManager 管理容器，形成了完整的分布式计算执行框架。这种设计不仅解决了 MapReduce 的扩展性问题，更为 Spark、Flink 等多种计算框架在同一集群上运行奠定了基础。
+
+### 4.2 ApplicationMaster 核心实现
+
+#### 4.2.1 MRAppMaster 生命周期管理
+
+MRAppMaster 是 MapReduce 在 YARN 上的 ApplicationMaster 实现，负责管理整个 MapReduce 作业的生命周期。其生命周期包含四个关键阶段：
+
+```text
+    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+    │   启动阶段   │───►│   初始化     │───►│   执行阶段    │───►│   清理阶段   │
+    │             │    │             │    │             │    │             │
+    │ • 进程启动   │    │ • 注册到RM   │    │ • 任务调度    │    │ • 资源释放   │
+    │ • 环境准备   │    │ • 解析作业    │    │ • 状态监控   │    │ • 状态汇报   │
+    │ • 配置加载   │    │ • 服务启动    │    │ • 故障处理   │    │ • 注销服务   │
+    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+```
+
+_图 4-2 MRAppMaster 生命周期图。_
+
+**关键阶段说明**：
+
+| **阶段**       | **主要任务**                   | **关键输出** |
+| -------------- | ------------------------------ | ------------ |
+| **启动阶段**   | 容器启动、环境初始化、配置加载 | 运行环境就绪 |
+| **初始化阶段** | 向 RM 注册、解析作业、启动服务 | 作业规划完成 |
+| **执行阶段**   | 资源申请、任务调度、进度监控   | 作业执行完成 |
+| **清理阶段**   | 资源释放、状态汇报、服务注销   | 作业正常结束 |
+
+#### 4.2.2 与 ResourceManager 的协调机制
+
+MRAppMaster 通过 ApplicationMasterProtocol 与 ResourceManager 进行标准化交互，实现资源的全生命周期管理。
+
+**协调流程**：
+
+```text
+    ┌─────────────────┐                    ┌─────────────────┐
+    │  MRAppMaster    │                    │ ResourceManager │
+    │                 │  1. 注册AM          │                 │
+    │                 │ ──────────────────►│                 │
+    │                 │  2. 申请Container   │                 │
+    │                 │ ──────────────────►│                 │
+    │                 │  3. 心跳+分配响应    │                 │
+    │                 │ ◄──────────────────│                 │
+    │                 │  4. 释放Container   │                 │
+    │                 │ ──────────────────►│                 │
+    │                 │  5. 注销AM          │                 │
+    │                 │ ──────────────────►│                 │
+    └─────────────────┘                    └─────────────────┘
+```
+
+_图 4-3 ResourceManager 协调机制。_
+
+**核心协调机制**：
+
+1. **注册与发现**：AM 向 RM 注册，获取集群资源信息和调度策略
+2. **资源协商**：基于作业需求动态申请 Container，支持本地性偏好
+3. **心跳通信**：定期汇报进度和资源使用，接收调度指令
+4. **状态同步**：实时同步作业状态，支持故障恢复和监控
+
+#### 4.2.3 任务调度与容器管理
+
+MRAppMaster 实现了智能的任务调度算法，将 MapReduce 任务高效地分配到 Container 中执行。
+
+**调度决策流程**：
+
+```text
+    ┌─────────────────┐
+    │   作业分析       │  ──► 计算 Map 任务数、确定 Reduce 数
+    └─────────────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │   资源规划       │  ──► 评估资源需求、分析数据本地性
+    └─────────────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │   调度执行       │  ──► 优先级排序、本地性匹配、负载均衡
+    └─────────────────┘
+```
+
+_图 4-4 任务调度决策流程。_
+
+**容器管理策略**：
+
+1. **智能启动**：根据数据分布和资源可用性优化 Container 启动顺序
+2. **动态监控**：实时跟踪任务进度，收集性能指标和资源使用情况
+3. **推测执行**：检测慢任务并启动备份任务，选择最快完成的结果
+4. **资源优化**：动态调整资源分配，最大化集群利用率
+
+#### 4.2.4 故障检测与恢复机制
+
+MRAppMaster 实现了三层故障处理架构，确保作业在各种故障场景下的可靠执行。
+
+**1. 故障处理层次**：
+
+| **故障层级**                 | **故障类型** | **处理策略**             | **具体措施**                         |
+| ---------------------------- | ------------ | ------------------------ | ------------------------------------ |
+| **任务级故障**               | 任务失败     | 重新调度 + 黑名单管理    | 在其他节点重新启动任务，避免故障节点 |
+|                              | 任务超时     | 杀死任务 + 重新启动      | 终止超时任务，重新分配资源执行       |
+|                              | 推测执行     | 启动备份 + 选择最快      | 并行执行多个副本，采用最快完成的结果 |
+| **Container 级故障**         | 容器崩溃     | 重新申请 + 故障隔离      | 向 RM 申请新容器，隔离故障容器       |
+|                              | 节点故障     | 迁移任务 + 更新黑名单    | 将任务迁移到健康节点，标记故障节点   |
+|                              | 网络异常     | 重试机制 + 超时处理      | 自动重试网络操作，设置合理超时时间   |
+| **ApplicationMaster 级故障** | AM 重启      | RM 重新启动 + 新节点分配 | ResourceManager 在新节点启动 AM      |
+|                              | 状态恢复     | 检查点恢复 + 进度重建    | 从持久化检查点恢复作业状态           |
+|                              | 作业恢复     | 任务状态重建 + 继续执行  | 重建任务状态机，从中断点继续执行     |
+
+**2. 关键恢复机制**：
+
+1. **智能重试**：基于失败原因实施不同的重试策略，避免无效重试
+2. **状态持久化**：关键状态保存到 HDFS，支持 AM 重启后快速恢复
+3. **黑名单管理**：动态维护故障节点黑名单，避免重复分配到问题节点
+4. **数据完整性**：确保 Map 输出和 Shuffle 数据的可靠性，保证最终结果正确性
+
+### 4.3 MapReduce 作业执行流程
+
+#### 4.3.1 作业提交与初始化
+
+MRAppMaster 接管作业后，首先进行作业解析和资源规划，为后续的任务调度奠定基础。
+
+**作业初始化流程**：
+
+```text
+    ┌─────────────┐    ┌───────────────┐    ┌─────────────┐    ┌─────────────┐
+    │   客户端     │    │ResourceManager│    │NodeManager  │    │MRAppMaster  │
+    │ 1.提交作业   │───►│ 2.分配AM容器    │───►│ 3.启动AM    │───►│ 4.初始化作业  │
+    │             │    │               │    │             │    │ 5.注册AM     │
+    └─────────────┘    └───────────────┘    └─────────────┘    └─────────────┘
+```
+
+_图 4-5 作业初始化流程。_
+
+**关键初始化任务**：
+
+| **任务类型** | **主要内容**                   | **输出结果**   |
+| ------------ | ------------------------------ | -------------- |
+| **配置解析** | 读取 job.xml，解析输入输出路径 | 作业配置对象   |
+| **输入分析** | 计算输入分片，确定 Map 任务数  | 任务分片列表   |
+| **资源评估** | 评估 Map/Reduce 资源需求       | 资源申请计划   |
+| **服务启动** | 启动 Web UI、RPC 服务          | 监控和通信接口 |
+
+#### 4.3.2 Map 阶段容器分配与执行
+
+MRAppMaster 采用数据本地性优先的调度策略，最大化 Map 任务的执行效率。
+
+**Map 任务调度策略**：
+
+```text
+    ┌─────────────────┐
+    │   数据本地性      │  ──► 节点本地 > 机架本地 > 任意位置
+    └─────────────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │   资源匹配       │  ──► 内存、CPU 需求与容器可用性匹配
+    └─────────────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │   调度执行       │  ──► 延迟调度 + 优先级排序
+    └─────────────────┘
+```
+
+_图 4-6 Map 任务调度决策流程。_
+
+**Map 任务管理机制**：
+
+1. **智能调度**：基于延迟调度算法，优先满足节点本地性（目标 >80%）
+2. **进度跟踪**：实时监控任务进度，收集性能指标和资源使用情况
+3. **推测执行**：检测慢任务（运行时间 >1.5 倍平均值），启动备份任务
+4. **输出管理**：协调 Map 输出的分区、排序和临时存储
+
+#### 4.3.3 Shuffle 过程资源协调
+
+Shuffle 是连接 Map 和 Reduce 的关键数据重分布过程，MRAppMaster 负责协调整个 Shuffle 的资源管理和故障处理。
+
+**Shuffle 过程协调**：
+
+```text
+    ┌─────────────────────────────────────────────────────────┐
+    │                  Map 端处理                              │
+    │  分区排序 → 溢写合并 → 数据准备                             │
+    └─────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │                  网络传输                                │
+    │  HTTP 拉取 + 并发控制 + 压缩传输                           │
+    └─────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │                  Reduce 端处理                           │
+    │  数据拷贝 → 归并排序 → 分组聚合                             │
+    └─────────────────────────────────────────────────────────┘
+```
+
+_图 4-7 Shuffle 资源协调架构。_
+
+**Shuffle 优化策略**：
+
+1. **本地性优化**：优先调度本地 Reduce 任务，减少网络传输开销
+2. **并发控制**：动态调整并发拷贝连接数，平衡网络带宽和传输效率
+3. **故障处理**：实现重试机制和超时处理，确保数据传输的可靠性
+4. **资源管理**：协调 ShuffleHandler 服务，优化内存和磁盘 I/O 使用
+
+#### 4.3.4 Reduce 阶段执行管理
+
+MRAppMaster 根据 Map 任务完成情况，动态调度 Reduce 任务，确保资源的高效利用。
+
+**Reduce 任务生命周期**：
+
+```text
+    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+    │   等待阶段   │───►│   拷贝阶段   │───►│   排序阶段    │───►│   计算阶段   │
+    │ • 等待Map    │    │ • 拉取数据   │    │ • 合并排序   │    │ • Reduce    │
+    │ • 资源分配   │    │ • 缓存管理   │    │ • 内存管理    │    │ • 输出写入   │
+    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+```
+
+_图 4-8 Reduce 任务执行流程。_
+
+**Reduce 调度策略**：
+
+1. **启动时机**：Map 任务完成 5-10% 时开始调度，平衡资源利用率和作业完成时间
+2. **动态调整**：根据可用容器数和作业进度动态计算 Reduce 任务调度数量
+3. **数据管理**：协调数据拷贝过程，处理数据倾斜和负载不均衡问题
+4. **输出协调**：确保输出数据的一致性和完整性，管理输出文件组织
+
+**性能优化机制**：
+
+| **优化策略**     | **实现方式**                   | **性能提升**      |
+| ---------------- | ------------------------------ | ----------------- |
+| **数据本地性**   | 节点本地 > 机架本地 > 任意位置 | 减少 90% 网络传输 |
+| **推测执行**     | 慢任务检测 + 备份任务启动      | 减少长尾任务影响  |
+| **延迟调度**     | 等待本地资源 vs 立即调度       | 提高本地性比例    |
+| **动态资源调整** | 根据作业进度调整资源分配       | 最大化集群利用率  |
+
+通过 ApplicationMaster 的精细化管理，MapReduce 作业实现了高效的任务调度、智能的资源分配和可靠的故障处理，为大规模数据处理提供了强有力的支撑。
 
 **YARN 环境下的 Shuffle 特点**：
 
@@ -2243,7 +3982,9 @@ Map 任务输出 ──► Shuffle 过程 ──► Reduce 任务输入
                               └───────────────────────────┘
 ```
 
-#### 4.3.2 YARN 下的 Shuffle 资源管理
+_图 4-9 YARN 架构下的 Shuffle 资源管理。_
+
+#### 4.3.5 YARN 下的 Shuffle 资源管理
 
 **Container 级别的资源控制**：
 
@@ -2266,6 +4007,99 @@ Map 任务输出 ──► Shuffle 过程 ──► Reduce 任务输入
    - 支持多磁盘并行写入的智能调度
    - 提供磁盘空间监控和自动清理机制
 
+**ShuffleHandler 核心实现分析**：
+
+ShuffleHandler 是 YARN 中负责 Shuffle 数据传输的核心组件，作为 NodeManager 的辅助服务运行：
+
+```java
+// ShuffleHandler 核心类定义
+@InterfaceAudience.LimitedPrivate({"MapReduce"})
+@InterfaceStability.Unstable
+public class ShuffleHandler extends AuxiliaryService {
+
+  // 核心配置常量
+  public static final String SHUFFLE_PORT_CONFIG_KEY = "mapreduce.shuffle.port";
+  public static final int DEFAULT_SHUFFLE_PORT = 13562;
+
+  public static final String MAX_SHUFFLE_CONNECTIONS = "mapreduce.shuffle.max.connections";
+  public static final int DEFAULT_MAX_SHUFFLE_CONNECTIONS = 0; // 无限制
+
+  public static final String SHUFFLE_BUFFER_SIZE = "mapreduce.shuffle.transfer.buffer.size";
+  public static final int DEFAULT_SHUFFLE_BUFFER_SIZE = 128 * 1024; // 128KB
+
+  // 网络通信组件
+  private ServerBootstrap bootstrap;
+  private ChannelGroup allChannels;
+  private EventLoopGroup bossGroup;
+  private EventLoopGroup workerGroup;
+
+  // 安全和缓存管理
+  private JobTokenSecretManager secretManager;
+  private LoadingCache<AttemptPathInfo, AttemptPathIdentifier> pathCache;
+
+  // 性能监控指标
+  @Metrics(about="Shuffle output metrics", context="mapred")
+  static class ShuffleMetrics implements ChannelFutureListener {
+    @Metric("Shuffle output in bytes")
+    MutableCounterLong shuffleOutputBytes;
+    @Metric("# of failed shuffle outputs")
+    MutableCounterInt shuffleOutputsFailed;
+    @Metric("# of succeeeded shuffle outputs")
+    MutableCounterInt shuffleOutputsOK;
+    @Metric("# of current shuffle connections")
+    MutableGaugeInt shuffleConnections;
+  }
+}
+```
+
+**Shuffle 数据传输机制**：
+
+ShuffleHandler 使用 Netty 框架实现高性能的数据传输：
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  Reduce Container                    NodeManager              Map Container │
+│  ┌─────────────┐                   ┌─────────────┐            ┌───────────┐ │
+│  │   Fetcher   │ ①HTTP请求         │ Shuffle     │            │ Map Output│ │
+│  │   Thread    │──────────────────▶│ Handler     │◀───────────│   Files   │ │
+│  │             │                   │             │ ②读取文件   │           │ │
+│  │             │ ④数据响应          │ ┌─────────┐ │            │           │ │
+│  │             │◀──────────────────│ │ Netty   │ │            │           │ │
+│  │             │                   │ │ Server  │ │            │           │ │
+│  └─────────────┘                   │ └─────────┘ │            └───────────┘ │
+│         │                          │      │      │                          │
+│         │                          │      ▼      │                          │
+│         ▼                          │ ③数据传输    │                          │
+│  ┌─────────────┐                   │ (零拷贝优化)  │                          │
+│  │   Merge     │                   │             │                          │
+│  │   Buffer    │                   └─────────────┘                          │
+│  └─────────────┘                                                            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+_图 4-10 ShuffleHandler 数据传输流程。_
+
+**资源管理优化策略**：
+
+1. **连接池管理**：
+
+   - 限制最大并发连接数，防止资源耗尽
+   - 支持连接复用和 Keep-Alive 机制
+   - 动态调整连接超时时间
+
+2. **内存缓冲优化**：
+
+   - 使用环形缓冲区减少内存分配开销
+   - 支持零拷贝（Zero-Copy）技术
+   - 智能缓冲区大小调整
+
+3. **磁盘 I/O 优化**：
+   - 使用 mmap 技术减少系统调用
+   - 支持异步 I/O 操作
+   - 多磁盘并行读取策略
+
 **ApplicationMaster 的 Shuffle 调度优化**：
 
 ApplicationMaster 作为作业级别的调度器，为 Shuffle 过程提供了全局优化能力：
@@ -2287,7 +4121,7 @@ ApplicationMaster 作为作业级别的调度器，为 Shuffle 过程提供了�
 │  │  • 负载均衡策略                                     │      │
 │  │  • 故障恢复协调                                     │      │
 │  └─────────────────────────┬─────────────────────────┘      │
-│                           │                                 │
+│                            │                                │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
 │  │ Reduce 任务  │  │ Reduce 任务 │  │ Reduce 任务  │          │
 │  │  Container  │  │  Container  │  │  Container  │          │
@@ -2295,7 +4129,9 @@ ApplicationMaster 作为作业级别的调度器，为 Shuffle 过程提供了�
 └─────────────────────────────────────────────────────────────┘
 ```
 
-#### 4.3.3 YARN 特有的 Shuffle 优化策略
+_图 4-11 YARN 架构下的全局调度视图。_
+
+#### 4.3.6 YARN 特有的 Shuffle 优化策略
 
 **动态资源调整**：
 
@@ -2309,221 +4145,1301 @@ ApplicationMaster 作为作业级别的调度器，为 Shuffle 过程提供了�
 - **性能隔离保障**：确保一个用户的 Shuffle 操作不会影响其他用户的性能
 - **公平性调度**：在多个作业同时进行 Shuffle 时保证资源分配的公平性
 
-#### 4.3.4 YARN 架构下的故障处理增强
+**ShuffleScheduler 智能调度策略**：
 
-**ApplicationMaster 级别的故障协调**：
+基于 `ShuffleSchedulerImpl` 的核心实现，YARN 提供了智能的 Shuffle 调度优化：
 
-在 YARN 架构下，ApplicationMaster 为 Shuffle 过程提供了更高层次的故障处理协调：
+```java
+// ShuffleSchedulerImpl 核心调度逻辑
+public class ShuffleSchedulerImpl<K,V> implements ShuffleScheduler<K,V> {
 
-1. **全局故障感知**：ApplicationMaster 能够感知整个作业中所有 Container 的故障状态
-2. **智能重调度**：基于集群资源状态和故障模式，智能选择重新执行的节点
-3. **级联故障处理**：当 Map 任务失败时，自动协调所有相关 Reduce 任务的数据重新获取
-4. **资源故障隔离**：将故障节点从可用资源池中移除，避免重复分配
+  // 核心调度参数
+  private static final int MAX_MAPS_AT_ONCE = 20;           // 单次最大并发 Map 数
+  private static final long INITIAL_PENALTY = 10000;       // 初始惩罚时间（毫秒）
+  private static final float PENALTY_GROWTH_RATE = 1.3f;   // 惩罚增长率
+  private static final int REPORT_FAILURE_LIMIT = 10;      // 失败报告阈值
 
-**Container 级别的故障隔离**：
+  // 调度状态管理
+  private final boolean[] finishedMaps;                    // Map 任务完成状态
+  private final int totalMaps;                             // 总 Map 任务数
+  private int remainingMaps;                               // 剩余 Map 任务数
+  private Map<String, MapHost> mapLocations;               // Map 任务位置映射
+  private Set<MapHost> pendingHosts;                       // 待处理主机集合
 
-- **独立故障域**：每个 Container 的故障不会影响同节点的其他 Container
-- **资源清理保障**：Container 故障后，NodeManager 自动清理相关的 Shuffle 临时文件
-- **内存泄漏防护**：通过 Container 内存限制，防止 Shuffle 过程中的内存泄漏影响整个节点
+  // 故障处理机制
+  private final DelayQueue<Penalty> penalties;             // 惩罚队列
+  private final Map<TaskAttemptID,IntWritable> failureCounts; // 失败计数
+  private final Map<String,IntWritable> hostFailures;      // 主机失败计数
 
-**多租户环境下的故障处理**：
-
-- **故障影响隔离**：一个用户作业的 Shuffle 故障不会影响其他用户的作业
-- **资源抢占恢复**：在资源紧张时，可以抢占低优先级作业的资源来恢复高优先级作业的 Shuffle
-- **公平性保障**：故障恢复过程中仍然遵循资源分配的公平性原则
-
-通过 YARN 架构的增强，Shuffle 过程在故障处理方面获得了更强的可靠性和更好的资源利用效率。这些改进使得大规模 MapReduce 作业能够在复杂的生产环境中稳定运行。
-
-### 4.4 开发实践要点
-
-在 YARN 环境下开发和部署 MapReduce 应用时，需要掌握一些关键的实践要点，以确保应用的高效运行和便于维护。本节将结合第 2 章介绍的资源管理机制，提供具体的开发指导。
-
-#### 4.4.1 配置优化
-
-**资源配置优化**：
-
-合理配置 MapReduce 作业的资源参数是性能优化的关键（基于第 2.3 节"容器资源抽象"的原理）：
-
-```xml
-<!-- mapred-site.xml 关键配置 -->
-<configuration>
-    <!-- Map 任务内存配置 -->
-    <property>
-        <name>mapreduce.map.memory.mb</name>
-        <value>2048</value>
-        <description>Map 任务容器内存大小</description>
-    </property>
-
-    <!-- Reduce 任务内存配置 -->
-    <property>
-        <name>mapreduce.reduce.memory.mb</name>
-        <value>4096</value>
-        <description>Reduce 任务容器内存大小</description>
-    </property>
-
-    <!-- JVM 堆内存配置 -->
-    <property>
-        <name>mapreduce.map.java.opts</name>
-        <value>-Xmx1638m</value>
-        <description>Map 任务 JVM 参数</description>
-    </property>
-
-    <property>
-        <name>mapreduce.reduce.java.opts</name>
-        <value>-Xmx3276m</value>
-        <description>Reduce 任务 JVM 参数</description>
-    </property>
-</configuration>
+  // 性能监控
+  private final CopyTimeTracker copyTimeTracker;           // 拷贝时间跟踪
+  private volatile int maxMapRuntime = 0;                  // 最大 Map 运行时间
+  private long totalBytesShuffledTillNow = 0;             // 已传输字节数
+}
 ```
 
-**Shuffle 性能配置**：
+**智能调度优化机制**：
+
+1. **并发控制策略**：
+
+   - 限制单次最大并发 Map 数为 20，避免网络拥塞
+   - 动态调整并发度，基于网络状况和主机负载
+   - 支持优先级队列，高优先级任务优先调度
+
+2. **故障感知与恢复**：
+
+   - 实现指数退避算法，失败主机的重试间隔逐渐增长
+   - 维护主机失败计数，自动屏蔽频繁失败的节点
+   - 支持任务级别的故障隔离，单个任务失败不影响整体进度
+
+3. **性能自适应调整**：
+   - 实时跟踪数据传输速率，动态调整缓冲区大小
+   - 基于历史性能数据预测最优调度策略
+   - 支持网络拓扑感知，优化数据传输路径
+
+**高级优化策略**：
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐   │
+│  │   并发控制   │    │   故障处理    │    │   性能监控   │    │   资源调度   │   │
+│  │ • 动态并发度 │    │ • 指数退避    │    │ • 传输监控   │    │ • 优先级队列  │   │
+│  │ • 负载均衡   │    │ • 故障隔离    │    │ • 性能预测   │    │ • 资源预留   │   │
+│  │ • 拥塞控制   │    │ • 自动恢复    │    │ • 瓶颈识别   │    │ • 弹性伸缩   │   │
+│  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘   │
+│         │                   │                   │                   │       │
+│         └───────────────────┼───────────────────┼───────────────────┘       │
+│                             │                   │                           │
+│                             ▼                   ▼                           │
+│                    ┌─────────────────────────────────┐                      │
+│                    │        智能调度决策引擎            │                      │
+│                    │ • 多维度性能评估                  │                      │
+│                    │ • 自适应参数调整                  │                      │
+│                    │ • 全局优化策略                    │                      │
+│                    └─────────────────────────────────┘                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+_图 4-12 ShuffleScheduler 优化策略架构。_
+
+**配置优化建议**：
+
+基于 ShuffleScheduler 的实现特点，推荐以下配置优化：
 
 ```xml
-<!-- Shuffle 相关优化配置 -->
+<!-- mapred-site.xml 中的 Shuffle 调度优化配置 -->
 <configuration>
-    <!-- Map 输出缓冲区大小 -->
-    <property>
-        <name>mapreduce.task.io.sort.mb</name>
-        <value>256</value>
-        <description>Map 输出缓冲区大小（MB）</description>
-    </property>
-
-    <!-- 溢写阈值 -->
-    <property>
-        <name>mapreduce.map.sort.spill.percent</name>
-        <value>0.8</value>
-        <description>缓冲区溢写阈值</description>
-    </property>
-
-    <!-- 并发拉取线程数 -->
+    <!-- 最大并发拉取数 -->
     <property>
         <name>mapreduce.reduce.shuffle.parallelcopies</name>
-        <value>10</value>
-        <description>Reduce 端并发拉取线程数</description>
+        <value>20</value>
+        <description>并发拉取 Map 输出的线程数</description>
     </property>
 
-    <!-- Shuffle 缓冲区大小 -->
+    <!-- 失败重试配置 -->
     <property>
-        <name>mapreduce.reduce.shuffle.input.buffer.percent</name>
-        <value>0.7</value>
-        <description>Shuffle 阶段内存使用比例</description>
+        <name>mapreduce.reduce.shuffle.maxfetchfailures</name>
+        <value>10</value>
+        <description>单个 Map 输出的最大失败次数</description>
+    </property>
+
+    <!-- 主机失败阈值 -->
+    <property>
+        <name>mapreduce.reduce.shuffle.max.host.failures</name>
+        <value>5</value>
+        <description>单个主机的最大失败次数</description>
+    </property>
+
+    <!-- 重试延迟配置 -->
+    <property>
+        <name>mapreduce.reduce.shuffle.retry-delay.max.ms</name>
+        <value>60000</value>
+        <description>最大重试延迟时间（毫秒）</description>
     </property>
 </configuration>
 ```
 
-**应用级配置最佳实践**：
+#### 4.3.7 YARN 架构下的故障处理增强
 
-1. **内存配置原则**：
+YARN 架构为 MapReduce 作业提供了多层次的故障处理机制，从 ApplicationMaster 级别的全局协调到 Container 级别的故障隔离，形成了完整的容错体系。
 
-   - 容器内存 = JVM 堆内存 + 堆外内存 + 系统开销
-   - 一般设置 JVM 堆内存为容器内存的 80%
-   - 为系统预留足够的内存空间
-
-2. **CPU 配置策略**：
-
-   - CPU 密集型任务：增加 vCores 配置
-   - I/O 密集型任务：适当减少 vCores，增加并发度
-
-3. **数据本地性优化**：
-   - 合理设置输入分片大小
-   - 考虑数据分布和节点容量
-
-#### 4.4.2 监控指标
-
-**关键性能指标**：
-
-监控 MapReduce 作业的关键指标有助于及时发现和解决性能问题：
-
-**作业级别指标**：
+**1. 多层次故障处理架构**：
 
 ```text
-作业执行监控指标
-
-┌─────────────────────────────────────────────────────────────┐
-│                    作业整体指标                               │
-├─────────────────────────────────────────────────────────────┤
-│ • 作业总执行时间 (Job Duration)                               │
-│ • Map 阶段耗时 (Map Phase Duration)                          │
-│ • Shuffle 阶段耗时 (Shuffle Phase Duration)                  │
-│ • Reduce 阶段耗时 (Reduce Phase Duration)                    │
-│ • 数据处理量 (Data Processed)                                 │
-│ • 吞吐量 (Throughput: MB/s)                                  │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│                    任务级别指标                               │
-├─────────────────────────────────────────────────────────────┤
-│ • 任务平均执行时间 (Average Task Duration)                     │
-│ • 任务成功率 (Task Success Rate)                              │
-│ • 数据倾斜指标 (Data Skew Metrics)                            │
-│ • 内存使用率 (Memory Utilization)                             │
-│ • CPU 使用率 (CPU Utilization)                               │
-│ • 垃圾回收时间 (GC Time)                                      │
-└─────────────────────────────────────────────────────────────┘
+    ┌─────────────────────────────────────────────────────────────────┐
+    │                    ResourceManager 层                           │
+    │  • 集群级故障监控    • AM 故障检测与重启    • 节点健康管理            │
+    └─────────────────────────────────────────────────────────────────┘
+                                    │
+    ┌─────────────────────────────────────────────────────────────────┐
+    │                  ApplicationMaster 层                           │
+    │  • 作业级故障协调    • 任务失败重试    • 资源重新分配                 │
+    └─────────────────────────────────────────────────────────────────┘
+                                    │
+    ┌─────────────────────────────────────────────────────────────────┐
+    │                    Container 层                                 │
+    │  • 任务级故障隔离    • 资源清理    • 本地故障恢复                     │
+    └─────────────────────────────────────────────────────────────────┘
 ```
 
-**资源使用监控**：
+_图 4-13 YARN 多层次故障处理架构。_
 
-```text
-资源监控关键指标
+**2. ApplicationMaster 关键源码分析**：
 
-┌─────────────────────────────────────────────────────────────┐
-│                    内存监控                                  │
-├─────────────────────────────────────────────────────────────┤
-│ • 堆内存使用率 (Heap Memory Usage)                            │
-│ • 非堆内存使用率 (Non-Heap Memory Usage)                      │
-│ • 内存泄漏检测 (Memory Leak Detection)                        │
-│ • GC 频率和耗时 (GC Frequency & Duration)                    │
-└─────────────────────────────────────────────────────────────┘
+基于 `MRAppMaster` 源码的核心实现逻辑分析，展示 ApplicationMaster 的完整生命周期管理：
 
-┌─────────────────────────────────────────────────────────────┐
-│                    网络和磁盘I/O                              │
-├─────────────────────────────────────────────────────────────┤
-│ • 网络带宽使用率 (Network Bandwidth Usage)                    │
-│ • 磁盘读写速率 (Disk I/O Rate)                                │
-│ • Shuffle 数据传输量 (Shuffle Data Transfer)                 │
-│ • 数据本地性比率 (Data Locality Ratio)                        │
-└─────────────────────────────────────────────────────────────┘
+```java
+/**
+ * MRAppMaster 主方法 - ApplicationMaster 启动入口
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+ */
+public static void main(String[] args) {
+    try {
+        // 1. 设置异常处理器和环境变量解析
+        Thread.setDefaultUncaughtExceptionHandler(new YarnUncaughtExceptionHandler());
+        String containerIdStr = System.getenv(Environment.CONTAINER_ID.name());
+        String nodeHostString = System.getenv(Environment.NM_HOST.name());
+        String appSubmitTimeStr = System.getenv(ApplicationConstants.APP_SUBMIT_TIME_ENV);
+
+        // 2. 验证关键环境参数
+        validateInputParam(containerIdStr, Environment.CONTAINER_ID.name());
+        validateInputParam(nodeHostString, Environment.NM_HOST.name());
+
+        // 3. 创建 ApplicationMaster 实例
+        ContainerId containerId = ContainerId.fromString(containerIdStr);
+        ApplicationAttemptId applicationAttemptId = containerId.getApplicationAttemptId();
+        MRAppMaster appMaster = new MRAppMaster(applicationAttemptId, containerId,
+            nodeHostString, Integer.parseInt(nodePortString),
+            Integer.parseInt(nodeHttpPortString), appSubmitTime);
+
+        // 4. 注册关闭钩子，确保优雅关闭
+        ShutdownHookManager.get().addShutdownHook(
+            new MRAppMasterShutdownHook(appMaster), SHUTDOWN_HOOK_PRIORITY);
+
+        // 5. 初始化配置并启动 ApplicationMaster
+        JobConf conf = new JobConf(new YarnConfiguration());
+        conf.addResource(new Path(MRJobConfig.JOB_CONF_FILE));
+        initAndStartAppMaster(appMaster, conf, jobUserName);
+    } catch (Throwable t) {
+        LOG.error("Error starting MRAppMaster", t);
+        ExitUtil.terminate(1, t);
+    }
+}
+
+/**
+ * ApplicationMaster 初始化和启动逻辑
+ */
+protected static void initAndStartAppMaster(final MRAppMaster appMaster,
+        final JobConf conf, String jobUserName) throws IOException, InterruptedException {
+    // 1. 安全框架配置
+    UserGroupInformation.setConfiguration(conf);
+    SecurityUtil.setConfiguration(conf);
+    Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
+
+    // 2. 创建用户身份并添加凭证
+    UserGroupInformation appMasterUgi = UserGroupInformation.createRemoteUser(jobUserName);
+    appMasterUgi.addCredentials(credentials);
+
+    // 3. 移除 AM->RM 令牌，防止任务获取
+    Iterator<Token<?>> iter = credentials.getAllTokens().iterator();
+    while (iter.hasNext()) {
+        Token<?> token = iter.next();
+        if (token.getKind().equals(AMRMTokenIdentifier.KIND_NAME)) {
+            iter.remove();
+        }
+    }
+
+    // 4. 在用户身份下初始化和启动 ApplicationMaster
+    appMasterUgi.doAs(new PrivilegedExceptionAction<Object>() {
+        @Override
+        public Object run() throws Exception {
+            appMaster.init(conf);  // 初始化所有服务组件
+            appMaster.start();     // 启动所有服务组件
+            if(appMaster.errorHappenedShutDown) {
+                throw new IOException("Was asked to shut down.");
+            }
+            return null;
+        }
+    });
+}
 ```
 
-**监控工具和方法**：
+**ApplicationMaster 核心组件初始化**：
 
-1. **YARN Web UI**：
+```java
+/**
+ * MRAppMaster 服务初始化 - 核心组件注册
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+ */
+@Override
+protected void serviceInit(Configuration conf) throws Exception {
+    // 1. 创建应用上下文
+    context = new RunningAppContext(conf, taskAttemptListener,
+        clientService, dispatcher, rmHeartbeatHandler);
 
-   - 查看作业状态和资源使用情况
-   - 监控 ApplicationMaster 日志
-   - 分析任务执行时间分布
+    // 2. 注册事件调度器 - 实现异步事件处理
+    dispatcher.register(JobEventType.class, new JobEventDispatcher());
+    dispatcher.register(TaskEventType.class, new TaskEventDispatcher());
+    dispatcher.register(TaskAttemptEventType.class, new TaskAttemptEventDispatcher());
+    dispatcher.register(CommitterEventType.class, committerEventHandler);
 
-2. **MapReduce History Server**：
+    // 3. 添加核心服务组件
+    addService(containerAllocator);     // 容器分配器
+    addService(containerLauncher);      // 容器启动器
+    addService(dispatcher);             // 事件调度器
+    addService(jobHistoryEventHandler); // 历史事件处理器
+    addService(taskAttemptListener);    // 任务尝试监听器
+    addService(clientService);          // 客户端服务
+    addService(rmHeartbeatHandler);     // RM 心跳处理器
 
-   - 查看历史作业详细信息
-   - 分析作业性能趋势
-   - 对比不同配置的性能差异
+    // 4. 推测执行器配置
+    if (conf.getBoolean(MRJobConfig.MAP_SPECULATIVE, false) ||
+        conf.getBoolean(MRJobConfig.REDUCE_SPECULATIVE, false)) {
+        addService(speculator);
+    }
 
-3. **日志分析**：
-   - 应用日志：业务逻辑错误和性能问题
-   - 容器日志：资源使用和系统错误
-   - ApplicationMaster 日志：作业调度和资源协商
+    super.serviceInit(conf);
+}
 
-**性能调优建议**：
+/**
+ * 作业启动逻辑 - 触发作业执行
+ */
+protected void startJobs() {
+    // 创建作业启动事件
+    JobEvent startJobEvent = new JobStartEvent(job.getID(), recoveredJobStartTime);
+    // 通过事件调度器触发作业执行
+    dispatcher.getEventHandler().handle(startJobEvent);
+}
+```
 
-1. **识别瓶颈**：
+**ApplicationMaster 与 ResourceManager 的通信协调**：
 
-   - 通过监控指标识别性能瓶颈
-   - 分析任务执行时间分布
-   - 检查数据倾斜问题
+```java
+/**
+ * ApplicationMaster 注册和心跳机制
+ * 源文件：org.apache.hadoop.yarn.client.api.impl.AMRMClientImpl
+ */
+public void registerApplicationMaster(String host, int port, String trackingUrl) {
+    // 1. 构建注册请求
+    RegisterApplicationMasterRequest request =
+        RegisterApplicationMasterRequest.newInstance(host, port, trackingUrl);
 
-2. **优化策略**：
+    // 2. 向 ResourceManager 注册
+    RegisterApplicationMasterResponse response =
+        resourceManager.registerApplicationMaster(request);
 
-   - **CPU 瓶颈**：增加并行度，优化算法复杂度
-   - **内存瓶颈**：调整内存配置，优化数据结构
-   - **I/O 瓶颈**：优化数据格式，启用压缩
-   - **网络瓶颈**：优化数据本地性，减少数据传输
+    // 3. 获取集群资源信息
+    this.maxResourceCapability = response.getMaximumResourceCapability();
+    this.applicationACLs = response.getApplicationACLs();
 
-3. **持续优化**：
-   - 建立性能基线
-   - 定期评估和调整配置
-   - 跟踪性能变化趋势
+    // 4. 启动心跳线程
+    startHeartbeatThread();
+}
+
+/**
+ * 心跳驱动的资源协调机制
+ */
+private void performHeartbeat() {
+    // 1. 构建资源分配请求
+    AllocateRequest request = AllocateRequest.newBuilder()
+        .setProgress(getApplicationProgress())           // 应用执行进度
+        .addAllAsk(getPendingResourceRequests())        // 待分配资源请求
+        .addAllRelease(getContainersToRelease())        // 待释放容器列表
+        .setBlacklistRequest(getBlacklistRequest())     // 黑名单请求
+        .build();
+
+    // 2. 发送心跳并获取响应
+    AllocateResponse response = rmClient.allocate(request);
+
+    // 3. 处理分配结果
+    processAllocationResponse(response);
+}
+
+/**
+ * 处理资源分配响应
+ */
+private void processAllocationResponse(AllocateResponse response) {
+    // 1. 处理新分配的容器
+    List<Container> allocatedContainers = response.getAllocatedContainers();
+    for (Container container : allocatedContainers) {
+        // 启动容器中的任务
+        containerLauncher.handle(new ContainerLauncherEvent(container,
+            ContainerLauncherEventType.CONTAINER_REMOTE_LAUNCH));
+    }
+
+    // 2. 处理已完成的容器
+    List<ContainerStatus> completedContainers = response.getCompletedContainersStatuses();
+    for (ContainerStatus containerStatus : completedContainers) {
+        // 处理容器完成事件
+        handleContainerCompletion(containerStatus);
+    }
+
+    // 3. 更新集群节点信息
+    updateClusterNodeInfo(response.getUpdatedNodes());
+}
+```
+
+**ApplicationMaster 故障恢复机制**：
+
+```java
+/**
+ * ApplicationMaster 故障恢复处理
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+ */
+public boolean isRecoverySupported() {
+    // 检查 OutputCommitter 是否支持恢复
+    return getCommitter().isRecoverySupported() &&
+           conf.getBoolean(MRJobConfig.MR_AM_JOB_RECOVERY_ENABLE,
+                          MRJobConfig.MR_AM_JOB_RECOVERY_ENABLE_DEFAULT);
+}
+
+/**
+ * 处理恢复逻辑
+ */
+private void processRecovery() throws IOException {
+    // 1. 检查是否为首次尝试
+    boolean firstAttempt = (getApplicationAttemptId().getAttemptId() == 1);
+    if (firstAttempt) {
+        return; // 首次尝试无需恢复
+    }
+
+    // 2. 检查恢复前提条件
+    if (!isRecoverySupported()) {
+        LOG.info("Not supported recovery. ApplicationMaster will have to restart.");
+        return;
+    }
+
+    // 3. 验证 Shuffle 密钥有效性
+    if (!recoverySupportedByCommitter()) {
+        LOG.info("Recovery not supported by committer. ApplicationMaster will restart.");
+        return;
+    }
+
+    // 4. 检查中间数据加密状态
+    if (conf.getBoolean(MRConfig.MR_ENCRYPTED_INTERMEDIATE_DATA,
+                       MRConfig.DEFAULT_MR_ENCRYPTED_INTERMEDIATE_DATA)) {
+        LOG.info("Intermediate data encryption enabled. Recovery not supported.");
+        return;
+    }
+
+    // 5. 执行实际恢复逻辑
+    LOG.info("Recovery is supported. Recovering data from previous life.");
+    recover();
+}
+```
+
+**3. ApplicationMaster 故障处理机制**：
+
+基于 `MRAppMaster` 源码分析，ApplicationMaster 实现了完善的故障检测和恢复机制：
+
+```java
+/**
+ * ApplicationMaster 故障处理核心逻辑
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+ */
+public class MRAppMaster extends CompositeService {
+
+    // 故障处理相关组件初始化
+    protected void serviceInit(Configuration conf) throws Exception {
+        // 注册任务失败事件处理器
+        dispatcher.register(TaskEventType.class, new TaskEventDispatcher());
+        dispatcher.register(TaskAttemptEventType.class,
+            new TaskAttemptEventDispatcher());
+
+        // 推测执行机制 - 处理慢任务
+        if (conf.getBoolean(MRJobConfig.MAP_SPECULATIVE, false)
+            || conf.getBoolean(MRJobConfig.REDUCE_SPECULATIVE, false)) {
+            speculator = createSpeculator(conf, context);
+            addIfService(speculator);
+        }
+
+        // 容器分配器 - 处理资源分配失败
+        addIfService(containerAllocator);
+        dispatcher.register(ContainerAllocator.EventType.class, containerAllocator);
+
+        // 容器启动器 - 处理容器启动失败
+        containerLauncher = createContainerLauncher(context);
+        addIfService(containerLauncher);
+        dispatcher.register(ContainerLauncher.EventType.class, containerLauncher);
+    }
+}
+```
+
+**3. 任务级故障处理策略**：
+
+基于 `TaskImpl` 源码的任务失败处理逻辑：
+
+```java
+/**
+ * 任务失败处理转换器
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.job.impl.TaskImpl
+ */
+private static class AttemptFailedTransition implements
+    MultipleArcTransition<TaskImpl, TaskEvent, TaskStateInternal> {
+
+    @Override
+    public TaskStateInternal transition(TaskImpl task, TaskEvent event) {
+        TaskTAttemptFailedEvent castEvent = (TaskTAttemptFailedEvent) event;
+        TaskAttemptId taskAttemptId = castEvent.getTaskAttemptID();
+
+        // 1. 记录失败尝试
+        task.failedAttempts.add(taskAttemptId);
+
+        // 2. 处理容器故障
+        TaskAttempt attempt = task.attempts.get(taskAttemptId);
+        if (attempt.getAssignedContainerMgrAddress() != null) {
+            task.eventHandler.handle(new ContainerFailedEvent(attempt.getID(),
+                attempt.getAssignedContainerMgrAddress()));
+        }
+
+        // 3. 判断是否需要重试
+        if (!castEvent.isFastFail()
+            && task.failedAttempts.size() < task.maxAttempts) {
+
+            // 智能重试决策
+            boolean shouldAddNewAttempt = true;
+            if (task.inProgressAttempts.size() > 0) {
+                if (task.speculationEnabled) {
+                    // 检查是否有正在运行的尝试
+                    for (TaskAttemptId attemptId : task.inProgressAttempts) {
+                        if (((TaskAttemptImpl) task.getAttempt(attemptId))
+                            .isContainerAssigned()) {
+                            shouldAddNewAttempt = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 创建新的任务尝试
+            if (shouldAddNewAttempt) {
+                task.addAndScheduleAttempt(Avataar.VIRGIN);
+            }
+        } else {
+            // 任务最终失败，终止所有尝试
+            for (TaskAttempt taskAttempt : task.attempts.values()) {
+                task.killUnfinishedAttempt(taskAttempt,
+                    "Task has failed. Killing attempt!");
+            }
+            return task.finished(TaskStateInternal.FAILED);
+        }
+        return getDefaultState(task);
+    }
+}
+```
+
+**4. 智能故障恢复策略**：
+
+**故障感知与分类**：
+
+- **快速失败检测**：通过 `isFastFail()` 机制快速识别不可恢复的故障
+- **故障类型分析**：区分网络故障、节点故障、应用逻辑错误等不同类型
+- **故障模式学习**：基于历史故障数据优化重试策略
+
+**资源重分配优化**：
+
+```java
+/**
+ * RMContainerAllocator 类 - 资源管理器容器分配器
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.rm.RMContainerAllocator
+ */
+public class RMContainerAllocator extends RMContainerRequestor {
+
+    /**
+     * handleContainerFailure 方法 - 处理容器失败事件
+     * 源文件：org.apache.hadoop.mapreduce.v2.app.rm.RMContainerAllocator
+     */
+    private void handleContainerFailure(ContainerFailedEvent event) {
+        // 1. 更新黑名单 - 避免在故障节点重复分配
+        addToBlacklist(event.getContainerMgrAddress());
+
+        // 2. 重新计算资源需求
+        recalculateResourceRequests();
+
+        // 3. 优先选择数据本地性好的节点
+        requestContainerWithLocality(event.getTaskAttemptId());
+    }
+
+    /**
+     * addToBlacklist 方法 - 黑名单管理
+     * 源文件：org.apache.hadoop.mapreduce.v2.app.rm.RMContainerAllocator
+     */
+    private void addToBlacklist(String nodeAddress) {
+        blacklistedNodes.add(nodeAddress);
+        // 定期清理黑名单，避免永久排除节点
+        scheduleBlacklistCleanup(nodeAddress);
+    }
+}
+```
+
+**5. 级联故障处理机制**：
+
+**Map 任务故障的级联影响**：
+
+- **数据重新生成**：Map 任务失败时，相关的中间数据需要重新生成
+- **Reduce 任务协调**：通知所有相关 Reduce 任务重新获取数据
+- **Shuffle 状态重置**：清理失效的 Shuffle 连接和缓存
+
+**Reduce 任务故障处理**：
+
+- **部分结果保护**：保护已完成的 Reduce 分区结果
+- **增量恢复**：只重新处理失败的数据分区
+- **输出一致性**：确保最终输出的一致性和完整性
+
+**6. 多租户环境下的故障隔离**：
+
+**资源隔离保障**：
+
+- **故障影响隔离**：一个用户作业的故障不会影响其他用户的作业
+- **资源配额保护**：故障恢复过程中遵循资源配额限制
+- **优先级调度**：高优先级作业的故障恢复优先获得资源
+
+**公平性保障机制**：
+
+```java
+/**
+ * FairScheduler 类 - 公平调度器中的故障处理
+ * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler
+ */
+public class FairScheduler extends AbstractYarnScheduler {
+
+    /**
+     * handle 方法 - 处理应用故障时的资源重分配
+     * 源文件：org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler
+     */
+    public void handle(SchedulerEvent event) {
+        if (event.getType() == SchedulerEventType.APP_ATTEMPT_REMOVED) {
+            AppAttemptRemovedSchedulerEvent appEvent =
+                (AppAttemptRemovedSchedulerEvent) event;
+
+            // 释放故障应用的资源
+            releaseAppResources(appEvent.getApplicationAttemptID());
+
+            // 重新计算队列资源分配
+            updateQueueResourceAllocation();
+
+            // 触发等待队列的资源分配
+            attemptScheduling();
+        }
+    }
+}
+```
+
+**7. 故障恢复性能优化**：
+
+**恢复时间优化**：
+
+- **并行恢复**：多个失败任务并行重启，减少总恢复时间
+- **增量检查点**：定期保存作业状态，减少重启时的数据重建
+- **预分配资源**：为关键任务预留恢复资源
+
+**网络优化**：
+
+- **本地性优先**：故障恢复时优先选择数据本地性好的节点
+- **带宽管理**：控制故障恢复期间的网络带宽使用
+- **连接复用**：复用现有网络连接，减少连接建立开销
+
+通过 YARN 架构的多层次故障处理机制，MapReduce 作业在面对各种故障时能够快速响应并自动恢复，大大提高了系统的可靠性和可用性。这种设计使得大规模 MapReduce 作业能够在复杂的生产环境中稳定运行，为企业级大数据处理提供了坚实的技术保障。
+
+### 4.4 关键源码解析
+
+本节深入分析 ApplicationMaster 的核心源码实现，通过解读 MRAppMaster 的关键代码，帮助读者理解 YARN 架构下 MapReduce 作业的执行机制。
+
+#### 4.4.1 MRAppMaster 启动流程源码
+
+**MRAppMaster 主类结构**：
+
+```java
+/**
+ * MRAppMaster 类 - MapReduce ApplicationMaster 的核心实现
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+ */
+public class MRAppMaster extends CompositeService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MRAppMaster.class);
+
+    // 核心组件
+    private ApplicationAttemptId appAttemptID;
+    private ContainerAllocator containerAllocator;
+    private ContainerLauncher containerLauncher;
+    private TaskAttemptListener taskAttemptListener;
+    private JobHistoryEventHandler jobHistoryEventHandler;
+    private SpeculatorEventDispatcher speculatorEventDispatcher;
+    private TaskHeartbeatHandler taskHeartbeatHandler;
+
+    // 资源管理
+    private AMRMClientAsync<ContainerRequest> amRMClient;
+    private NMClientAsync nmClientAsync;
+
+    // 作业状态管理
+    private Job job;
+    private OutputCommitter committer;
+    private JobTokenSecretManager jobTokenSecretManager;
+
+    /**
+     * main 方法 - 主启动方法
+     * 源文件：org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+     */
+    public static void main(String[] args) {
+        try {
+            // 1. 解析启动参数
+            String containerIdStr = System.getenv(Environment.CONTAINER_ID.name());
+            ContainerId containerId = ContainerId.fromString(containerIdStr);
+            ApplicationAttemptId appAttemptID = containerId.getApplicationAttemptId();
+
+            // 2. 初始化配置
+            Configuration conf = new YarnConfiguration();
+            String jobUserName = System.getenv(ApplicationConstants.Environment.USER.name());
+            conf.set(MRJobConfig.USER_NAME, jobUserName);
+
+            // 3. 创建并启动 MRAppMaster
+            MRAppMaster appMaster = new MRAppMaster(appAttemptID, containerId,
+                                                   nodeHostString, nodePortInt,
+                                                   nodeHttpPortInt, clock.getTime());
+
+            // 4. 初始化信号处理
+            ShutdownHookManager.get().addShutdownHook(
+                new MRAppMasterShutdownHook(appMaster), SHUTDOWN_HOOK_PRIORITY);
+
+            // 5. 启动服务
+            YarnConfiguration yarnConf = new YarnConfiguration(conf);
+            appMaster.init(yarnConf);
+            appMaster.start();
+
+            LOG.info("MRAppMaster started successfully");
+
+        } catch (Throwable t) {
+            LOG.fatal("Error starting MRAppMaster", t);
+            ExitUtil.terminate(1, t);
+        }
+    }
+}
+```
+
+**初始化和启动逻辑**：
+
+```java
+/**
+ * serviceInit 方法 - MRAppMaster 初始化流程
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+ */
+@Override
+protected void serviceInit(Configuration conf) throws Exception {
+
+    // 1. 初始化作业配置
+    conf.setBoolean(Dispatcher.DISPATCHER_EXIT_ON_ERROR_KEY, true);
+    initJobCredentialsAndUGI(conf);
+
+    // 2. 创建事件调度器
+    dispatcher = createDispatcher();
+    addIfService(dispatcher);
+
+    // 3. 初始化作业历史服务
+    jobHistoryEventHandler = createJobHistoryHandler(context);
+    dispatcher.register(JobHistoryEvent.Type.class, jobHistoryEventHandler);
+
+    // 4. 创建任务监听器
+    taskAttemptListener = createTaskAttemptListener(context, preemptionPolicy);
+    addIfService(taskAttemptListener);
+
+    // 5. 初始化容器分配器
+    containerAllocator = createContainerAllocator(clientService, context);
+    addIfService(containerAllocator);
+    dispatcher.register(ContainerAllocator.EventType.class, containerAllocator);
+
+    // 6. 初始化容器启动器
+    containerLauncher = createContainerLauncher(context);
+    addIfService(containerLauncher);
+    dispatcher.register(ContainerLauncher.EventType.class, containerLauncher);
+
+    // 7. 创建推测执行调度器
+    speculatorEventDispatcher = new SpeculatorEventDispatcher(conf);
+    dispatcher.register(Speculator.EventType.class, speculatorEventDispatcher);
+
+    // 8. 初始化心跳处理器
+    taskHeartbeatHandler = createTaskHeartbeatHandler(context, conf);
+    addIfService(taskHeartbeatHandler);
+
+    super.serviceInit(conf);
+}
+
+/**
+ * serviceStart 方法 - MRAppMaster 启动逻辑
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+ */
+@Override
+protected void serviceStart() throws Exception {
+
+    // 1. 启动 AMRMClient
+    amRMClient = AMRMClientAsync.createAMRMClientAsync(1000, new AMRMCallbackHandler());
+    addIfService(amRMClient);
+    amRMClient.init(getConfig());
+    amRMClient.start();
+
+    // 2. 启动 NMClient
+    nmClientAsync = new NMClientAsyncImpl(new NMCallbackHandler());
+    addIfService(nmClientAsync);
+    nmClientAsync.init(getConfig());
+    nmClientAsync.start();
+
+    // 3. 向 ResourceManager 注册
+    RegisterApplicationMasterResponse response =
+        amRMClient.registerApplicationMaster(appMasterHostname,
+                                           appMasterRpcPort,
+                                           appMasterTrackingUrl);
+
+    // 4. 获取集群资源信息
+    maxContainerCapability = response.getMaximumResourceCapability();
+    LOG.info("Max container capability: " + maxContainerCapability);
+
+    // 5. 启动所有服务组件
+    super.serviceStart();
+
+    // 6. 创建并启动作业
+    job = createJob(getConfig(), forcedState, shutDownMessage);
+
+    // 7. 启动作业执行
+    ((RunningAppContext) context).setJob(job);
+    dispatcher.getEventHandler().handle(new JobEvent(job.getID(), JobEventType.JOB_INIT));
+
+    LOG.info("MRAppMaster started, jobId: " + job.getID());
+}
+```
+
+#### 4.4.2 资源协商关键代码
+
+**AMRMCallbackHandler 实现**：
+
+```java
+/**
+ * AMRMCallbackHandler 类 - 与 ResourceManager 的资源协商回调处理器
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+ */
+private class AMRMCallbackHandler implements AMRMClientAsync.CallbackHandler {
+
+    /**
+     * onContainersCompleted 方法 - 处理容器完成事件
+     * 源文件：org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+     */
+    @Override
+    public void onContainersCompleted(List<ContainerStatus> completedContainers) {
+        for (ContainerStatus containerStatus : completedContainers) {
+            LOG.info("Container completed: " + containerStatus.getContainerId() +
+                    " exitStatus: " + containerStatus.getExitStatus());
+
+            // 处理容器完成事件
+            dispatcher.getEventHandler().handle(
+                new ContainerAllocatorEvent(containerStatus.getContainerId(),
+                                           ContainerAllocator.EventType.CONTAINER_COMPLETED));
+        }
+    }
+
+    /**
+     * onContainersAllocated 方法 - 处理容器分配事件
+     * 源文件：org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+     */
+    @Override
+    public void onContainersAllocated(List<Container> allocatedContainers) {
+        for (Container container : allocatedContainers) {
+            LOG.info("Container allocated: " + container.getId() +
+                    " on node: " + container.getNodeId());
+
+            // 处理容器分配事件
+            dispatcher.getEventHandler().handle(
+                new ContainerAllocatorEvent(container.getId(),
+                                           ContainerAllocator.EventType.CONTAINER_ALLOCATED));
+        }
+    }
+
+    @Override
+    public void onShutdownRequest() {
+        LOG.info("Shutdown request received from ResourceManager");
+        dispatcher.getEventHandler().handle(
+            new JobEvent(job.getID(), JobEventType.JOB_AM_REBOOT));
+    }
+
+    @Override
+    public void onNodesUpdated(List<NodeReport> updatedNodes) {
+        for (NodeReport nodeReport : updatedNodes) {
+            LOG.info("Node updated: " + nodeReport.getNodeId() +
+                    " state: " + nodeReport.getNodeState());
+        }
+    }
+
+    @Override
+    public float getProgress() {
+        return job.getProgress();
+    }
+
+    @Override
+    public void onError(Throwable e) {
+        LOG.error("Error in AMRMClient", e);
+        dispatcher.getEventHandler().handle(
+            new JobEvent(job.getID(), JobEventType.INTERNAL_ERROR));
+    }
+}
+```
+
+**容器请求和分配逻辑**：
+
+```java
+/**
+ * RMContainerAllocator - 负责向 RM 请求和管理容器
+ */
+public class RMContainerAllocator extends RMContainerRequestor
+                                  implements ContainerAllocator {
+
+    /**
+     * 处理容器请求事件
+     */
+    @Override
+    public void handle(ContainerAllocatorEvent event) {
+        switch (event.getType()) {
+            case CONTAINER_REQ:
+                handleContainerRequest((ContainerRequestEvent) event);
+                break;
+            case CONTAINER_DEALLOCATE:
+                handleContainerDeallocate((ContainerDeallocateEvent) event);
+                break;
+            case CONTAINER_FAILED:
+                handleContainerFailure((ContainerFailedEvent) event);
+                break;
+        }
+    }
+
+    /**
+     * 处理容器请求
+     */
+    private void handleContainerRequest(ContainerRequestEvent reqEvent) {
+
+        // 1. 构建资源请求
+        Resource capability = reqEvent.getCapability();
+        String[] hosts = reqEvent.getHosts();
+        String[] racks = reqEvent.getRacks();
+        Priority priority = reqEvent.getPriority();
+
+        // 2. 创建容器请求
+        ContainerRequest containerReq = new ContainerRequest(capability,
+                                                            hosts,
+                                                            racks,
+                                                            priority);
+
+        // 3. 提交请求到 ResourceManager
+        amRMClient.addContainerRequest(containerReq);
+
+        LOG.info("Requested container: " + containerReq);
+    }
+
+    /**
+     * 心跳处理 - 定期与 RM 通信
+     */
+    @Override
+    protected void heartbeat() throws Exception {
+
+        // 1. 计算进度
+        float progress = computeProgress();
+
+        // 2. 发送心跳
+        AllocateResponse allocateResponse = amRMClient.allocate(progress);
+
+        // 3. 处理分配的容器
+        List<Container> allocatedContainers = allocateResponse.getAllocatedContainers();
+        if (!allocatedContainers.isEmpty()) {
+            handleAllocatedContainers(allocatedContainers);
+        }
+
+        // 4. 处理完成的容器
+        List<ContainerStatus> completedContainers = allocateResponse.getCompletedContainersStatuses();
+        if (!completedContainers.isEmpty()) {
+            handleCompletedContainers(completedContainers);
+        }
+
+        // 5. 处理更新的节点
+        List<NodeReport> updatedNodes = allocateResponse.getUpdatedNodes();
+        if (!updatedNodes.isEmpty()) {
+            handleUpdatedNodes(updatedNodes);
+        }
+    }
+
+    /**
+     * 处理分配的容器
+     */
+    private void handleAllocatedContainers(List<Container> allocatedContainers) {
+        for (Container container : allocatedContainers) {
+
+            // 1. 检查容器是否满足要求
+            if (isContainerSuitable(container)) {
+
+                // 2. 分配给等待的任务
+                TaskAttemptId taskAttemptId = assignContainer(container);
+
+                if (taskAttemptId != null) {
+                    // 3. 启动容器
+                    dispatcher.getEventHandler().handle(
+                        new ContainerRemoteLaunchEvent(taskAttemptId, container));
+
+                    LOG.info("Assigned container " + container.getId() +
+                            " to task " + taskAttemptId);
+                } else {
+                    // 4. 释放不需要的容器
+                    amRMClient.releaseAssignedContainer(container.getId());
+                }
+            }
+        }
+    }
+}
+```
+
+#### 4.4.3 任务状态管理实现
+
+**任务状态机实现**：
+
+```java
+/**
+ * TaskImpl 类 - 任务状态管理的核心实现
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.job.impl.TaskImpl
+ */
+public class TaskImpl implements Task, EventHandler<TaskEvent> {
+
+    // 任务状态机 - 定义任务生命周期状态转换
+    private static final StateMachineFactory<TaskImpl, TaskState, TaskEventType, TaskEvent>
+        stateMachineFactory = StateMachineFactory.<TaskImpl, TaskState, TaskEventType, TaskEvent>newInstance()
+        .addTransition(TaskState.NEW, TaskState.SCHEDULED, TaskEventType.T_SCHEDULE, new InitialScheduleTransition())
+        .addTransition(TaskState.SCHEDULED, TaskState.RUNNING, TaskEventType.T_ATTEMPT_LAUNCHED, new LaunchTransition())
+        .addTransition(TaskState.RUNNING, TaskState.SUCCEEDED, TaskEventType.T_ATTEMPT_SUCCEEDED, new AttemptSucceededTransition())
+        .addTransition(TaskState.RUNNING, TaskState.FAILED, TaskEventType.T_ATTEMPT_FAILED, new AttemptFailedTransition())
+        .installTopology();
+
+    private final StateMachine<TaskState, TaskEventType, TaskEvent> stateMachine;
+
+    /**
+     * 处理任务事件
+     */
+    @Override
+    public void handle(TaskEvent event) {
+        try {
+            writeLock.lock();
+            TaskState oldState = getState();
+
+            try {
+                stateMachine.doTransition(event.getType(), event);
+            } catch (InvalidStateTransitionException e) {
+                LOG.error("Invalid event " + event.getType() + " on Task " + this.taskId +
+                         " with state " + oldState, e);
+                internalError(event.getType());
+            }
+
+            if (oldState != getState()) {
+                LOG.info("Task " + taskId + " transitioned from " + oldState + " to " + getState());
+            }
+
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * 任务启动转换
+     */
+    private static class LaunchTransition implements SingleArcTransition<TaskImpl, TaskEvent> {
+        @Override
+        public void transition(TaskImpl task, TaskEvent event) {
+
+            // 1. 更新任务状态
+            task.addAndScheduleAttempt(Avataar.VIRGIN);
+            task.scheduledTime = task.clock.getTime();
+
+            // 2. 发送容器请求事件
+            TaskAttempt attempt = task.attempts.values().iterator().next();
+            task.eventHandler.handle(new TaskAttemptEvent(attempt.getID(),
+                                                         TaskAttemptEventType.TA_SCHEDULE));
+
+            LOG.info("Task " + task.taskId + " launched");
+        }
+    }
+
+    /**
+     * 任务成功转换
+     */
+    private static class AttemptSucceededTransition implements SingleArcTransition<TaskImpl, TaskEvent> {
+        @Override
+        public void transition(TaskImpl task, TaskEvent event) {
+
+            TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
+            TaskAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptID());
+
+            // 1. 设置成功的任务尝试
+            task.successfulAttempt = attemptEvent.getTaskAttemptID();
+            task.finishTime = task.clock.getTime();
+
+            // 2. 杀死其他运行中的尝试
+            for (TaskAttempt taskAttempt : task.attempts.values()) {
+                if (taskAttempt.getID() != task.successfulAttempt &&
+                    !taskAttempt.isFinished()) {
+
+                    task.eventHandler.handle(new TaskAttemptKillEvent(taskAttempt.getID(),
+                                                                     "Task succeeded"));
+                }
+            }
+
+            // 3. 通知作业任务完成
+            task.eventHandler.handle(new JobTaskEvent(task.taskId, TaskState.SUCCEEDED));
+
+            LOG.info("Task " + task.taskId + " succeeded");
+        }
+    }
+}
+```
+
+**任务尝试状态管理**：
+
+```java
+/**
+ * TaskAttemptImpl 类 - 任务尝试的状态管理
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.job.impl.TaskAttemptImpl
+ */
+public class TaskAttemptImpl implements TaskAttempt, EventHandler<TaskAttemptEvent> {
+
+    /**
+     * 任务尝试状态机
+     */
+    private static final StateMachineFactory<TaskAttemptImpl, TaskAttemptState,
+                                           TaskAttemptEventType, TaskAttemptEvent>
+        stateMachineFactory = StateMachineFactory.<TaskAttemptImpl, TaskAttemptState,
+                                                 TaskAttemptEventType, TaskAttemptEvent>newInstance()
+
+        .addTransition(TaskAttemptState.NEW, TaskAttemptState.UNASSIGNED, TaskAttemptEventType.TA_SCHEDULE, new ScheduleTaskattemptTransition())
+        .addTransition(TaskAttemptState.UNASSIGNED, TaskAttemptState.ASSIGNED, TaskAttemptEventType.TA_ASSIGNED, new ContainerAssignedTransition())
+        .addTransition(TaskAttemptState.ASSIGNED, TaskAttemptState.RUNNING, TaskAttemptEventType.TA_CONTAINER_LAUNCHED, new ContainerLaunchedTransition())
+        .addTransition(TaskAttemptState.RUNNING, TaskAttemptState.SUCCEEDED, TaskAttemptEventType.TA_DONE, new SucceededTransition())
+
+        .installTopology();
+
+    /**
+     * 容器分配转换
+     */
+    private static class ContainerAssignedTransition implements SingleArcTransition<TaskAttemptImpl, TaskAttemptEvent> {
+        @Override
+        public void transition(TaskAttemptImpl taskAttempt, TaskAttemptEvent event) {
+            TaskAttemptContainerAssignedEvent assignedEvent = (TaskAttemptContainerAssignedEvent) event;
+            taskAttempt.container = assignedEvent.getContainer();
+            taskAttempt.nodeId = assignedEvent.getContainer().getNodeId();
+            taskAttempt.eventHandler.handle(new ContainerRemoteLaunchEvent(taskAttempt.attemptId, taskAttempt.container));
+            LOG.info("TaskAttempt " + taskAttempt.attemptId + " assigned to container " + taskAttempt.container.getId());
+        }
+    }
+
+    /**
+     * 任务成功转换
+     */
+    private static class SucceededTransition implements SingleArcTransition<TaskAttemptImpl, TaskAttemptEvent> {
+        @Override
+        public void transition(TaskAttemptImpl taskAttempt, TaskAttemptEvent event) {
+            taskAttempt.finishTime = taskAttempt.clock.getTime();
+            taskAttempt.updateProgressSplits();
+            taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.attemptId, TaskEventType.T_ATTEMPT_SUCCEEDED));
+            taskAttempt.eventHandler.handle(new ContainerLauncherEvent(taskAttempt.attemptId, taskAttempt.container.getId(),
+                taskAttempt.container.getNodeId(), taskAttempt.container.getContainerToken(), ContainerLauncher.EventType.CONTAINER_REMOTE_CLEANUP));
+            LOG.info("TaskAttempt " + taskAttempt.attemptId + " succeeded");
+        }
+    }
+}
+```
+
+#### 4.4.4 故障处理核心逻辑
+
+**故障检测机制**：
+
+```java
+/**
+ * TaskHeartbeatHandler 类 - 任务心跳监控和故障检测
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.TaskHeartbeatHandler
+ */
+public class TaskHeartbeatHandler extends AbstractService implements EventHandler<TaskHeartbeatEvent> {
+
+    private final Map<TaskAttemptId, ReportTime> runningAttempts;
+    private final long taskTimeoutInterval;
+    private final long taskTimeoutCheckInterval;
+
+    /**
+     * 心跳超时检查线程
+     */
+    private class PingChecker implements Runnable {
+        @Override
+        public void run() {
+            while (!stopped && !Thread.currentThread().isInterrupted()) {
+                try {
+                    // 1. 检查超时的任务
+                    List<TaskAttemptId> timedOutAttempts = new ArrayList<>();
+                    long currentTime = clock.getTime();
+
+                    synchronized (runningAttempts) {
+                        for (Map.Entry<TaskAttemptId, ReportTime> entry : runningAttempts.entrySet()) {
+                            if (currentTime - entry.getValue().getLastProgress() > taskTimeoutInterval) {
+                                timedOutAttempts.add(entry.getKey());
+                            }
+                        }
+                    }
+
+                    // 2. 处理超时任务
+                    for (TaskAttemptId attemptId : timedOutAttempts) {
+                        LOG.warn("Task attempt " + attemptId + " timed out");
+
+                        // 发送超时事件
+                        eventHandler.handle(new TaskAttemptDiagnosticsUpdateEvent(attemptId,
+                                                                                 "Task attempt timed out"));
+                        eventHandler.handle(new TaskAttemptEvent(attemptId,
+                                                               TaskAttemptEventType.TA_TIMED_OUT));
+                    }
+
+                    Thread.sleep(taskTimeoutCheckInterval);
+
+                } catch (InterruptedException e) {
+                    LOG.info("TaskHeartbeatHandler interrupted");
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理心跳事件
+     */
+    @Override
+    public void handle(TaskHeartbeatEvent event) {
+        switch (event.getType()) {
+            case T_ATTEMPT_PING:
+                handleTaskAttemptPing((TaskAttemptPingEvent) event);
+                break;
+            case T_ATTEMPT_UNREGISTER:
+                handleTaskAttemptUnregister((TaskAttemptUnregisterEvent) event);
+                break;
+        }
+    }
+
+    /**
+     * 处理任务心跳
+     */
+    private void handleTaskAttemptPing(TaskAttemptPingEvent event) {
+        TaskAttemptId attemptId = event.getTaskAttemptId();
+
+        synchronized (runningAttempts) {
+            ReportTime reportTime = runningAttempts.get(attemptId);
+            if (reportTime != null) {
+                reportTime.setLastProgress(clock.getTime());
+            }
+        }
+    }
+}
+```
+
+**故障恢复策略**：
+
+```java
+/**
+ * AttemptFailedTransition 类 - 任务失败处理和重试逻辑
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.job.impl.TaskImpl.AttemptFailedTransition
+ */
+private static class AttemptFailedTransition implements
+                            MultipleArcTransition<TaskImpl, TaskEvent, TaskState> {
+
+    @Override
+    public TaskState transition(TaskImpl task, TaskEvent event) {
+        TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
+        TaskAttemptId failedAttemptId = attemptEvent.getTaskAttemptID();
+
+        TaskAttempt failedAttempt = task.attempts.get(failedAttemptId);
+        task.failedAttempts.add(failedAttemptId);
+        LOG.warn("Task attempt " + failedAttemptId + " failed: " + failedAttempt.getDiagnostics());
+
+        if (task.failedAttempts.size() < task.maxAttempts) {
+            TaskFailureType failureType = analyzeFailureType(failedAttempt);
+
+            switch (failureType) {
+                case NODE_FAILURE:
+                    task.addAndScheduleAttempt(Avataar.VIRGIN);
+                    return TaskState.RUNNING;
+                case CONTAINER_FAILURE:
+                    task.scheduleRetryAttempt(CONTAINER_RETRY_DELAY);
+                    return TaskState.RUNNING;
+                case APPLICATION_FAILURE:
+                    task.addAndScheduleAttempt(isDataSkewIssue(failedAttempt) ?
+                        Avataar.SPECULATIVE : Avataar.VIRGIN);
+                    return TaskState.RUNNING;
+                default:
+                    task.addAndScheduleAttempt(Avataar.VIRGIN);
+                    return TaskState.RUNNING;
+            }
+        } else {
+            task.finishTime = task.clock.getTime();
+            task.eventHandler.handle(new JobTaskEvent(task.taskId, TaskState.FAILED));
+            return TaskState.FAILED;
+        }
+    }
+
+    private TaskFailureType analyzeFailureType(TaskAttempt failedAttempt) {
+        String diagnostics = failedAttempt.getDiagnostics();
+        int exitCode = failedAttempt.getShuffleFinishTime();
+
+        if (diagnostics.contains("NodeManager") || diagnostics.contains("Connection refused")) {
+            return TaskFailureType.NODE_FAILURE;
+        }
+        if (exitCode == ContainerExitStatus.KILLED_BY_RESOURCEMANAGER ||
+            exitCode == ContainerExitStatus.KILLED_EXCEEDED_PMEM ||
+            exitCode == ContainerExitStatus.KILLED_EXCEEDED_VMEM) {
+            return TaskFailureType.CONTAINER_FAILURE;
+        }
+        return exitCode != 0 ? TaskFailureType.APPLICATION_FAILURE : TaskFailureType.UNKNOWN;
+    }
+
+    private boolean isDataSkewIssue(TaskAttempt failedAttempt) {
+        long runTime = failedAttempt.getFinishTime() - failedAttempt.getLaunchTime();
+        long avgRunTime = calculateAverageTaskRunTime();
+        return runTime > avgRunTime * DATA_SKEW_THRESHOLD ||
+               failedAttempt.getDiagnostics().contains("OutOfMemoryError");
+    }
+}
+
+/**
+ * MRAppMasterRecoveryService 类 - ApplicationMaster 级别的故障恢复
+ * 源文件：org.apache.hadoop.mapreduce.v2.app.recover.MRAppMasterRecoveryService
+ */
+public class MRAppMasterRecoveryService extends AbstractService {
+
+    public void recover() throws Exception {
+        Path recoveryPath = getRecoveryPath();
+        if (fs.exists(recoveryPath)) {
+            JobState recoveredJobState = readJobState(recoveryPath);
+            Map<TaskId, TaskState> recoveredTaskStates = readTaskStates(recoveryPath);
+            Map<TaskAttemptId, TaskAttemptState> recoveredAttemptStates = readTaskAttemptStates(recoveryPath);
+
+            rebuildStateMachines(recoveredJobState, recoveredTaskStates, recoveredAttemptStates);
+            requestLostContainers(recoveredAttemptStates);
+            LOG.info("Successfully recovered from checkpoint");
+        }
+    }
+
+    /**
+     * CheckpointSaver 类 - 定期保存检查点
+     * 源文件：org.apache.hadoop.mapreduce.v2.app.recover.MRAppMasterRecoveryService.CheckpointSaver
+     */
+    private class CheckpointSaver implements Runnable {
+        @Override
+        public void run() {
+            try {
+                JobState currentJobState = job.getState();
+                Map<TaskId, TaskState> currentTaskStates = collectTaskStates();
+                Map<TaskAttemptId, TaskAttemptState> currentAttemptStates = collectTaskAttemptStates();
+                writeCheckpoint(currentJobState, currentTaskStates, currentAttemptStates);
+            } catch (Exception e) {
+                LOG.error("Failed to save checkpoint", e);
+            }
+        }
+    }
+}
+```
 
 ### 4.5 本章小结
 
@@ -2541,7 +5457,7 @@ ApplicationMaster 作为作业级别的调度器，为 Shuffle 过程提供了�
 
 **承前启后的意义**：
 
-ApplicationMaster 驱动的分布式计算模式不仅解决了 MapReduce 的扩展性问题，更为 Spark、Flink 等新一代计算框架奠定了统一的资源管理基础。这种"一作业一管理者"的设计理念，将在第 5 章的多框架支持中得到进一步体现，展示 YARN 如何成为大数据生态系统的统一资源管理平台。
+ApplicationMaster 驱动的分布式计算模式不仅解决了 MapReduce 的扩展性问题，更为 Spark、Flink 等新一代计算框架奠定了统一的资源管理基础。这种"一作业一管理者"的设计理念，展示了 YARN 如何成为大数据生态系统的统一资源管理平台。
 
 通过本章的学习，我们不仅理解了 MapReduce 在 YARN 上的运行机制，更重要的是掌握了 YARN 架构设计的核心思想——通过职责分离和资源抽象，实现计算框架的可插拔性和资源的高效利用。
 
@@ -2582,10 +5498,6 @@ YARN 的设计初衷是成为一个通用的资源管理平台，支持多种计
 所有在 YARN 上运行的计算框架都遵循相同的集成模式：
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        YARN 计算框架集成流程                                   │
-└─────────────────────────────────────────────────────────────────────────────┘
-
     Client              ResourceManager           NodeManager           ApplicationMaster
       │                        │                      │                        │
       │                        │                      │                        │
@@ -2620,6 +5532,8 @@ YARN 的设计初衷是成为一个通用的资源管理平台，支持多种计
       │◄───────────────────────┤                      │                        │
       │                        │                      │                        │
 ```
+
+_图 5-1 YARN 计算框架集成流程。_
 
 **关键交互说明**：
 ① 客户端提交：应用请求 + AM 类型 + 资源约束
@@ -2692,8 +5606,6 @@ Spark 在 YARN 上运行时，会启动一个专门的 ApplicationMaster，负�
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Spark on YARN 架构图                          │
-├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  Client                YARN Cluster                             │
 │  ┌─────────┐           ┌──────────────────────────────────────┐ │
@@ -2718,12 +5630,12 @@ Spark 在 YARN 上运行时，会启动一个专门的 ApplicationMaster，负�
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+_图 5-2 Spark on YARN 架构图。_
+
 **资源管理与任务调度流程**：
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                      交互时序图                                  │
-├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │ Client    ResourceManager    ApplicationMaster    Executor      │
 │   │              │                  │               │           │
@@ -2749,12 +5661,12 @@ Spark 在 YARN 上运行时，会启动一个专门的 ApplicationMaster，负�
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+_图 5-3 Spark on YARN 交互时序图。_
+
 **生命周期管理阶段**：
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Spark 应用生命周期                             │
-├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │ 启动阶段                运行阶段                结束阶段            │
 │ ┌─────────────┐        ┌─────────────┐        ┌─────────────┐   │
@@ -2775,6 +5687,8 @@ Spark 在 YARN 上运行时，会启动一个专门的 ApplicationMaster，负�
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+_图 5-4 Spark on YARN 生命周期。_
 
 #### 5.2.3 资源配置策略概览
 
@@ -3059,7 +5973,7 @@ YARN 支持多种资源类型的调度，不仅限于 CPU 和内存，还可以�
 
 YARN 作为 Hadoop 生态系统的核心组件，在大数据处理领域发挥着重要作用。通过本教程的学习，我们深入了解了 YARN 的架构设计、调度机制、容错机制等核心技术，以及相关的分布式系统理论基础。
 
-随着技术的不断发展，YARN 也在持续演进，向着更加智能化、云原生化的方向发展。未来的研究将更多地关注异构计算、边缘计算、人工智能等新兴技术与 YARN 的结合，以及系统可靠性、性能优化等永恒主题的深入探索。
+YARN 正在向着更加智能化、云原生化的方向演进，未来将更多地关注异构计算、边缘计算、人工智能等新兴技术的结合。
 
 **思考与讨论：YARN vs. Kubernetes**：
 
