@@ -1,0 +1,3 @@
+[submodule "books/SparkInternals"]
+	path = books/SparkInternals
+	url = git@github.com:JerryLead/SparkInternals.git
