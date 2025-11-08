@@ -126,7 +126,7 @@
 
 - 程序应支持处理单个文件或整个目录中的所有文件
 - 建议在程序中添加文件存在性检查和错误处理
-- 输出结果保存到个人目录 `/<学号>/homework1/problem[1-3]`
+- 输出结果保存到个人目录 `/users/<学号>/homework1/problem[1-3]`
 - 数据规模足够大，能够有效展示 MapReduce 任务调优、Combiner 优化和性能监控的效果
 
 ---
@@ -164,8 +164,8 @@
      - 设置输入输出路径和格式
      - 处理输出目录的清理工作
 
-3. **输出格式要求**：
-   - **结果目录**：`/<学号>/homework1/problem1`
+3. **输出格式要求**:
+   - **结果目录**：`/users/<学号>/homework1/problem1`
    - **主要结果文件**：`words.txt`
      - 格式：`单词\t词频`（制表符分隔），每行一个单词统计
      - 排序：按单词字典序排列
@@ -185,7 +185,7 @@
 
 - 建议先使用简单测试文件验证程序基本功能
 - 使用中等和大规模文件测试程序的稳定性和性能
-- 输出结果保存到个人目录 `/<学号>/homework1/problem1`
+- 输出结果保存到个人目录 `/users/<学号>/homework1/problem1`
 
 #### 2.2.4 代码框架
 
@@ -307,8 +307,8 @@ public class WordCountDriver {
    - 分析 Combiner 对程序性能的影响
    - 提供性能优化建议
 
-4. **输出格式要求**：
-   - **结果目录**：`/<学号>/homework1/problem2`
+4. **输出格式要求**:
+   - **结果目录**：`/users/<学号>/homework1/problem2`
    - **主要结果文件**：`words.txt`
      - 格式：`单词\t词频`（与题目一保持一致）
      - 排序：按单词字典序排列
@@ -332,7 +332,7 @@ public class WordCountDriver {
 - 使用超大规模测试文件观察 Combiner 和 Partitioner 的性能优化效果
 - 比较有无 Combiner 时的网络传输数据量差异
 - 测试不同 Partitioner 策略对负载均衡的影响
-- 输出结果保存到个人目录 `/<学号>/homework1/problem2`
+- 输出结果保存到个人目录 `/users/<学号>/homework1/problem2`
 
 #### 2.3.4 代码框架
 
@@ -459,7 +459,7 @@ public class WordCountDriver {
 
 3. **输出格式要求**：
 
-   - **结果目录**：`/<学号>/homework1/problem3`
+   - **结果目录**：`/users/<学号>/homework1/problem3`
    - **主要结果文件**：`word-count-results.txt`
      - 格式：`单词\t出现次数`（制表符分隔）
      - 排序：按出现次数降序排列
@@ -691,28 +691,28 @@ jar cf hadoop-assignment.jar -C target/classes .
 
 ```bash
 # 题目一：WordCount
-# 1. 准备输入数据
-hdfs dfs -mkdir -p /user/input/wordcount
-hdfs dfs -put input.txt /user/input/wordcount/
+# 1. 验证输入数据
+hdfs dfs -ls /public/data/wordcount
+# 数据已提前放置，无需上传
 
 # 2. 运行程序
 hadoop jar hadoop-assignment.jar com.bigdata.assignment.WordCountDriver \
-    /user/input/wordcount /user/output/wordcount
+    /public/data/wordcount /users/<学号>/homework1/problem1
 
 # 3. 查看结果
-hdfs dfs -cat /user/output/wordcount/part-r-00000
+hdfs dfs -cat /users/<学号>/homework1/problem1/part-r-00000
 
 # 题目二：带 Combiner 和 Partitioner 的 WordCount
 hadoop jar hadoop-assignment.jar com.bigdata.assignment.WordCountWithCombinerDriver \
-    /user/input/wordcount /user/output/wordcount-optimized
+    /public/data/wordcount /users/<学号>/homework1/problem2
 
 # 题目三：MapReduce 任务调优与性能分析
-# 1. 准备数据（使用公共数据目录）
+# 1. 验证数据（使用公共数据目录）
 hdfs dfs -ls /public/data/wordcount/
 
 # 2. 运行程序
 hadoop jar hadoop-assignment.jar com.bigdata.assignment.WordCountOptimizedDriver \
-    /public/data/wordcount /user/output/wordcount-optimized
+    /public/data/wordcount /users/<学号>/homework1/problem3
 ```
 
 ### 3.4 调试技巧
