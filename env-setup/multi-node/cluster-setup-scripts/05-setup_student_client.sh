@@ -24,9 +24,9 @@ if [ -z "$CLUSTER_MASTER" ]; then
     CLUSTER_MASTER="${input_master:-$DEFAULT_CLUSTER_MASTER}"
 fi
 
-# 验证学号格式（假设学号为数字）
-if [[ ! "$STUDENT_ID" =~ ^[0-9]+$ ]]; then
-    echo "错误: 学号格式不正确，请输入数字学号"
+# 验证学号格式（允许字母、数字、下划线，不能以数字开头）
+if [[ ! "$STUDENT_ID" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+    echo "错误: 学号格式不正确，学号必须以字母或下划线开头，可包含字母、数字、下划线"
     exit 1
 fi
 
