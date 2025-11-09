@@ -146,7 +146,7 @@ zookeeper/
 *.csv
 *.tsv
 *.json
-*.xml
+# *.xml
 *.parquet
 *.avro
 *.orc

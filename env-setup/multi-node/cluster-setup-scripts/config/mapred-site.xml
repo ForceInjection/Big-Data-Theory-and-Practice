@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+    <!-- MapReduce 框架名称 -->
+    <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+        <description>MapReduce 框架名称</description>
+    </property>
+
+    <!-- MapReduce JobHistory Server 配置 -->
+    <property>
+        <name>mapreduce.jobhistory.address</name>
+        <value>hadoop-master:10020</value>
+        <description>MapReduce JobHistory Server 地址</description>
+    </property>
+    <property>
+        <name>mapreduce.jobhistory.webapp.address</name>
+        <value>hadoop-master:19888</value>
+        <description>MapReduce JobHistory Server Web UI 地址</description>
+    </property>
+
+    <!-- ApplicationMaster 环境变量 -->
+    <property>
+        <name>yarn.app.mapreduce.am.env</name>
+        <value>HADOOP_MAPRED_HOME=/home/hadoop/hadoop</value>
+        <description>ApplicationMaster 容器环境变量</description>
+    </property>
+
+    <!-- Map/Reduce 容器环境变量 -->
+    <property>
+        <name>mapreduce.map.env</name>
+        <value>HADOOP_MAPRED_HOME=/home/hadoop/hadoop</value>
+        <description>Map 容器环境变量</description>
+    </property>
+    <property>
+        <name>mapreduce.reduce.env</name>
+        <value>HADOOP_MAPRED_HOME=/home/hadoop/hadoop</value>
+        <description>Reduce 容器环境变量</description>
+    </property>
+
+    <!-- MapReduce 应用程序完整类路径 -->
+    <property>
+        <name>mapreduce.application.classpath</name>
+        <value>
+            $HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*:$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*:$HADOOP_MAPRED_HOME/share/hadoop/common/*:$HADOOP_MAPRED_HOME/share/hadoop/common/lib/*:$HADOOP_MAPRED_HOME/share/hadoop/hdfs/*:$HADOOP_MAPRED_HOME/share/hadoop/hdfs/lib/*:$HADOOP_MAPRED_HOME/share/hadoop/yarn/*:$HADOOP_MAPRED_HOME/share/hadoop/yarn/lib/*
+        </value>
+        <description>MapReduce 应用程序完整类路径</description>
+    </property>
+</configuration>

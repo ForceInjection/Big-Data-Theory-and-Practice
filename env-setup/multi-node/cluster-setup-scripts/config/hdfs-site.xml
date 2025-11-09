@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License. See accompanying LICENSE file.
+-->
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>3</value>
+        <description>数据块副本数量（建议设置为 3）</description>
+    </property>
+    <property>
+        <name>dfs.namenode.name.dir</name>
+        <value>/mnt/hadoop/data/namenode</value>
+        <description>NameNode 数据存储目录</description>
+    </property>
+    <property>
+        <name>dfs.datanode.data.dir</name>
+        <value>/mnt/hadoop/data/datanode</value>
+        <description>DataNode 数据存储目录</description>
+    </property>
+    <property>
+        <name>dfs.namenode.secondary.http-address</name>
+        <value>hadoop-worker1:50090</value>
+        <description>SecondaryNameNode HTTP 地址</description>
+    </property>
+    <property>
+        <name>dfs.blocksize</name>
+        <value>134217728</value>
+        <description>HDFS 块大小（128MB）</description>
+    </property>
+    <property>
+        <name>dfs.namenode.handler.count</name>
+        <value>20</value>
+        <description>NameNode 处理线程数</description>
+    </property>
+    <property>
+        <name>dfs.datanode.handler.count</name>
+        <value>10</value>
+        <description>DataNode 处理线程数</description>
+</property>
+	
+
+	<property>
+    <name>dfs.permissions.enabled</name>
+    <value>true</value>
+    <description>启用 HDFS 权限检查</description>
+</property>
+
+<property>
+    <name>dfs.permissions.superusergroup</name>
+    <value>hadoop</value>
+    <description>超级用户组</description>
+</property>
+
+<property>
+    <name>dfs.namenode.acls.enabled</name>
+    <value>true</value>
+    <description>启用 HDFS ACL 支持</description>
+</property>
+
+</configuration>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://hadoop-master:9000</value>
+        <description>默认文件系统 URI</description>
+    </property>
+    <property>
+        <name>hadoop.tmp.dir</name>
+        <value>/mnt/hadoop/tmp</value>
+        <description>Hadoop 临时目录</description>
+    </property>
+    <property>
+        <name>io.file.buffer.size</name>
+        <value>131072</value>
+        <description>文件缓冲区大小</description>
+    </property>
+    <property>
+        <name>hadoop.proxyuser.hadoop.hosts</name>
+        <value>*</value>
+        <description>代理用户主机</description>
+    </property>
+    <property>
+        <name>hadoop.proxyuser.hadoop.groups</name>
+        <value>*</value>
+        <description>代理用户组</description>
+    </property>
+</configuration>

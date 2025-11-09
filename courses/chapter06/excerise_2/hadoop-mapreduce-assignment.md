@@ -606,6 +606,36 @@ public class WordCountOptimizedDriver {
 
 如需完整的 Hadoop 单节点集群环境，请参考：[单节点集群安装指南](../../../env-setup/signle-node/single-node-cluster.md)
 
+**容器开发环境**（推荐）：
+
+```shell
+docker pull registry.cn-hangzhou.aliyuncs.com/mydocker_he/hadoop-client
+
+HOST_PATH=<YOUR_HOST_PATH>
+
+mkdir -p ${HOST_PATH}/java_code
+
+# 启动容器
+docker run -d --name hadoop-client \
+  -p 9000:9000 -p 9870:9870 -p 8032:8032 -p 8088:8088 -p 19888:19888 \
+  -v ${HOST_PATH}/java_code:/home/hadoop/java_code \
+  --add-host hadoop-master:<hadoop-master-ip> \
+  --add-host hadoop-worker1:<hadoop-worker1-ip> \
+  --add-host hadoop-worker2:<hadoop-worker2-ip> \
+  --add-host hadoop-worker3:<hadoop-worker3-ip> \
+  --add-host hadoop-worker4:<hadoop-worker4-ip> \
+  --cap-add=NET_RAW --cap-add=NET_ADMIN \
+  hadoop-client tail -f /dev/null
+
+
+# 进入容器（Docker）
+docker exec -it hadoop-client bash
+```
+
+- 占位符说明: 请将 <YOUR_HOST_PATH> 替换为您本地的实际路径，例如：/home/hadoop/bigdata/hw2/java_code
+- 网络权限说明: --cap-add=NET_RAW --cap-add=NET_ADMIN 参数用于启用网络工具（如 ping、traceroute 等）的权限，确保容器内的网络诊断功能正常工作。
+- 集群实际 ip 地址和详细说明见微信群。
+
 **轻量级开发环境**（推荐）：
 
 1. **安装 Java 8**：
@@ -648,6 +678,7 @@ public class WordCountOptimizedDriver {
 #### 3.1.2 远程集群连接配置
 
 1. **获取集群配置文件**：从集群管理员处获取配置文件并放置到 `$HADOOP_CONF_DIR`
+   1. 手动把 `config`目录下的文件复制到 `$HADOOP_CONF_DIR` 目录下， 或执行 `cp config/* $HADOOP_CONF_DIR/`。
 2. **验证连接**：`hdfs dfs -ls /` 和 `yarn node -list`
 
 #### 3.1.3 开发工具配置
@@ -839,6 +870,7 @@ hadoop jar hadoop-assignment.jar com.bigdata.assignment.WordCountOptimizedDriver
 3. **性能分析**（题目二和题目三必做，对应性能对比分析评分）：
 
    - **题目二**：
+
      - 使用 Combiner 前后的 Map 输出记录数对比
      - 不同 Partitioner 策略下各 Reducer 的数据分布情况
      - 运行时间、内存使用等关键性能指标分析
