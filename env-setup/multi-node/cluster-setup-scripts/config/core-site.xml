@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+	    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://hadoop-master:9000</value>
+        <description>默认文件系统 URI，指向主节点的 NameNode</description>
+    </property>
+    <property>
+        <name>hadoop.tmp.dir</name>
+        <value>/mnt/hadoop/tmp</value>
+        <description>Hadoop 临时目录</description>
+    </property>
+    <property>
+        <name>io.file.buffer.size</name>
+        <value>131072</value>
+        <description>文件缓冲区大小，提高 I/O 性能</description>
+</property>
+
+
+
+<property>
+
+    <name>hadoop.security.authentication</name>
+
+    <value>simple</value>
+
+    <description>使用简单认证模式</description>
+
+</property>
+
+<property>
+
+    <name>hadoop.security.authorization</name>
+
+    <value>false</value>
+
+    <description>暂时禁用授权检查（可根据需要启用）</description>
+
+</property>
+
+
+
+<!-- 方案一：限制网段（推荐用于教学环境） -->
+
+<property>
+
+    <name>hadoop.proxyuser.hadoop.hosts</name>
+
+    <value>hadoop-master,localhost,192.168.1.*,10.0.0.*</value>
+
+    <description>允许 hadoop 用户从指定主机/网段代理（根据实际网络环境调整网段）</description>
+
+</property>
+
+
+<property>
+
+    <name>hadoop.proxyuser.hadoop.groups</name>
+
+    <value>students</value>
+
+    <description>允许代理 students 组的用户</description>
+
+</property>
+<!-- 额外安全配置：限制代理用户权限 -->
+
+<property>
+
+    <name>hadoop.proxyuser.hadoop.users</name>
+
+    <value>*</value>
+
+    <description>允许代理的用户（* 表示 students 组内所有用户）</description>
+
+</property>
+
+</configuration>
