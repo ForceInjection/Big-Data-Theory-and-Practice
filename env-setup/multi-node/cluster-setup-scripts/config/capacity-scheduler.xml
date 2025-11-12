@@ -84,7 +84,7 @@
 
   <property>
     <name>yarn.scheduler.capacity.root.students.maximum-am-resource-percent</name>
-    <value>0.3</value>
+    <value>0.5</value>
     <description>ApplicationMaster 最大资源百分比</description>
   </property>
 
@@ -117,5 +117,10 @@
     <name>yarn.scheduler.capacity.rack-locality-additional-delay</name>
     <value>-1</value>
     <description>机架本地性额外延迟</description>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.default.user-limit-factor</name>
+    <value>2</value>
+    <description>default队列每用户资源限制因子</description>
   </property>
 </configuration>
