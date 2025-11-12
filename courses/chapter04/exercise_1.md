@@ -319,7 +319,7 @@ public class HDFSFileManager {
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <hadoop.version>3.3.4</hadoop.version>
+        <hadoop.version>3.4.2</hadoop.version>
     </properties>
 
     <dependencies>

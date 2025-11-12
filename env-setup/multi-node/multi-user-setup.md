@@ -358,11 +358,11 @@ mkdir -p ~/hadoop-client
 cd ~/hadoop-client
 
 # 下载 Hadoop（与集群版本保持一致）
-wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.4/hadoop-3.3.4.tar.gz
+wget https://archive.apache.org/dist/hadoop/common/hadoop-3.4.2/hadoop-3.4.2.tar.gz
 
 # 解压安装
-tar -xzf hadoop-3.3.4.tar.gz
-sudo mv hadoop-3.3.4 /opt/hadoop
+tar -xzf hadoop-3.4.2.tar.gz
+sudo mv hadoop-3.4.2 /opt/hadoop
 
 # 设置所有者
 sudo chown -R $USER:$USER /opt/hadoop
@@ -425,7 +425,7 @@ hdfs dfs -rm /users/2024001/file.txt
 
 ```bash
 # 运行 WordCount 示例
-hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar \
+hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.4.2.jar \
     wordcount \
     /public/data/wordcount/simple-test.txt \
     /users/2024001/output/wordcount-$(date +%Y%m%d-%H%M%S)
