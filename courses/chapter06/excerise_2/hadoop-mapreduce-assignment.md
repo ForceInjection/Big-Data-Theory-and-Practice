@@ -898,7 +898,13 @@ hadoop jar hadoop-assignment.jar com.bigdata.assignment.WordCountOptimizedDriver
 2. **文件命名规范**：`学号-姓名-hadoop-assignment.zip`
 3. **文件大小限制**：不超过 50MB
 
-#### 4.3.2 质量要求
+#### 4.3.2 提交格式及截止时间
+
+1. 邮件标题: "**2025 大数据理论与实践-学号-姓名-练习二**"；
+2. 邮箱地址：`grissom.wang@transwarp.io`；
+3. 邮件附件是 `学号-姓名-hadoop-assignment.zip`的压缩包
+4. 作业提交截止时间 : 2025 年11月23日23:59
+#### 4.3.3 质量要求
 
 1. **代码质量**：
 
