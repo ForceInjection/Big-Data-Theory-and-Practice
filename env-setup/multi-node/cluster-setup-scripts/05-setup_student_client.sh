@@ -30,13 +30,20 @@ if [[ ! "$STUDENT_ID" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
     exit 1
 fi
 
-# 创建模板目录
-mkdir -p "$TEMPLATES_DIR"
+# 配置文件源目录
+CONFIG_SOURCE_DIR="$SCRIPT_DIR/config"
+
+# 检查配置文件源目录是否存在
+if [ ! -d "$CONFIG_SOURCE_DIR" ]; then
+    echo "错误: 配置文件源目录 $CONFIG_SOURCE_DIR 不存在"
+    echo "请确保 config 目录包含正确的 Hadoop 配置文件"
+    exit 1
+fi
 
 echo "=== 开始配置学生 Hadoop 远程客户端环境 ==="
 echo "学号: $STUDENT_ID"
 echo "集群主节点: $CLUSTER_MASTER"
-echo "模板目录: $TEMPLATES_DIR"
+echo "配置文件源目录: $CONFIG_SOURCE_DIR"
 echo
 
 # 网络连接测试函数
@@ -76,142 +83,23 @@ test_network_connectivity() {
 # 执行网络连接测试
 test_network_connectivity
 
-# 创建配置文件模板
-echo "创建配置文件模板..."
+# 检查配置文件是否存在
+required_configs=("core-site.xml" "yarn-site.xml" "mapred-site.xml")
+missing_configs=()
 
-# core-site.xml 模板
-cat > "$TEMPLATES_DIR/core-site.xml" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration>
-    <property>
-        <name>fs.defaultFS</name>
-        <value>hdfs://$CLUSTER_MASTER:9000</value>
-        <description>HDFS 默认文件系统</description>
-    </property>
-    
-    <property>
-        <name>hadoop.tmp.dir</name>
-        <value>/tmp/hadoop-\${user.name}</value>
-        <description>Hadoop 临时目录</description>
-    </property>
-    
-    <property>
-        <name>fs.trash.interval</name>
-        <value>1440</value>
-        <description>回收站保留时间（分钟）</description>
-    </property>
-    
-    <property>
-        <name>hadoop.security.authentication</name>
-        <value>simple</value>
-        <description>认证方式</description>
-    </property>
-    
-    <property>
-        <name>hadoop.proxyuser.hadoop.hosts</name>
-        <value>*</value>
-        <description>代理用户主机</description>
-    </property>
-    
-    <property>
-        <name>hadoop.proxyuser.hadoop.groups</name>
-        <value>*</value>
-        <description>代理用户组</description>
-    </property>
-</configuration>
-EOF
+for config in "${required_configs[@]}"; do
+    if [ ! -f "$CONFIG_SOURCE_DIR/$config" ]; then
+        missing_configs+=("$config")
+    fi
+done
 
-# yarn-site.xml 模板
-cat > "$TEMPLATES_DIR/yarn-site.xml" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration>
-    <property>
-        <name>yarn.resourcemanager.hostname</name>
-        <value>$CLUSTER_MASTER</value>
-        <description>ResourceManager 主机名</description>
-    </property>
-    
-    <property>
-        <name>yarn.resourcemanager.address</name>
-        <value>$CLUSTER_MASTER:8032</value>
-        <description>ResourceManager 地址</description>
-    </property>
-    
-    <property>
-        <name>yarn.resourcemanager.scheduler.address</name>
-        <value>$CLUSTER_MASTER:8030</value>
-        <description>ResourceManager 调度器地址</description>
-    </property>
-    
-    <property>
-        <name>yarn.resourcemanager.resource-tracker.address</name>
-        <value>$CLUSTER_MASTER:8031</value>
-        <description>ResourceManager 资源跟踪器地址</description>
-    </property>
-    
-    <property>
-        <name>yarn.resourcemanager.admin.address</name>
-        <value>$CLUSTER_MASTER:8033</value>
-        <description>ResourceManager 管理地址</description>
-    </property>
-    
-    <property>
-        <name>yarn.resourcemanager.webapp.address</name>
-        <value>$CLUSTER_MASTER:8088</value>
-        <description>ResourceManager Web UI 地址</description>
-    </property>
-    
-    <property>
-        <name>yarn.nodemanager.aux-services</name>
-        <value>mapreduce_shuffle</value>
-        <description>NodeManager 辅助服务</description>
-    </property>
-    
-    <property>
-        <name>yarn.application.classpath</name>
-        <value>\$HADOOP_CONF_DIR,\$HADOOP_COMMON_HOME/share/hadoop/common/*,\$HADOOP_COMMON_HOME/share/hadoop/common/lib/*,\$HADOOP_HDFS_HOME/share/hadoop/hdfs/*,\$HADOOP_HDFS_HOME/share/hadoop/hdfs/lib/*,\$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*,\$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*,\$HADOOP_YARN_HOME/share/hadoop/yarn/*,\$HADOOP_YARN_HOME/share/hadoop/yarn/lib/*</value>
-        <description>应用程序类路径</description>
-    </property>
-</configuration>
-EOF
+if [ ${#missing_configs[@]} -gt 0 ]; then
+    echo "错误: 缺少必要的配置文件: ${missing_configs[*]}"
+    echo "请确保 config 目录包含完整的 Hadoop 配置文件"
+    exit 1
+fi
 
-# mapred-site.xml 模板
-cat > "$TEMPLATES_DIR/mapred-site.xml" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration>
-    <property>
-        <name>mapreduce.framework.name</name>
-        <value>yarn</value>
-        <description>MapReduce 框架</description>
-    </property>
-    
-    <property>
-        <name>mapreduce.jobhistory.address</name>
-        <value>$CLUSTER_MASTER:10020</value>
-        <description>JobHistory 服务地址</description>
-    </property>
-    
-    <property>
-        <name>mapreduce.jobhistory.webapp.address</name>
-        <value>$CLUSTER_MASTER:19888</value>
-        <description>JobHistory Web UI 地址</description>
-    </property>
-    
-    <property>
-        <name>mapreduce.application.classpath</name>
-        <value>\$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*:\$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*</value>
-        <description>MapReduce 应用程序类路径</description>
-    </property>
-    
-    <property>
-        <name>mapreduce.job.queuename</name>
-        <value>students</value>
-        <description>默认提交到 students 队列</description>
-    </property>
-</configuration>
-EOF
-
-echo "配置文件模板创建完成"
+echo "使用现有配置文件，跳过模板生成..."
 echo
 
 # 配置本地客户端环境
@@ -222,9 +110,9 @@ hadoop_conf_dir="$HOME/.hadoop/conf"
 mkdir -p "$hadoop_conf_dir"
 
 # 复制配置文件
-cp "$TEMPLATES_DIR/core-site.xml" "$hadoop_conf_dir/"
-cp "$TEMPLATES_DIR/yarn-site.xml" "$hadoop_conf_dir/"
-cp "$TEMPLATES_DIR/mapred-site.xml" "$hadoop_conf_dir/"
+cp "$CONFIG_SOURCE_DIR/core-site.xml" "$hadoop_conf_dir/"
+cp "$CONFIG_SOURCE_DIR/yarn-site.xml" "$hadoop_conf_dir/"
+cp "$CONFIG_SOURCE_DIR/mapred-site.xml" "$hadoop_conf_dir/"
 
 echo "配置文件已复制到: $hadoop_conf_dir"
 
