@@ -97,7 +97,7 @@ Hadoop MapReduce 作为第一代大数据处理框架，在处理大规模数据
 
 MapReduce 要求开发者必须将所有计算逻辑强制拆分为 Map 和 Reduce 两个阶段，即使是简单的 WordCount 也需要编写大量样板代码。
 
-```scala
+```java
 // MapReduce 实现 WordCount - 需要大量样板代码
 public class WordCountMapper extends Mapper<LongWritable, Text, Text, IntWritable> {
     public void map(LongWritable key, Text value, Context context)
@@ -258,14 +258,18 @@ RDD 是 Spark 提供的核心数据抽象，它代表一个不可变的、分布
 
 如果你熟悉 Java 编程，可以将 RDD 理解为"**分布式版本的 Java Collections**"。它们在 API 设计上有很多相似之处：
 
-```scala
+```java
 // Java Collections/Stream API
 List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5);
 List<Integer> doubled = numbers.stream()
     .map(x -> x * 2)           // 转换操作
     .filter(x -> x > 5)        // 过滤操作
     .collect(Collectors.toList()); // 收集结果
+```
 
+对应的 Spark RDD API：
+
+```scala
 // Spark RDD API（相似的操作模式）
 val numbers = sc.parallelize(List(1, 2, 3, 4, 5))
 val doubled = numbers
@@ -350,6 +354,12 @@ RDD 提供两种类型的操作：
 val numbers = sc.parallelize(List(1, 2, 3, 4, 5))
 val evenNumbers = numbers.filter(_ % 2 == 0)      // 转换：过滤偶数
 val squared = evenNumbers.map(x => x * x)         // 转换：平方运算
+
+val lines = sc.parallelize(List("hello world", "spark programming", "big data"))
+val words = lines.flatMap(_.split(" "))           // 转换：拆分单词
+
+val wordCounts = words.map(word => (word, 1))
+                      .reduceByKey(_ + _)          // 转换：按键聚合
 ```
 
 **2. 行动操作（Actions）**：
@@ -454,7 +464,7 @@ val criticalData = sc.textFile("hdfs://namenode:9000/critical-data.txt")
 
 // 不同的持久化策略：
 criticalData.persist(StorageLevel.MEMORY_AND_DISK_2)  // 内存+磁盘，2副本
-criticalData.persist(StorageLevel.OFF_HEAP)           // 堆外内存，减少 GC 压力
+criticalData.persist(StorageLevel.OFF_HEAP)           // 堆外内存，减少 GC 压力（需要配置 spark.memory.offHeap.enabled=true）
 
 // 将最终结果保存回 HDFS
 criticalData.saveAsTextFile("hdfs://namenode:9000/output/critical-results")
@@ -746,7 +756,7 @@ Worker 节点还负责管理本地存储，包括磁盘缓存和内存缓存，�
 
 Driver Program 是 Spark 应用程序的神经中枢，它不仅是应用程序的入口点，更是整个分布式计算过程的协调者和控制者。在 Spark 的设计哲学中，Driver Program 承担着将用户的高级数据处理逻辑转换为可在集群上并行执行的底层任务的重要职责。这种设计使得用户可以用简洁的代码表达复杂的分布式计算逻辑，而无需关心底层的任务分发、数据传输和故障处理等细节。
 
-Driver Program 的内部结构包含多个关键组件，每个组件都有其特定的职责和作用机制。SparkContext 作为应用程序的核心上下文，不仅负责与集群管理器的通信，还维护着应用程序的全局状态信息。它通过 DAGScheduler（有向无环图调度器）来分析用户定义的 RDD 转换链，将复杂的数据处理流程分解为多个阶段（Stage），每个阶段包含可以并行执行的任务集合。
+Driver Program 的内部结构包含多个关键组件，每个组件都有其特定的职责和作用机制。SparkContext 作为应用程序的核心上下文，不仅负责与集群管理器的通信，还维护着应用程序的全局状态信息。它通过 `DAGScheduler`（有向无环图调度器）来分析用户定义的 RDD 转换链，将复杂的数据处理流程分解为多个阶段（Stage），每个阶段包含可以并行执行的任务集合。
 
 **RDD 依赖图构建**是 Driver Program 中的核心功能之一，它负责根据用户的转换操作构建 RDD 的依赖关系图。这个图不仅记录了数据的转换逻辑，还包含了优化信息，如数据分区策略、缓存策略等。通过分析这个图，Spark 能够进行各种优化，如管道化执行、数据本地性优化等，从而显著提升计算性能。任务调度器则负责将 DAGScheduler 生成的任务分发到集群中的各个 Executor 上执行，它需要考虑多种因素，包括数据本地性、负载均衡、资源可用性等。
 
@@ -1465,12 +1475,12 @@ spark-submit \
 
 #### 2.2.4 各种部署模式的适用场景
 
-| 部署模式   | 适用场景               | 优势                 | 劣势                   |
-| ---------- | ---------------------- | -------------------- | ---------------------- |
-| Standalone | 小规模集群、开发测试   | 简单易用、快速部署   | 功能有限、缺乏高级调度 |
-| YARN       | Hadoop 生态环境        | 成熟稳定、资源共享   | 复杂度高、依赖 Hadoop  |
-| Kubernetes | 云原生环境、微服务架构 | 现代化、自动化程度高 | 学习成本高、相对较新   |
-| Mesos      | 大规模多框架环境       | 细粒度资源控制       | 复杂度极高、维护困难   |
+| **部署模式** | **适用场景**           | **优势**             | **劣势**               |
+| ------------ | ---------------------- | -------------------- | ---------------------- |
+| `Standalone` | 小规模集群、开发测试   | 简单易用、快速部署   | 功能有限、缺乏高级调度 |
+| `YARN`       | Hadoop 生态环境        | 成熟稳定、资源共享   | 复杂度高、依赖 Hadoop  |
+| `Kubernetes` | 云原生环境、微服务架构 | 现代化、自动化程度高 | 学习成本高、相对较新   |
+| `Mesos`      | 大规模多框架环境       | 细粒度资源控制       | 复杂度极高、维护困难   |
 
 > **历史说明**：Spark on Mesos 曾经是 Spark 支持的重要部署模式之一，Apache Mesos 作为分布式系统内核，能够提供细粒度的资源管理和多框架支持。Spark 在 Mesos 上支持两种运行模式：粗粒度模式（Coarse-grained Mode）和细粒度模式（Fine-grained Mode）。然而，随着 Kubernetes 等现代容器编排平台的兴起，以及 Mesos 生态的逐渐衰落，Apache Spark 社区在 **Spark 3.2.0 版本中正式弃用了对 Mesos 的支持**，并在 **Spark 4.0.0 版本中完全移除了 Mesos 相关代码**。目前建议使用 Kubernetes 作为现代化的容器编排和资源管理平台。
 
@@ -5618,77 +5628,40 @@ Tungsten 执行引擎通过内存管理优化、缓存友好的数据布局和 C
 ## 参考文献
 
 [1] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-
 [2] **Matei Zaharia, et al.** "Spark: Cluster Computing with Working Sets." _Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing_, 2010.
-
 [3] **Reynold Xin, et al.** "Project Tungsten: Bringing Spark Closer to Bare Metal." _Spark Summit_, 2015.
-
 [4] **Michael Armbrust, et al.** "Adaptive Query Execution in Spark SQL." _Proceedings of the VLDB Endowment_, Vol. 14, No. 12, 2021.
-
 [5] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-
 [6] **Michael Armbrust, et al.** "Spark SQL: Relational Data Processing in Spark." _Proceedings of the 2015 ACM SIGMOD International Conference on Management of Data_, 2015.
-
 [7] **Michael Armbrust, et al.** "Structured Streaming: A Declarative API for Real-Time Applications in Apache Spark." _Proceedings of the 2018 International Conference on Management of Data_, 2018.
-
 [8] **Michael Armbrust, et al.** "Spark SQL: Relational Data Processing in Spark." _Proceedings of the 2015 ACM SIGMOD International Conference on Management of Data_, 2015.
-
 [9] **Tathagata Das, et al.** "Discretized Streams: Fault-Tolerant Streaming Computation at Scale." _Proceedings of the Twenty-Fourth ACM Symposium on Operating Systems Principles_, 2013.
-
 [10] **Michael Armbrust, et al.** "Structured Streaming: A Declarative API for Real-Time Applications in Apache Spark." _Proceedings of the 2018 International Conference on Management of Data_, 2018.
-
 [11] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-
 [12] **Matei Zaharia, et al.** "Spark: Cluster Computing with Working Sets." _Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing_, 2010.
-
 [13] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-
 [14] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-
 [15] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-
 [16] **Patrick Wendell, et al.** "Managing Apache Spark Workloads with Dynamic Resource Allocation." _Spark Summit_, 2014.
-
 [17] **Matei Zaharia, et al.** "Spark: Cluster Computing with Working Sets." _Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing_, 2010.
-
 [18] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-
 [19] **Apache Software Foundation.** "Apache Spark Documentation." Retrieved from <https://spark.apache.org/docs/latest/>
-
 [20] **Apache Software Foundation.** "Spark Programming Guide." Retrieved from <https://spark.apache.org/docs/latest/programming-guide.html>
-
 [21] **Apache Software Foundation.** "Spark SQL and DataFrames." Retrieved from <https://spark.apache.org/docs/latest/sql-programming-guide.html>
-
 [22] **Apache Software Foundation.** "Structured Streaming Programming Guide." Retrieved from <https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html>
-
 [23] **Apache Software Foundation.** "MLlib: Machine Learning Library." Retrieved from <https://spark.apache.org/docs/latest/ml-guide.html>
-
 [24] **Apache Software Foundation.** "GraphX: Graph Processing in Spark." Retrieved from <https://spark.apache.org/docs/latest/graphx-programming-guide.html>
-
 [25] **Apache Software Foundation.** "Spark Configuration." Retrieved from <https://spark.apache.org/docs/latest/configuration.html>
-
 [26] **Apache Software Foundation.** "Spark Performance Tuning." Retrieved from <https://spark.apache.org/docs/latest/tuning.html>
-
 [27] **Apache Software Foundation.** "Spark Monitoring and Instrumentation." Retrieved from <https://spark.apache.org/docs/latest/monitoring.html>
-
 [28] **Apache Software Foundation.** "Spark Security." Retrieved from <https://spark.apache.org/docs/latest/security.html>
-
 [29] **Apache Software Foundation.** "Spark Cluster Overview." Retrieved from <https://spark.apache.org/docs/latest/cluster-overview.html>
-
 [30] **Apache Software Foundation.** "Running Spark on YARN." Retrieved from <https://spark.apache.org/docs/latest/running-on-yarn.html>
-
 [31] **Apache Software Foundation.** "Running Spark on Kubernetes." Retrieved from <https://spark.apache.org/docs/latest/running-on-kubernetes.html>
-
 [32] **Apache Software Foundation.** "Spark RDD API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/rdd/RDD.html>
-
 [33] **Apache Software Foundation.** "Spark DataFrame API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/Dataset.html>
-
 [34] **Apache Software Foundation.** "Spark SQL Functions." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/functions$.html>
-
 [35] **Apache Software Foundation.** "Spark MLlib API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/index.html>
-
 [36] **Apache Software Foundation.** "Spark GraphX API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/graphx/index.html>
-
 [37] **Apache Software Foundation.** "Spark Streaming API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/streaming/index.html>
-
 [38] **Apache Software Foundation.** "Structured Streaming API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/streaming/index.html>
