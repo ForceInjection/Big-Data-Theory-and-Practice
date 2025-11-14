@@ -53,7 +53,7 @@ object SparkShellDemo {
     // 3. 数据缓存演示
     println("\n3. 数据缓存演示:")
     
-    val expensiveRDD = sc.parallelize(1 to 1000000)
+    val expensiveRDD = sc.parallelize(1 to 1000)
       .map(x => {
         // 模拟耗时操作
         Thread.sleep(1)
@@ -62,7 +62,7 @@ object SparkShellDemo {
     
     // 第一次计算
     val start1 = System.currentTimeMillis()
-    val result1 = expensiveRDD.filter(_ > 500000).count()
+    val result1 = expensiveRDD.filter(_ > 500).count()
     val time1 = System.currentTimeMillis() - start1
     println(s"第一次计算耗时: ${time1}ms, 结果: $result1")
     
@@ -72,7 +72,7 @@ object SparkShellDemo {
     
     // 第二次计算
     val start2 = System.currentTimeMillis()
-    val result2 = expensiveRDD.filter(_ > 800000).count()
+    val result2 = expensiveRDD.filter(_ > 800).count()
     val time2 = System.currentTimeMillis() - start2
     println(s"缓存后计算耗时: ${time2}ms, 结果: $result2")
     

@@ -4,7 +4,7 @@
 
 echo "=== 运行 Scala Demo 程序 ==="
 
-JAR_FILE="target/scala-2.13/spark-3-5-demo_2.13-1.0.jar"
+JAR_FILE="target/scala-2.12/spark-3-5-demo_2.12-1.0.jar"
 
 if [ ! -f "$JAR_FILE" ]; then
     echo "JAR 文件不存在，请先运行: ./scripts/build.sh"

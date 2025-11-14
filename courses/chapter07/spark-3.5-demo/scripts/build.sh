@@ -14,4 +14,4 @@ echo "开始构建项目..."
 sbt clean package
 
 echo "=== 构建完成 ==="
-echo "JAR 文件位置: target/scala-2.13/spark-3.5-demo_2.13-1.0.jar"
+echo "JAR 文件位置: target/scala-2.12/spark-3-5-demo_2.12-1.0.jar"

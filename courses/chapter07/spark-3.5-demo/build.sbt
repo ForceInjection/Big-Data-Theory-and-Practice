@@ -1,7 +1,7 @@
 // 项目设置
 name := "spark-3.5-demo"
 version := "1.0"
-scalaVersion := "2.13.12"
+scalaVersion := "2.12.18"
 
 // Spark 依赖
 val sparkVersion = "3.5.1"
