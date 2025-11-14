@@ -903,7 +903,7 @@ hadoop jar hadoop-assignment.jar com.bigdata.assignment.WordCountOptimizedDriver
 1. 邮件标题: "**2025 大数据理论与实践-学号-姓名-练习二**"；
 2. 邮箱地址：`grissom.wang@transwarp.io`；
 3. 邮件附件是 `学号-姓名-hadoop-assignment.zip`的压缩包
-4. 作业提交截止时间 : 2025 年 11 月 23 日 23:59
+4. 作业提交截止时间 : 2025 年 11 月 30 日 23:59
 
 #### 4.3.3 质量要求
 
