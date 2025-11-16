@@ -10,9 +10,13 @@
 
 ## 2. [参考书籍](./books/README.md)
 
-《daHadoop 权威指南》第 4 版：
+《**Hadoop 权威指南**》第 4 版：
 
 ![hadoop-definitive-guide.jpg](./books/hadoop-definitive-guide-cover.jpg)
+
+《**大数据处理框架 Apache Spark 设计与实现**》：
+
+![大数据处理框架Apache Spark设计与实现](https://img1.doubanio.com/view/subject/l/public/s33687169.jpg)
 
 ---
 
@@ -45,8 +49,26 @@
   - [练习 1](./courses/chapter04/exercise_1.md)
 
 - **第五讲**：
+
   - [MapReduce 分布式计算框架](./courses/chapter05/map-reduce.md)
   - [学生使用指南](./courses/chapter05/student-guide.md)
+
+- **第六讲**：
+
+  - [YARN 与 Kubernetes 底层隔离技术深度分析](./courses/chapter06/YARN-Kubernetes-底层隔离技术深度分析.md)
+  - [练习 2：YARN 资源管理实践](./courses/chapter06/excerise_2/)
+
+- **第七讲**：
+
+  - [Apache Spark 设计与实现](./courses/chapter07/Apache%20Spark%20设计与实现.md)
+  - [第 06 讲-分布式计算框架 Spark](./courses/chapter07/第06讲-分布式计算框架Spark.pdf)
+  - [Spark 3.5 演示项目](./courses/chapter07/spark-3.5-demo/)
+
+- **第八讲**：
+  - [Apache Hive 设计与实现](./courses/chapter08/Apache%20Hive%20设计与实现.md)
+  - [列式存储：Parquet 文件格式解析](./courses/chapter08/列式存储：Parquet%20文件格式解析.md)
+  - [Parquet 实践练习](./courses/chapter08/Parquet实践练习.md)
+  - [Parquet 实践项目](./courses/chapter08/parquet-practice-project/)
 
 ---
 
