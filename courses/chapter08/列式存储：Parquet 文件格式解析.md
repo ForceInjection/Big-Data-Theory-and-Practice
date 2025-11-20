@@ -691,7 +691,7 @@ Parquet 的 **Repetition Level（重复层级）** 和 **Definition Level（定�
 - 值范围：0 到最大嵌套深度
 - 0 表示新记录的开始，大于 0 表示在某个层级的重复
 
-**通俗理解**：当遇到一个数组或列表时，它告诉我们"当前值属于哪个层级的重复结构"。例如，一个用户有多个联系人，每个联系人有多个电话，`Repetition Level` 会标记电话属于哪个联系人。
+**通俗理解**：当遇到一个**数组**或**列表**时，它告诉我们"当前值属于哪个层级的重复结构"。例如，一个用户有多个联系人，每个联系人有多个电话，`Repetition Level` 会标记电话属于哪个联系人。
 
 #### 4.1.2 Definition Level（定义层级）
 
@@ -703,7 +703,7 @@ Parquet 的 **Repetition Level（重复层级）** 和 **Definition Level（定�
 - 值范围：0 到路径中可选字段的最大深度
 - 数值越大，表示路径定义得越深
 
-**通俗理解**：如果某个字段是可选的（比如 null），`Definition Level` 会告诉我们"这个字段的父级路径存在到哪里"。例如，如果字段 `a.b.c` 存在，而路径 `a.b` 是必需的，但 `c` 是可选的，`Definition Level` 会表示 `c` 是否存在。
+**通俗理解**：如果某个字段是可选的（比如 null），`Definition Level` 会告诉我们"这个字段的**父级路径**存在到哪里"。例如，如果字段 `a.b.c` 存在，而路径 `a.b` 是必需的，但 `c` 是可选的，`Definition Level` 会表示 `c` 是否存在。
 
 ### 4.2 Dremel 论文示例分析
 
@@ -804,7 +804,73 @@ message Document {
 
 **验证结论**：示例数据完全符合 Schema 定义，涵盖了必需字段、可选字段、字段缺失和显式 null 值等各种情况。
 
-#### 4.2.3 字段分析：`Name.Language.code`
+**存储结构说明**：在 Parquet 的最终存储中，这个嵌套数据结构将被转换为列式存储格式：
+
+1. **列式布局**：
+
+   - `doc_id` (INT64): [10]
+   - `Links.backward` (STRING): ["d1", "d3"]
+   - `Links.forward` (STRING): ["d2", "d4"]
+   - `Name.Language.code` (STRING): ["en", "zh", "fr"]
+   - `Name.Language.country` (STRING): ["us", null]
+   - `Name.url` (STRING): ["http://example.com"]
+
+2. **层级标记**：
+
+   - 使用 **Repetition Level** 标记嵌套重复关系
+   - 使用 **Definition Level** 处理可选字段和 null 值
+   - 通过 RL/DL 值可以完整重建原始嵌套结构
+
+3. **编码优势**：
+   - 同类数据聚集存储，压缩效率高
+   - 查询时只需读取相关列，I/O 效率高
+   - 完美支持复杂嵌套数据结构
+
+**具体存储示例（Dremel 论文表示法）**：
+
+Dremel 论文使用表格形式直观展示 RL 和 DL 值，更易于理解：
+
+**Name.Language.code 列存储表示**：
+
+| 值   | Repetition Level | Definition Level | 说明                     |
+| ---- | ---------------- | ---------------- | ------------------------ |
+| "en" | 0                | 3                | 新文档开始，完整路径存在 |
+| "zh" | 2                | 3                | 在 Language 层级重复     |
+| "fr" | 1                | 3                | 在 Name 层级重复         |
+
+**Name.Language.country 列存储表示**：
+
+| 值   | Repetition Level | Definition Level | 说明                            |
+| ---- | ---------------- | ---------------- | ------------------------------- |
+| "us" | 0                | 3                | 新文档开始，完整路径存在        |
+| null | 2                | 3                | 在 Language 层级重复，值为 null |
+
+**各列的完整存储信息**：
+
+```text
+# Name.Language.code 列
+数据值: ["en", "zh", "fr"] → 字典编码: [0, 1, 2]
+字典表: ["en", "zh", "fr"] (按首次出现顺序排序)
+RL值: [0, 2, 1] → RLE编码: (0,1), (2,1), (1,1)  # (值,重复次数): (0出现1次), (2出现1次), (1出现1次)
+DL值: [3, 3, 3] → RLE编码: (3,3)                # (值,重复次数): (3连续出现3次)
+
+# Name.Language.country 列
+数据值: ["us", null] → 字典编码: [0, null] → 实际存储编码: [0] (null 值不进入字典，使用特定标记)
+字典表: ["us"]
+RL值: [0, 2] → RLE编码: (0,1), (2,1)
+DL值: [3, 3] → RLE编码: (3,2)
+
+# 文件尾元数据包含：
+- Schema: 完整的 protobuf Schema 定义
+- 统计信息: 每列的最小值、最大值、空值数量、不同值数量
+- 字典信息: 所有字典编码列的字典表
+- 编码信息: 各列使用的编码方式（PLAIN, RLE, BIT_PACKED, DELTA_LENGTH_BYTE_ARRAY, etc）
+- 压缩信息: 使用的压缩算法（SNAPPY, GZIP, LZO, etc）
+- 行组信息: 行组边界、行数统计
+- 页信息: 数据页和字典页的偏移量和大小
+```
+
+#### 4.2.3 `Name.Language.code` 字段完整分析
 
 **字段路径分析**：
 
@@ -848,7 +914,7 @@ message Document {
 | 2        | "zh"   | 3                    | 完整路径都存在 |
 | 3        | "fr"   | 3                    | 完整路径都存在 |
 
-#### 4.2.4 数据存储表格
+##### 4.2.3.3 数据存储与重建
 
 **`Name.Language.code` 字段的列式存储**：
 
@@ -860,17 +926,50 @@ message Document {
 
 **数据重建过程**：
 
-1. **"en" (RL=0, DL=3)**：从文档根开始，构建路径 `Document → Name[0] → Language[0] → code="en"`
-2. **"zh" (RL=2, DL=3)**：在 Language 层级重复，构建 `Name[0] → Language[1] → code="zh"`
-3. **"fr" (RL=1, DL=3)**：在 Name 层级重复，构建 `Name[1] → Language[0] → code="fr"`
+**步骤 1：处理 "en" (RL=0, DL=3)**:
 
-**重建算法说明**：
+```bash
+算法逻辑：
+1. RL=0 → 从文档根开始新的记录
+2. DL=3 → 完整路径存在，字段有值
+3. 构建路径：Document → Name[0] → Language[0] → code="en"
+4. 结果：创建第一个完整的嵌套结构
+```
 
-- 根据 Repetition Level 确定从哪个层级开始构建新的嵌套结构
-- 根据 Definition Level 确定路径的完整性和字段的存在性
-- 按顺序处理每个值，逐步重建完整的嵌套数据结构
+**步骤 2：处理 "zh" (RL=2, DL=3)**:
 
-#### 4.2.5 字段分析：`Name.Language.country`
+```bash
+算法逻辑：
+1. RL=2 → 在 Language 层级重复（层级 2）
+2. DL=3 → 完整路径存在，字段有值
+3. 构建路径：Name[0] → Language[1] → code="zh"
+4. 结果：在现有 Name[0] 下添加新的 Language[1]
+```
+
+**步骤 3：处理 "fr" (RL=1, DL=3)**:
+
+```bash
+算法逻辑：
+1. RL=1 → 在 Name 层级重复（层级 1）
+2. DL=3 → 完整路径存在，字段有值
+3. 构建路径：Name[1] → Language[0] → code="fr"
+4. 结果：创建新的 Name[1] 结构
+```
+
+**重建算法核心原理**：
+
+- **Repetition Level 决定重复位置**：指示在哪个层级开始重复，从而确定数据结构的嵌套关系
+- **Definition Level 决定字段存在性**：确保路径的完整性和字段的存在状态
+- **组合使用实现精确重建**：通过 RL 和 DL 的组合，可以完全重建原始的嵌套数据结构
+
+**算法优势**：
+
+- **空间效率**：只存储实际存在的字段值
+- **结构完整**：保持原始数据的嵌套层次关系
+- **类型安全**：明确区分 null 值和字段缺失
+- **处理简单**：必需字段的重建逻辑相对简单
+
+#### 4.2.4 `Name.Language.country` 字段完整分析
 
 **字段路径分析**：
 
@@ -884,7 +983,7 @@ message Document {
 - `Name` 和 `Language` 是重复字段（影响 Repetition Level）
 - `country` 是可选字段（影响 Definition Level 的计算）
 
-##### 4.2.5.1 Repetition Level 计算
+##### 4.2.4.1 Repetition Level 计算
 
 **具体计算**：
 
@@ -894,7 +993,7 @@ message Document {
 | 2        | 缺失   | Name[0].Language[1].country | 2                    | Language 层级重复 |
 | 3        | null   | Name[1].Language[0].country | 1                    | Name 层级重复     |
 
-##### 4.2.5.2 Definition Level 计算
+##### 4.2.4.2 Definition Level 计算
 
 **计算规则**：对于可选字段，Definition Level 表示路径中已定义的层级深度。
 
@@ -911,7 +1010,7 @@ message Document {
 - **DL = 2**：表示路径到 `Language` 层级存在，但 `country` 字段在数据中缺失
 - **DL = 3**：表示完整路径存在，`country` 字段有定义（包括显式的 null 值）
 
-#### 4.2.6 `Name.Language.country` 数据存储表格
+##### 4.2.4.3 数据存储与重建
 
 **`Name.Language.country` 字段的列式存储**：
 
@@ -952,18 +1051,6 @@ message Document {
 3. 构建路径：Name[1] → Language[0] → country=null
 4. 结果：创建新的 Name[1] 结构，包含显式 null 值
 ```
-
-**重建算法核心原理**：
-
-- **Repetition Level 决定重复位置**：指示在哪个层级开始重复，从而确定数据结构的嵌套关系
-- **Definition Level 决定字段存在性**：区分字段缺失（DL < 最大深度）和字段为 null（DL = 最大深度）
-- **组合使用实现精确重建**：通过 RL 和 DL 的组合，可以完全重建原始的嵌套数据结构
-
-**算法优势**：
-
-- **空间效率**：只存储实际存在的字段值
-- **类型安全**：明确区分 null 值和字段缺失
-- **结构完整**：保持原始数据的嵌套层次关系
 
 ### 4.3 本章小结
 
