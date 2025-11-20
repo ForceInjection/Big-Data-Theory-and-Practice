@@ -89,60 +89,63 @@ Hive 的核心设计目标体现了对传统数据仓库局限性的深刻反思
 
 传统关系型数据库在处理大规模数据时暴露出诸多限制。以典型的数据仓库查询为例，传统数据库的问题主要体现在：
 
-**1. 扩展性限制**：
-
-传统数据库通常采用纵向扩展（Scale-up）方式，通过增加更强大的硬件来提升性能，这种方式成本高昂且存在物理上限。
-
-```sql
--- 传统数据库面临扩展瓶颈
--- 数据量增长 → 需要更强大硬件 → 成本指数级增长 → 最终达到物理极限
-```
-
-**2. 成本问题**：
-
-商业数据库许可证费用昂贵，高端硬件设备投资巨大，维护成本高。
-
-**3. 批处理性能**：
-
-传统数据库优化了事务处理（OLTP），但在批处理分析（OLAP）方面性能不足，不适合海量数据的批量处理。
+1. **扩展性限制**：传统数据库通常采用纵向扩展（Scale-up）方式，通过增加更强大的硬件来提升性能，这种方式成本高昂且存在物理上限；
+2. **成本问题**：商业数据库许可证费用昂贵，高端硬件设备投资巨大，维护成本高；
+3. **批处理性能**：传统数据库优化了事务处理（OLTP），但在批处理分析（OLAP）方面性能不足，不适合海量数据的批量处理。
 
 Hive 针对传统数据库的以上问题，提出了革命性的解决方案。
 
-**1. 横向扩展架构**：
+1. **横向扩展架构**：Hive 基于 Hadoop 生态系统，采用横向扩展（Scale-out）方式，通过增加普通商用服务器来提升处理能力，成本线性增长；
+2. **开源零许可成本**：Hive 是开源软件，无需支付许可证费用，可以利用廉价的商用硬件构建大规模数据仓库；
+3. **批处理优化**：Hive 专门优化了批处理操作，适合海量数据的分析查询，通过 MapReduce/Tez 等分布式计算框架实现高性能并行处理。
 
-Hive 基于 Hadoop 生态系统，采用横向扩展（Scale-out）方式，通过增加普通商用服务器来提升处理能力，成本线性增长。
-
-**2. 开源零许可成本**：
-
-Hive 是开源软件，无需支付许可证费用，可以利用廉价的商用硬件构建大规模数据仓库。
-
-**3. 批处理优化**：
-
-Hive 专门优化了批处理操作，适合海量数据的分析查询，通过 MapReduce/Tez 等分布式计算框架实现高性能并行处理。
+以下是一个典型的 Hive 查询示例，展示了 Hive 如何处理大规模数据的分析查询：
 
 ```sql
--- Hive 支持熟悉的 SQL 语法
-SELECT department, AVG(salary) as avg_salary
-FROM employees
-WHERE hire_date > '2020-01-01'
-GROUP BY department
-HAVING avg_salary > 100000;
+-- Hive 支持标准 SQL 语法，实现与关系型数据库的语法兼容
+SELECT
+    department,
+    AVG(salary) as avg_salary  -- 计算每个部门的平均薪资
+FROM
+    employees                  -- 员工明细数据表
+WHERE
+    hire_date > '2020-01-01'   -- 筛选2020年后入职的员工
+    -- 建议使用: hire_date > DATE '2020-01-01' 以明确日期类型
+GROUP BY
+    department                 -- 按部门分组进行聚合计算
+HAVING
+    avg_salary > 100000;      -- 筛选平均薪资超过100,000的部门
 ```
 
-通过以上示例可以清晰看出两者在架构设计和适用场景方面的巨大差异。为了更全面地理解 Hive 的技术优势，下表从多个维度对两个系统进行详细对比：
+**语句说明：**
 
-| **对比维度**   | **传统关系型数据库**  | **Apache Hive**                 | **优势说明**             |
-| -------------- | --------------------- | ------------------------------- | ------------------------ |
-| **扩展方式**   | 纵向扩展（Scale-up）  | 横向扩展（Scale-out）           | 成本效益更好，无物理上限 |
-| **数据规模**   | TB 级别               | PB 级别                         | 处理海量数据能力更强     |
-| **成本模型**   | 高（许可证+高端硬件） | 低（开源+商用硬件）             | 总体拥有成本大幅降低     |
-| **查询延迟**   | 毫秒到秒级            | 分钟到小时级                    | 适合批处理而非实时查询   |
-| **数据模型**   | 规范化                | 反规范化                        | 更适合分析型查询         |
-| **事务支持**   | 完整的 ACID 事务      | 有限的事务支持（Hive 3.0+增强） | 适用场景不同             |
-| **并发性能**   | 高并发 OLTP           | 高吞吐批处理                    | 工作负载特性不同         |
-| **生态集成**   | 封闭生态系统          | 开放的 Hadoop 生态系统          | 更丰富的工具链集成       |
-| **开发灵活性** | 固定的存储引擎        | 多种文件格式和计算引擎选择      | 更灵活的架构设计         |
-| **适用场景**   | 事务处理、实时查询    | 批处理分析、数据仓库            | 互补而非替代关系         |
+- **查询目标**：统计 2020 年 1 月 1 日之后入职员工的各部门平均薪资，筛选出平均薪资超过 100,000 的部门（典型 OLAP 分析场景）
+- **SELECT 子句**：选择部门字段，对薪资字段执行平均值聚合计算，结果别名为 avg_salary
+- **FROM 子句**：数据来源于员工明细表 employees，包含部门、薪资、入职日期等业务字段
+- **WHERE 子句**：行级过滤条件，筛选入职日期晚于 2020-01-01 的记录；建议使用 `DATE '2020-01-01'` 明确日期类型
+- **GROUP BY 子句**：按部门字段进行分组，触发聚合计算阶段
+- **HAVING 子句**：对分组聚合结果进行二次过滤，保留平均薪资超过 100,000 的部门
+- **输出结果**：生成"部门名称 - 平均薪资"格式的结果集，支持业务分析和报表展示
+
+**Hive 执行特性（简述）：**
+
+- **语法兼容**：上述标准 SQL 在 Hive 中可直接执行，体现与关系型数据库一致的查询表达能力。
+- **物理执行**：`WHERE` 条件通常可谓词下推至扫描阶段，`GROUP BY` 产生聚合任务（支持部分/全聚合），`HAVING` 在聚合完成后进行结果过滤；具体由 `MapReduce` / `Tez` / `Spark` 等执行引擎承载。
+
+通过以上示例可以清晰看出两者在架构设计和适用场景方面的巨大差异。为了更全面地理解 `Hive` 的技术优势，下表从多个维度对两个系统进行详细对比：
+
+| **对比维度**       | **传统关系型数据库**        | **Apache Hive**                      | **技术特点说明**                                                                 |
+| ------------------ | --------------------------- | ------------------------------------ | -------------------------------------------------------------------------------- |
+| **扩展架构**       | 纵向扩展（Scale-up）        | 横向扩展（Scale-out）                | Hive 支持通过增加普通服务器节点实现线性扩展，成本效益更优且无物理性能上限        |
+| **数据处理规模**   | TB 级别                     | PB 级别                              | Hive 基于分布式架构设计，具备处理海量数据的能力                                  |
+| **总体拥有成本**   | 高（商业许可证 + 专用硬件） | 低（开源软件 + 商用硬件）            | Hive 采用开源模式，大幅降低软件许可和硬件投资成本                                |
+| **查询响应性能**   | 毫秒到秒级（OLTP 场景）     | 分钟到小时级（批处理场景）           | Hive 针对批处理分析优化，适合大规模数据离线分析而非实时交互查询                  |
+| **数据建模方式**   | 规范化范式设计              | 反范式宽表设计                       | Hive 采用更适合分析查询的宽表模型，减少多表关联开销                              |
+| **事务支持能力**   | 完整的 ACID 事务支持        | 有限的事务支持（Hive 3.0+ 版本增强） | 传统数据库针对事务一致性优化，Hive 更注重批处理吞吐量                            |
+| **并发处理特性**   | 高并发在线事务处理（OLTP）  | 高吞吐批处理分析（OLAP）             | 两者针对不同的工作负载特性进行优化，形成互补关系                                 |
+| **生态系统集成**   | 相对封闭的专有生态系统      | 开放的 Hadoop 大数据生态系统         | Hive 深度集成 Hadoop 生态工具链，提供更丰富的数据处理能力                        |
+| **技术架构灵活性** | 固定的存储引擎和计算模型    | 支持多种文件格式和计算引擎选择       | Hive 提供 ORC、Parquet 等多种文件格式和 MapReduce、Tez、Spark 等多种计算引擎选择 |
+| **典型应用场景**   | 在线事务处理、实时业务系统  | 数据仓库、批处理分析、离线报表       | 两者分别适用于实时事务处理和批量数据分析场景，形成技术互补                       |
 
 通过这个全面的对比分析，我们可以清楚地看到 Hive 在各个维度上的技术特点和适用场景。这些优势的实现离不开 Hive 强大的生态系统支撑，接下来我们将深入了解 Hive 生态系统的各个组件。
 
@@ -152,21 +155,21 @@ Hive 生态系统包含多个组件，形成了完整的数据仓库平台：
 
 ```text
 ┌───────────────────────────────────────────────────────┐
-│                   Hive Applications                     │
+│                   Hive Applications                   │
 ├─────────────┬─────────────┬─────────────┬─────────────┤
 │   Hive CLI  │  Beeline    │   JDBC/ODBC │   Web UI    │
 │             │  Client     │   Drivers   │   Interface │
 ├─────────────┴─────────────┴─────────────┴─────────────┤
 │                 Hive Server (HS2)                     │
 ├─────────────┬─────────────┬─────────────┬─────────────┤
-│  Metadata  │  Query      │  Execution  │  Security   │
-│  Store     │  Compiler   │  Engine     │  Module     │
+│  Metadata   │  Query      │  Execution  │  Security   │
+│  Store      │  Compiler   │  Engine     │  Module     │
 ├─────────────┴─────────────┴─────────────┴─────────────┤
 │               Storage Subsystem                       │
 ├─────────────┬─────────────┬─────────────┬─────────────┤
 │    HDFS     │   ORC       │  Parquet    │  Other      │
 │             │   Format    │  Format     │  Formats    │
-└───────────────────────────────────────────────────────┘
+└─────────────┴─────────────┴─────────────┴─────────────┘
 ```
 
 _图 1-1 Hive 生态系统组件概览。_
@@ -194,37 +197,37 @@ Hive 的整体架构采用分层设计理念，将复杂的分布式处理逻辑
 
 ```text
 ┌─────────────────────────────────────────────────────┐
-│                User Interface Layer                  │
+│                User Interface Layer                 │
 ├─────────────────────────────────────────────────────┤
-│  Hive CLI    │   Beeline    │   JDBC/ODBC   │ Web UI │
+│  Hive CLI    │   Beeline   │   JDBC/ODBC   │ Web UI │
 └─────────────────────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────┐
-│                Hive Services Layer                   │
+│                Hive Services Layer                  │
 ├─────────────────────────────────────────────────────┤
-│  Hive Server 2 (HS2)  │  Metastore Service         │
+│  Hive Server 2 (HS2)   │  Metastore Service         │
 └─────────────────────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────┐
-│                Processing Layer                      │
+│                Processing Layer                     │
 ├─────────────────────────────────────────────────────┤
-│  Driver  │  Compiler  │  Optimizer  │  Executor     │
+│  Driver  │  Compiler   │  Optimizer  │  Executor    │
 └─────────────────────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────┐
-│                Execution Layer                       │
+│                Execution Layer                      │
 ├─────────────────────────────────────────────────────┤
 │  MapReduce  │   Tez    │   Spark    │  LLAP         │
 └─────────────────────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────┐
-│                Storage Layer                         │
+│                Storage Layer                        │
 ├─────────────────────────────────────────────────────┤
-│  HDFS      │  ORC     │  Parquet    │  Other Formats │
+│  HDFS      │  ORC     │  Parquet   │  Other Formats │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -233,18 +236,84 @@ _图 1-2 Hive 分层架构设计。_
 **各层功能详解：**
 
 1. **用户接口层（User Interface Layer）**：提供多种客户端访问方式，包括传统的 Hive CLI、现代化的 Beeline 客户端、标准的 JDBC/ODBC 驱动以及 Web 界面，满足不同用户群体的使用需求。
-
 2. **服务层（Hive Services Layer）**：包含 Hive Server 2（HS2）和元数据服务（Metastore Service）。HS2 提供多用户并发访问支持，元数据服务负责管理表结构、分区信息等元数据。
-
 3. **处理层（Processing Layer）**：这是 Hive 的核心处理引擎，包括驱动（Driver）、编译器（Compiler）、优化器（Optimizer）和执行器（Executor）。负责将 SQL 查询转换为可执行的分布式任务。
-
 4. **执行层（Execution Layer）**：支持多种执行引擎，包括传统的 MapReduce、高性能的 Tez、内存计算的 Spark 以及实时查询的 LLAP。用户可以根据具体场景选择最适合的执行引擎。
-
 5. **存储层（Storage Layer）**：基于 Hadoop 分布式文件系统（HDFS），支持多种优化的文件格式，如列式存储的 ORC 和 Parquet，以及行式存储的文本格式等。
 
-这种分层架构设计使得 Hive 具有良好的扩展性和灵活性。各个层次之间通过清晰的接口进行通信，允许独立的技术演进和优化。接下来我们将深入分析架构中的核心组件。
+这种分层架构设计使得 Hive 具有良好的扩展性和灵活性。各个层次之间通过清晰的接口进行通信，允许独立的技术演进和优化。
 
-#### 1.2.2 元数据存储（Metastore）
+#### 1.2.2 Hive SQL 完整执行流程
+
+为了深入理解 Hive 的工作原理，我们需要从系统层面分析一个 SQL 查询的完整执行过程。Hive 的执行流程体现了其分层架构中各组件之间的协同工作机制。
+
+**Hive SQL 执行全流程：**
+
+1. **客户端提交 SQL 查询**
+
+   - 通过 CLI、Beeline、JDBC 等接口提交
+   - 查询发送到 Hive Server 2 (HS2)
+
+2. **Hive Server 2 接收并预处理**
+
+   - 建立会话（Session）和操作（Operation）上下文
+   - 验证用户权限和连接有效性
+   - 将查询转发给 Driver 组件
+
+3. **Driver 协调执行流程**
+
+   - 调用 Compiler 进行 SQL 编译
+   - 管理查询执行状态和生命周期
+   - 处理执行过程中的异常和重试机制
+
+4. **Compiler 编译 SQL 查询**
+
+   - 语法解析：将 SQL 转换为抽象语法树（AST）
+   - 语义分析：验证表名、列名、数据类型等元数据
+   - 逻辑优化：应用规则优化查询逻辑
+   - 物理计划生成：转换为可执行的物理计划
+
+5. **元数据交互（与 Metastore）**
+
+   - 获取表结构、分区信息、统计信息等元数据
+   - 验证表是否存在、用户是否有访问权限
+   - 为查询优化提供统计信息支持
+
+6. **优化器进行查询优化**
+
+   - 谓词下推（Predicate Pushdown）：将过滤条件推送到数据源
+   - 列裁剪（Column Pruning）：只读取需要的列
+   - 连接优化（Join Reordering）：优化多表连接顺序
+   - 分区裁剪（Partition Pruning）：减少不必要的数据扫描
+
+7. **执行引擎执行物理计划**
+
+   - 根据配置选择执行引擎（MapReduce、Tez、Spark、LLAP）
+   - 将逻辑操作转换为特定引擎的执行任务
+   - 通过 YARN 申请和管理计算资源
+
+8. **任务调度和执行监控**
+
+   - 将任务分解为多个 Stage 和 Task
+   - 监控任务执行状态和进度
+   - 处理任务失败和重试机制
+
+9. **结果收集和返回**
+   - 从各个执行节点收集计算结果
+   - 进行最终的数据聚合和排序
+   - 将结果返回给客户端应用程序
+
+**执行流程的关键特性：**
+
+1. **端到端的流水线处理**：从 SQL 提交到结果返回形成一个完整的处理流水线，各组件职责明确，协同工作。
+2. **元数据驱动的执行**：整个执行过程严重依赖元数据服务，包括表结构验证、统计信息优化、权限控制等。
+3. **多引擎支持**：支持多种执行引擎，用户可以根据数据规模、性能要求和资源情况选择最适合的引擎。
+4. **容错和重试机制**：具备完善的错误处理机制，包括任务失败自动重试、资源不足时的动态调整等。
+5. **资源管理集成**：与 YARN 紧密集成，实现资源的动态分配和回收，提高集群资源利用率。
+
+以上执行流程展示了 Hive 如何将简单的 SQL 查询转换为复杂的分布式计算任务，体现了其作为大数据 SQL 引擎的核心价值。接下来我们将深入分析架构中的各个核心组件。
+
+#### 1.2.3 元数据存储（Metastore）
 
 元数据存储（Metastore）是 Hive 架构中的核心组件，负责管理所有表、分区、列、数据类型等元数据信息。Metastore 的设计体现了 Hive 将元数据与数据存储分离的重要理念。
 
@@ -259,63 +328,41 @@ _图 1-2 Hive 分层架构设计。_
 **Metastore 的存储架构：**
 
 ```text
-┌─────────────────────────────────────────────────────┐
-│                 Hive Metastore                      │
-├─────────────────────────────────────────────────────┤
-│  Table Metadata    │  Partition Metadata  │ Statistics │
-│  - Table name      │  - Partition values  │ - Row count│
-│  - Column info     │  - Storage location  │ - File size│
-│  - Storage format  │  - File format       │ - Null count│
-└─────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                 Hive Metastore                            │
+├───────────────────────────────────────────────────────────┤
+│  Table Metadata    │  Partition Metadata  │ Statistics    │
+│  - Table name      │  - Partition values  │ - Row count   │
+│  - Column info     │  - Storage location  │ - File size   │
+│  - Storage format  │  - File format       │ - Null count  │
+└───────────────────────────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────┐
 │            Relational Database (RDBMS)              │
 ├─────────────────────────────────────────────────────┤
-│  MySQL       │  PostgreSQL  │  Oracle     │ Derby    │
+│  MySQL       │  PostgreSQL  │  Oracle     │ Derby   │
 └─────────────────────────────────────────────────────┘
 ```
 
 _图 1-3 Metastore 存储架构。_
 
-**Metastore 的工作流程：**
+**在完整执行流程中的角色：**
 
-```java
-// 来源：基于 Hive 3.x 简化伪代码
-public class HiveMetastore {
+如 1.2.2 节所述，Metastore 在整个 Hive SQL 执行流程的第 5 步"元数据交互"中发挥核心作用。其主要职责包括：
 
-    // 创建表时更新元数据
-    public void createTable(Table table) {
-        // 验证表名唯一性
-        validateTableName(table.getName());
+- **表结构验证**：在查询编译阶段验证表名、列名、数据类型的正确性
+- **统计信息提供**：为查询优化器提供表的行数、数据量、唯一值数量等统计信息
+- **权限控制**：验证用户对表数据的访问权限，确保数据安全
+- **分区管理**：提供分区元数据，支持分区裁剪优化
 
-        // 存储表结构信息到数据库
-        storeTableSchema(table);
+**Metastore 的独特架构特性：**
 
-        // 设置存储位置和格式
-        setStorageProperties(table);
-
-        // 初始化统计信息
-        initializeStatistics(table);
-    }
-
-    // 查询表元数据
-    public Table getTable(String databaseName, String tableName) {
-        // 从数据库加载表结构
-        Table table = loadTableSchema(databaseName, tableName);
-
-        // 加载分区信息（如果存在）
-        if (table.isPartitioned()) {
-            table.setPartitions(loadPartitions(table));
-        }
-
-        // 加载统计信息
-        table.setStatistics(loadStatistics(table));
-
-        return table;
-    }
-}
-```
+1. **客户端-服务端架构**：通过标准化的 Thrift API 提供服务，支持远程访问
+2. **多数据库后端支持**：支持 MySQL、PostgreSQL、Oracle 等多种关系型数据库作为存储后端
+3. **事务一致性保证**：基于底层 RDBMS 的事务机制确保元数据操作的 ACID 特性
+4. **并发访问控制**：支持多用户并发访问，通过锁机制避免元数据冲突
+5. **Schema 演进支持**：支持表结构的在线变更和版本管理
 
 **Metastore 的优势：**
 
@@ -327,7 +374,7 @@ public class HiveMetastore {
 
 Metastore 的稳定性和性能直接影响整个 Hive 系统的可用性。在实际生产环境中，通常需要根据数据规模和使用模式选择合适的数据库后端和配置参数。
 
-#### 1.2.3 驱动引擎（Driver）
+#### 1.2.4 驱动引擎（Driver）
 
 驱动引擎（Driver）是 Hive 查询处理流程的协调者，负责接收用户查询、协调各个组件完成查询处理，并返回最终结果。Driver 的设计体现了 Hive 将复杂处理流程封装为简单接口的核心思想。
 
@@ -339,43 +386,17 @@ Metastore 的稳定性和性能直接影响整个 Hive 系统的可用性。在�
 4. **结果返回**：将查询结果返回给客户端
 5. **错误处理**：处理查询过程中的异常和错误
 
-**Driver 的工作流程：**
+**在完整执行流程中的角色：**
 
-```java
-// 来源：基于 Hive 3.x 简化伪代码
-public class HiveDriver {
+如 1.2.2 节所述，Driver 作为 Hive SQL 执行流程的核心协调者，在整个流程的第 3 步"Driver 协调执行流程"中承担主要职责。Driver 负责管理查询的完整生命周期，从接收 SQL 查询到返回最终结果。
 
-    public QueryResult executeQuery(String query, SessionState session) {
-        try {
-            // 1. 解析查询
-            ASTNode ast = parseQuery(query);
+**Driver 的独特架构特性：**
 
-            // 2. 语义分析
-            SemanticAnalyzer analyzer = new SemanticAnalyzer(session);
-            analyzer.analyze(ast);
-
-            // 3. 生成逻辑计划
-            LogicalPlan logicalPlan = analyzer.getLogicalPlan();
-
-            // 4. 优化逻辑计划
-            Optimizer optimizer = new Optimizer();
-            LogicalPlan optimizedPlan = optimizer.optimize(logicalPlan);
-
-            // 5. 生成物理计划
-            PhysicalPlan physicalPlan = generatePhysicalPlan(optimizedPlan);
-
-            // 6. 执行物理计划
-            QueryResult result = executePhysicalPlan(physicalPlan);
-
-            return result;
-
-        } catch (Exception e) {
-            handleQueryError(e);
-            throw new HiveException("Query execution failed", e);
-        }
-    }
-}
-```
+1. **会话状态管理**：维护用户会话的完整上下文，包括配置参数、临时表、UDF 注册等
+2. **组件协调机制**：作为中央协调器，调度 Compiler、Optimizer、Execution Engine 等组件协同工作
+3. **资源管理集成**：与 YARN 资源管理器深度集成，负责计算资源的申请、分配和释放
+4. **容错与恢复机制**：提供完善的错误处理框架，支持任务重试、故障转移和状态恢复
+5. **性能监控体系**：内置完整的性能指标收集和报告机制，支持查询性能分析和优化
 
 **Driver 的关键特性：**
 
@@ -386,7 +407,7 @@ public class HiveDriver {
 
 Driver 的设计使得 Hive 能够处理复杂的分布式查询，同时为用户提供简单一致的接口体验。
 
-#### 1.2.4 查询编译器（Compiler）
+#### 1.2.5 查询编译器（Compiler）
 
 查询编译器（Compiler）是 Hive 架构中的智能核心，负责将 SQL 查询转换为可执行的分布式计算任务。编译器的设计质量直接决定了查询的性能和效率。
 
@@ -401,32 +422,56 @@ Driver 的设计使得 Hive 能够处理复杂的分布式查询，同时为用�
 
 **编译器的优化策略：**
 
-```java
-// 来源：基于 Hive 3.x 简化伪代码
-public class QueryCompiler {
+Hive 编译器采用多阶段的优化架构，通过一系列优化技术显著提升查询性能。其优化策略包含以下关键阶段和技术：
 
-    public PhysicalPlan compile(ASTNode ast, SessionState session) {
+**1. 语义分析与逻辑计划生成**：
 
-        // 1. 语义分析和验证
-        BaseSemanticAnalyzer analyzer = SemanticAnalyzerFactory.get(ast, session);
-        analyzer.analyze(ast, session);
+- **语法树验证**：确保 SQL 语句的语法和语义正确性
+- **元数据绑定**：将表名、列名解析为实际的元数据对象
+- **逻辑计划构建**：生成初始的逻辑查询计划，表示查询的抽象执行逻辑
 
-        // 2. 生成逻辑计划
-        LogicalPlan logicalPlan = analyzer.getLogicalPlan();
+**2. 逻辑优化阶段**：
 
-        // 3. 逻辑优化
-        LogicalPlan optimizedLogicalPlan = logicalOptimizer.optimize(logicalPlan);
+基于规则的优化（Rule-Based Optimization）应用一系列优化规则：
 
-        // 4. 生成物理计划
-        PhysicalPlan physicalPlan = physicalPlanner.plan(optimizedLogicalPlan);
+- **谓词下推**：将过滤条件尽可能推到数据源附近执行，减少数据传输量
 
-        // 5. 物理优化
-        PhysicalPlan optimizedPhysicalPlan = physicalOptimizer.optimize(physicalPlan);
+  - 效果：可减少 50-90% 的数据传输和后续处理开销
+  - 示例：`WHERE date = '2023-01-01'` 条件下推到文件扫描阶段
 
-        return optimizedPhysicalPlan;
-    }
-}
-```
+- **列裁剪**：只读取查询中实际引用的列，忽略不必要的列
+
+  - 效果：显著减少 I/O 开销，特别是对于宽表场景
+  - 示例：查询只使用 `name, salary` 列时，不读取其他 20 个字段
+
+- **常量折叠**：在编译时计算常量表达式，减少运行时计算
+
+  - 效果：消除不必要的运行时计算开销
+  - 示例：`WHERE salary > 1000 * 12` 优化为 `WHERE salary > 12000`
+
+- **分区裁剪**：根据查询条件只扫描相关的数据分区
+  - 效果：大幅减少数据扫描量，提升查询性能数倍
+  - 示例：`WHERE year = 2023 AND month = 12` 只扫描 2023 年 12 月分区
+
+**3. 物理计划生成与优化**：
+
+- **执行引擎选择**：根据查询特性选择最优执行引擎（MapReduce、Tez、Spark）
+- **算法选择**：为每个操作选择最优算法（Hash Join vs Sort-Merge Join）
+- **资源优化**：优化数据本地性，减少网络传输开销
+- **并行度优化**：根据数据量和集群资源设置合适的任务并行度
+
+**4. 基于成本的优化**：
+
+- **统计信息使用**：利用表的统计信息（行数、数据量、NDV 等）进行成本估算
+- **成本模型**：基于代价模型选择最优的执行计划变体
+- **连接顺序优化**：选择连接顺序以最小化中间结果大小
+- **聚合策略优化**：选择最优的聚合执行策略（Map-side vs Reduce-side）
+
+**5. 运行时优化**：
+
+- **动态优化**：根据运行时统计信息调整执行策略
+- **推测执行**：对慢任务启动备份任务，避免长尾效应
+- **数据倾斜处理**：特殊处理数据倾斜情况，避免单个任务过载
 
 **编译器的重要优化技术：**
 
@@ -438,7 +483,7 @@ public class QueryCompiler {
 
 这些优化技术使得 Hive 能够高效处理大规模数据的复杂查询。
 
-#### 1.2.5 执行引擎（Execution Engine）
+#### 1.2.6 执行引擎（Execution Engine）
 
 执行引擎（Execution Engine）是 Hive 架构中的执行层，负责将编译后的物理计划转换为实际的分布式计算任务。Hive 支持多种执行引擎，每种引擎都有其特定的优势和适用场景。
 
@@ -464,50 +509,61 @@ SET hive.execution.engine=spark;
 SET hive.llap.execution.mode=true;
 ```
 
-**执行引擎的工作流程：**
+**在完整执行流程中的角色：**
 
-```java
-// 来源：基于 Hive 3.x 简化伪代码
-public interface ExecutionEngine {
+如 1.2.2 节所述，执行引擎在整个 Hive SQL 执行流程的第 7 步"任务执行与结果收集"中承担核心执行职责。执行引擎负责将优化后的物理执行计划转换为具体的分布式计算任务，并协调这些任务在集群中的执行。
 
-    // 执行物理计划
-    QueryResult execute(PhysicalPlan plan) throws HiveException;
+**执行引擎的独特架构特性：**
 
-    // 获取执行统计信息
-    ExecutionStats getExecutionStats();
+1. **多引擎支持架构**：支持 MapReduce、Tez、Spark、LLAP 等多种执行引擎，每种引擎针对不同场景优化
+2. **动态引擎选择机制**：根据查询复杂度、数据规模、性能要求自动选择最优执行引擎
+3. **资源管理深度集成**：与 YARN 资源管理器紧密集成，支持动态资源分配和弹性扩缩容
+4. **容错与恢复体系**：提供完善的任务失败检测、自动重试、推测执行和数据一致性保证机制
+5. **性能监控与优化**：内置全面的性能指标收集和实时监控，支持执行过程中的动态优化
 
-    // 取消正在执行的查询
-    void cancel() throws HiveException;
-}
+**内部实现机制和技术细节：**
 
-// Tez 执行引擎实现
-public class TezExecutionEngine implements ExecutionEngine {
+1. **执行计划转换引擎**：将逻辑执行计划转换为特定引擎的物理执行任务
+2. **任务调度器**：基于数据本地性、资源可用性和任务依赖关系进行智能任务调度
+3. **数据 shuffle 管理器**：优化 map 和 reduce 阶段之间的数据传输，减少网络开销
+4. **内存管理子系统**：针对不同引擎特性进行内存分配和垃圾回收优化
+5. **检查点与状态管理**：支持长时间任务的检查点机制，确保故障恢复的数据一致性
 
-    public QueryResult execute(PhysicalPlan plan) {
-        // 将物理计划转换为 Tez DAG
-        TezDAG tezDAG = convertToTezDAG(plan);
+**多执行引擎技术对比**：
 
-        // 提交 Tez DAG 到集群
-        TezClient tezClient = createTezClient();
-        DAGClient dagClient = tezClient.submit(tezDAG);
+Hive 支持多种执行引擎，每种引擎针对不同场景优化：
 
-        // 监控执行状态
-        monitorExecution(dagClient);
+| **执行引擎**  | **技术特点**                 | **适用场景**                   | **性能优势**                       |
+| ------------- | ---------------------------- | ------------------------------ | ---------------------------------- |
+| **MapReduce** | 经典的批处理模型，阶段式执行 | 稳定的批处理作业，兼容性要求高 | 成熟稳定，资源隔离性好             |
+| **Tez**       | DAG 执行模型，减少中间落盘   | 复杂查询，多阶段数据处理       | 减少 I/O 开销，提升执行效率 2-5 倍 |
+| **Spark**     | 内存计算，RDD 弹性数据集     | 迭代算法，机器学习场景         | 内存计算带来 10-100 倍性能提升     |
+| **LLAP**      | 实时查询，内存缓存           | 交互式查询，BI 报表            | 亚秒级响应，高并发查询支持         |
 
-        // 收集结果
-        return collectResults(dagClient);
-    }
-}
-```
+**执行引擎选择策略**：
 
-**执行引擎的关键特性：**
+- **简单查询**：MapReduce 或 Tez，资源消耗较低
+- **复杂查询**：Tez 或 Spark，利用 DAG 优化减少中间数据落地
+- **交互式查询**：LLAP，提供近实时查询响应
+- **机器学习**：Spark，支持迭代计算和高级数据分析
+- **数据规模**：小数据集可用 Spark 内存计算，大数据集用 Tez 批处理
 
-1. **资源管理**：有效管理计算资源，避免资源冲突
-2. **容错机制**：提供任务失败重试和数据恢复机制
-3. **性能监控**：实时监控查询执行状态和性能指标
-4. **可扩展性**：支持大规模集群部署和弹性扩展
+**性能优化特性：**
 
-通过灵活的执行引擎架构，Hive 能够适应不同的工作负载和性能要求，为用户提供最佳的计算体验。
+1. **数据本地化优化**：优先将任务调度到数据所在节点，减少网络传输开销
+2. **并行度优化**：根据数据规模和集群资源动态调整任务并行度，最大化资源利用率
+3. **内存计算优化**：针对 Spark 和 LLAP 引擎优化内存使用，减少磁盘 I/O 操作
+4. **动态资源调整**：根据任务执行情况动态申请和释放计算资源，提高集群利用率
+5. **执行计划缓存**：缓存常用查询的执行计划，减少重复编译开销
+
+**与其他组件的接口规范：**
+
+1. **与 Driver 的接口**：接收物理执行计划，返回执行状态和结果数据
+2. **与 YARN 的接口**：通过 ApplicationMaster 进行资源申请、任务调度和状态汇报
+3. **与 Metastore 的接口**：获取数据位置信息，支持数据本地化优化
+4. **与 HDFS 的接口**：读写输入数据和中间结果，支持各种文件格式和压缩算法
+
+通过灵活的多引擎架构和深度优化，Hive 执行引擎能够为不同场景提供最佳的计算性能和资源利用率，是大数据批处理和交互式查询的核心技术基础。
 
 ### 1.3 HiveQL 与 SQL 兼容性
 
@@ -776,7 +832,31 @@ FROM sales;
 
 ---
 
+### 1.4 本章小结
+
+本章全面介绍了 Apache Hive 的核心设计理念——"SQL-on-Hadoop 与数据仓库抽象层"，这一理念是 Hive 成为大数据仓库标准的关键基础：
+
+1. **技术架构革新**：从传统的 MapReduce 编程模式转向 SQL 接口抽象，数据分析效率提升 5-10 倍，开发门槛显著降低
+2. **元数据管理统一**：通过 Metastore 提供统一的元数据服务，支持多计算引擎共享元数据，实现数据治理标准化
+3. **执行引擎多样化**：从单一的 MapReduce 执行引擎扩展到 Tez、Spark、LLAP 等多种引擎，满足不同场景的性能需求
+4. **SQL 兼容性完善**：从基础 SQL 子集支持到接近完整的 ANSI SQL 兼容，支持复杂查询和高级分析功能
+5. **企业级特性增强**：ACID 事务支持、物化视图、查询优化等特性，使 Hive 成为真正的企业级数据仓库解决方案
+
+SQL-on-Hadoop 与数据仓库抽象层不仅是一个技术架构，更是 Hive 在实际大数据应用中支撑企业级数据分析的核心技术体系。通过本章的学习，我们掌握了 Hive 的设计思想、架构组件和核心概念，为深入理解其查询优化、执行机制和高级特性奠定了坚实基础。
+
+---
+
 ## 第 2 章 Hive 架构深入解析
+
+本章将深入解析 Apache Hive 的核心架构设计和实现机制。在前一章建立的整体概念基础上，我们将详细分析 Hive 的元数据管理系统、查询处理引擎、执行引擎优化、存储格式与压缩、以及高可用与扩展性架构。通过本章的学习，读者将深入理解 Hive 的内部工作原理和性能优化技术，为实际部署和调优 Hive 集群奠定技术基础。
+
+通过本章学习，读者将能够：
+
+1. **掌握元数据管理机制**：深入理解 Hive Metastore 的架构设计、高可用部署和元数据存储原理
+2. **理解查询处理流程**：全面掌握 Hive 查询编译、优化、执行的完整处理链条和关键技术
+3. **掌握执行引擎优化**：深入理解多执行引擎（MapReduce、Tez、Spark、LLAP）的技术特点和适用场景
+4. **精通存储格式与压缩**：掌握不同文件格式和压缩算法的性能特性和适用场景
+5. **构建高可用架构**：理解 Hive 的高可用部署模式、容错机制和扩展性设计
 
 ### 2.1 元数据管理系统
 
@@ -945,14 +1025,14 @@ HiveQL 解析过程采用 ANTLR（Another Tool for Language Recognition）语法
 
 ```text
 +----------------+     +----------------+     +----------------+
-|   HiveQL      |     |   ANTLR        |     |   Abstract     |
-|   Statement   | --> |   Parser      | --> |   Syntax Tree |
-|               |     |               |     |   (AST)       |
+|   HiveQL       |     |   ANTLR        |     |   Abstract     |
+|   Statement    | --> |   Parser       | --> |   Syntax Tree  |
+|                |     |                |     |   (AST)        |
 +----------------+     +----------------+     +----------------+
         |                       |                       |
         |               +----------------+     +----------------+
         +-------------> |   Semantic     | --> |   Logical      |
-                        |   Analyzer    |     |   Plan        |
+                        |   Analyzer     |     |   Plan         |
                         +----------------+     +----------------+
 ```
 
@@ -966,23 +1046,27 @@ HiveQL 解析过程采用 ANTLR（Another Tool for Language Recognition）语法
 
 ```sql
 -- 原始 HiveQL 语句
-SELECT department, AVG(salary)
+SELECT department, AVG(salary) as avg_sal
 FROM employees
-WHERE hire_date > '2020-01-01'
-GROUP BY department;
+WHERE hire_date > '2020-01-01' AND status = 'active'
+GROUP BY department
+HAVING avg_sal > 5000;
 
 -- 解析后的 AST 结构
 Query
   → SELECT
     → ProjectList
       → Alias(department)
-      → Alias(AVG(salary))
+      → Alias(AVG(salary) as avg_sal)
   → FROM
     → Table(employees)
   → WHERE
     → Predicate(hire_date > '2020-01-01')
+    → Predicate(status = 'active')
   → GROUP BY
     → GroupingSet(department)
+  → HAVING
+    → Predicate(avg_sal > 5000)
 ```
 
 **常见解析错误处理：**
@@ -1011,13 +1095,42 @@ Query
 - **Sort**：排序操作，处理 ORDER BY
 - **Limit**：限制操作，处理 LIMIT 子句
 
-**逻辑计划示例：**
+**逻辑计划生成详细过程：**
 
 ```text
-Aggregate(groupBy: [department], agg: [AVG(salary)])
-  → Filter(condition: hire_date > '2020-01-01')
-    → Project(columns: [department, salary, hire_date])
+-- 步骤1: 表扫描
+TableScan(table: employees)
+ 输出: [id, name, department, salary, hire_date, status]
+
+-- 步骤2: 投影操作（列裁剪）
+Project(columns: [department, salary, hire_date, status])
+  → TableScan(table: employees)
+
+-- 步骤3: 过滤操作（谓词下推）
+Filter(condition: hire_date > '2020-01-01' AND status = 'active')
+  → Project(columns: [department, salary, hire_date, status])
+    → TableScan(table: employees)
+
+-- 步骤4: 聚合操作
+Aggregate(groupBy: [department], agg: [AVG(salary) as avg_sal])
+  → Filter(condition: hire_date > '2020-01-01' AND status = 'active')
+    → Project(columns: [department, salary, hire_date, status])
       → TableScan(table: employees)
+
+-- 步骤5: 过滤操作（HAVING条件）
+Filter(condition: avg_sal > 5000)
+  → Aggregate(groupBy: [department], agg: [AVG(salary) as avg_sal])
+    → Filter(condition: hire_date > '2020-01-01' AND status = 'active')
+      → Project(columns: [department, salary, hire_date, status])
+        → TableScan(table: employees)
+
+-- 步骤6: 最终投影
+Project(columns: [department, avg_sal])
+  → Filter(condition: avg_sal > 5000)
+    → Aggregate(groupBy: [department], agg: [AVG(salary) as avg_sal])
+      → Filter(condition: hire_date > '2020-01-01' AND status = 'active')
+        → Project(columns: [department, salary, hire_date, status])
+          → TableScan(table: employees)
 ```
 
 **逻辑计划优化机会：**
@@ -1126,20 +1239,42 @@ Hive 实现了多种逻辑优化策略，通过规则匹配和转换来改进查
 - **FileSinkOperator**：文件输出操作，写入结果数据
 - **SelectOperator**：选择操作，处理投影和过滤
 
-**物理计划示例（MapReduce）：**
+**多引擎物理计划对比：**
 
 ```text
+-- MapReduce 物理计划
 Job: Query-1
   Map 1
-    → TableScan(employees)
-    → Filter(hire_date > '2020-01-01')
-    → Project(department, salary)
-    → ReduceSink(grouping: [department])
+    → TableScan(employees)                    # 读取表数据
+    → Filter(hire_date > '2020-01-01' AND status = 'active')  # 过滤条件
+    → Project(department, salary)              # 选择需要的列
+    → ReduceSink(grouping: [department])      # 按部门分组输出
 
   Reduce 1
-    → GroupByOperator(grouping: [department])
-    → AggregateFunction(AVG(salary))
-    → FileSink(output: hdfs://...)
+    → GroupByOperator(grouping: [department]) # 按部门分组
+    → AggregateFunction(AVG(salary))           # 计算平均工资
+    → Filter(avg_sal > 5000)                  # HAVING条件过滤
+    → FileSink(output: hdfs:///user/hive/result)  # 输出结果
+
+-- Tez 物理计划 (DAG执行)
+DAG: Query-1
+  Vertex 1 (Map):
+    → TableScan + Filter + Project + ReduceSink
+    Output: HashPartition([department])
+
+  Vertex 2 (Reduce):
+    → GroupBy + Aggregate + Filter + FileSink
+    Input: HashPartition([department])
+
+-- Spark 物理计划 (RDD转换)
+val employeesRDD = spark.table("employees")
+val result = employeesRDD
+  .filter(row => row.getDate("hire_date") > date2020 && row.getString("status") == "active")
+  .map(row => (row.getString("department"), row.getDouble("salary")))
+  .groupByKey()
+  .mapValues(salaries => salaries.sum / salaries.size)
+  .filter { case (dept, avgSal) => avgSal > 5000 }
+  .saveAsTextFile("hdfs:///user/hive/result")
 ```
 
 **执行引擎适配：**
@@ -1182,15 +1317,45 @@ ANALYZE TABLE sales PARTITION(year=2023) COMPUTE STATISTICS;
 **成本优化示例：**
 
 ```sql
--- 查询：多表连接顺序优化
-SELECT *
-FROM large_table l
-JOIN medium_table m ON l.id = m.id
-JOIN small_table s ON m.id = s.id;
+-- 查询：多表连接 + 复杂条件
+SELECT d.dept_name, e.avg_salary, c.city_name
+FROM departments d
+JOIN (
+    SELECT department_id, AVG(salary) as avg_salary
+    FROM employees
+    WHERE hire_year = 2023 AND status = 'active'
+    GROUP BY department_id
+    HAVING AVG(salary) > 5000
+) e ON d.id = e.department_id
+JOIN cities c ON d.city_id = c.id
+WHERE d.region = 'North' AND c.country = 'USA';
 
--- CBO 基于统计信息选择最优连接顺序：
--- 1. 先连接 small_table 和 medium_table（结果集较小）
--- 2. 再与 large_table 连接（减少中间数据量）
+-- 统计信息基础：
+departments: 1000 rows, region分布: North(40%), South(30%), East(20%), West(10%)
+employees: 1,000,000 rows, hire_year=2023: 50,000 rows, status='active': 80%
+cities: 100 rows, country='USA': 60 rows
+
+-- CBO 优化决策：
+1. **子查询解嵌套**：将子查询转换为常规连接
+2. **连接顺序优化**：
+   - 先连接 cities ⋈ departments (60 ⋈ 400 = ~24,000 rows)
+   - 再连接 employees (过滤后: 50,000 × 80% = 40,000 rows)
+   - 最后聚合计算
+3. **谓词下推**：
+   - WHERE条件尽早应用到基表
+   - HAVING条件在聚合后应用
+4. **列裁剪**：只选择最终需要的列
+
+-- 优化后的执行计划：
+Project(dept_name, avg_salary, city_name)
+  → Filter(region = 'North' AND country = 'USA')
+    → Join(departments ⋈ cities ⋈ employees)
+      → Filter(hire_year = 2023 AND status = 'active')
+        → TableScan(employees)
+      → Filter(region = 'North')
+        → TableScan(departments)
+      → Filter(country = 'USA')
+        → TableScan(cities)
 ```
 
 **CBO 配置参数：**
@@ -1249,22 +1414,34 @@ MapReduce 是 Hive 最早支持也是最基本的执行引擎，适合批处理�
 
 **MapReduce 执行流程：**
 
-```text
-+----------------+     +----------------+     +----------------+
-|   HiveQL      |     |   Compiler     |     |   MapReduce   |
-|   Query       | --> |   (Logical    | --> |   Job        |
-|               |     |   Plan)       |     |   Submission |
-+----------------+     +----------------+     +----------------+
-        |                       |                       |
-        |               +----------------+     +----------------+
-        +-------------> |   Optimizer   | --> |   JobTracker  |
-                        +----------------+     +----------------+
-                                |                       |
-                        +----------------+     +----------------+
-                        |   Physical    | --> |   TaskTracker |
-                        |   Plan       |     |   Execution   |
-                        +----------------+     +----------------+
-```
+Hive 在 MapReduce 引擎下的完整执行流程包含以下核心步骤：
+
+1. **查询编译阶段**
+
+   - HiveQL Query → Compiler：接收 SQL 查询语句
+   - Compiler 生成 Logical Plan：进行语法解析和语义分析，生成逻辑执行计划
+   - Optimizer 优化逻辑计划：应用谓词下推、列裁剪等优化规则
+   - 生成 Physical Plan：将逻辑计划转换为物理执行计划
+
+2. **作业提交阶段**
+
+   - Driver 接收物理计划：Driver 组件协调整个执行过程
+   - 物理计划转换为 MapReduce Job：将查询操作映射为 Map 和 Reduce 任务
+   - 提交到 YARN ResourceManager：在现代 Hadoop 环境中，MapReduce 作为 YARN 应用程序运行
+
+3. **作业执行阶段**
+
+   - YARN ResourceManager 分配资源：为 MapReduce Application Master 分配容器
+   - MapReduce Application Master 调度任务：替代传统的 JobTracker，管理作业执行
+   - NodeManager 启动任务执行：在各个节点上启动 Map 和 Reduce 任务
+   - MapReduce Framework 协调执行：管理任务执行、数据 shuffle 和结果汇总
+
+4. **结果返回阶段**
+   - 任务执行结果返回给 Driver
+   - Driver 将最终结果返回给客户端
+   - 清理临时资源和元数据
+
+整个流程体现了 Hive 作为 SQL-on-Hadoop 解决方案的核心价值：将声明式的 SQL 查询自动转换为分布式的 MapReduce 作业执行。
 
 **Map 阶段操作：**
 
@@ -1321,23 +1498,33 @@ Apache Tez 是构建在 YARN 之上的通用数据处理框架，提供了比 Ma
 
 **Tez 执行架构：**
 
-```text
-+----------------+     +----------------+     +----------------+
-|   Logical     |     |   Tez          |     |   YARN        |
-|   Plan       | --> |   Compiler     | --> |   Application |
-|               |     |               |     |   Master      |
-+----------------+     +----------------+     +----------------+
-        |                       |                       |
-        |               +----------------+     +----------------+
-        +-------------> |   DAG         | --> |   NodeManager |
-                        |   Construction|     |   Execution   |
-                        +----------------+     +----------------+
-                                |                       |
-                        +----------------+     +----------------+
-                        |   Vertex      | --> |   Tez         |
-                        |   Optimization|     |   Runtime     |
-                        +----------------+     +----------------+
-```
+Hive 与 Tez 集成后的执行架构包含以下核心组件和流程：
+
+1. **逻辑计划处理阶段**
+
+   - Logical Plan 输入：Hive 编译器生成的逻辑执行计划
+   - Tez Compiler 编译：将逻辑计划转换为 Tez 可执行的 DAG（有向无环图）
+   - DAG 构造优化：构建优化的执行图结构，减少数据移动和落地
+
+2. **资源申请与调度阶段**
+
+   - YARN Application Master：向 YARN 资源管理器申请计算资源
+   - 容器分配：获取执行任务所需的容器资源
+   - 资源复用配置：启用容器重用机制减少启动开销
+
+3. **DAG 执行阶段**
+
+   - Vertex 优化：对 DAG 中的顶点（计算节点）进行优化
+   - NodeManager 执行：在各个节点上执行具体的计算任务
+   - Tez Runtime 协调：Tez 运行时环境管理任务执行和数据传输
+   - 动态优化调整：运行时根据实际情况动态调整执行计划
+
+4. **结果处理阶段**
+   - 任务执行结果汇总
+   - 中间数据管理：优化中间结果的存储和传输
+   - 最终结果返回给 Hive Driver
+
+Tez 架构的核心优势在于其 DAG 执行模型，避免了 MapReduce 多阶段作业间的数据落地开销，通过精细的任务调度和资源复用机制，显著提升了查询执行性能。
 
 **Tez 配置示例：**
 
@@ -1374,22 +1561,42 @@ Apache Tez 是构建在 YARN 之上的通用数据处理框架，提供了比 Ma
 
 Hive 支持使用 Apache Spark 作为执行引擎，结合了 Hive 的元数据管理和 Spark 的内存计算优势。
 
-**Spark 集成架构：**
+**Spark 执行流程：**
 
-```text
-+----------------+     +----------------+     +----------------+
-|   Hive        |     |   Spark        |     |   HDFS        |
-|   Metastore   | <-> |   SQL         | <-> |   Data        |
-|   (Metadata)  |     |   Engine      |     |   Storage     |
-+----------------+     +----------------+     +----------------+
-        ^                       ^                       ^
-        |                       |                       |
-+----------------+     +----------------+     +----------------+
-|   HiveServer2  | --> |   Spark        | --> |   Spark       |
-|   (Thrift     |     |   Context      |     |   Executors   |
-|   Server)     |     |               |     |               |
-+----------------+     +----------------+     +----------------+
-```
+Hive 与 Spark 集成后的完整执行流程包含以下核心步骤：
+
+1. **查询接收与解析阶段**
+
+   - HiveServer2 接收 SQL 查询：通过 Thrift 接口接收客户端查询请求
+   - 访问 Hive Metastore：获取表结构、分区信息等元数据
+   - SQL 解析与验证：验证语法正确性和语义完整性
+
+2. **执行计划生成阶段**
+
+   - 生成逻辑执行计划：将 SQL 转换为逻辑操作树
+   - 逻辑优化：应用 Catalyst 优化器的各种优化规则
+   - 生成物理执行计划：转换为 Spark RDD 操作序列
+   - 资源规划：确定需要的 Executor 资源和内存配置
+
+3. **Spark 作业执行阶段**
+
+   - Spark Context 提交作业：将物理计划提交到 Spark 集群
+   - Driver 程序协调执行：管理整个作业的执行流程
+   - Spark Executors 执行任务：在各个节点上并行执行计算任务
+   - 内存数据管理：利用 Spark 内存计算优势减少磁盘 I/O
+
+4. **数据读写阶段**
+
+   - 从 HDFS 读取输入数据：通过 Spark 的分布式数据读取机制
+   - 中间结果缓存：在内存中缓存中间计算结果加速处理
+   - 结果写入输出：将最终结果写入 HDFS 或返回给客户端
+
+5. **资源清理与结果返回**
+   - 释放 Spark 资源：清理 Executor 和内存资源
+   - 返回查询结果：通过 HiveServer2 将结果返回给客户端
+   - 日志记录与监控：记录执行日志和性能指标
+
+整个流程充分利用了 Spark 的内存计算和 DAG 调度优势，同时保持了与 Hive 元数据管理的无缝集成。
 
 **Spark 执行优势：**
 
@@ -1424,35 +1631,43 @@ Hive 支持使用 Apache Spark 作为执行引擎，结合了 Hive 的元数据�
 </property>
 ```
 
-**Hive on Spark 工作流程：**
-
-1. HiveServer2 接收 SQL 查询
-2. 编译器生成逻辑计划和物理计划
-3. 将物理计划转换为 Spark RDD 操作
-4. Spark Context 提交作业到集群
-5. Spark Executors 执行具体计算任务
-6. 结果返回给客户端
-
 #### 2.3.4 LLAP（Live Long and Process）实时查询
 
-LLAP 是 Hive 2.0 引入的混合执行模型，结合了传统的批处理和实时查询的优势。
+LLAP（Live Long and Process）是 Hive 2.0 引入的混合执行模型，与传统执行引擎（MapReduce、Tez、Spark）有本质区别：LLAP 不是一个独立的执行引擎，而是一个智能加速层，它位于执行引擎之上，通过内存缓存和常驻服务来加速查询执行。LLAP 可以与 MapReduce、Tez 或 Spark 协同工作，结合了传统的批处理能力和实时查询的优势。
 
 **LLAP 架构特点：**
 
-```text
-+----------------+     +----------------+     +----------------+
-|   Client      |     |   LLAP         |     |   DataNode    |
-|   (JDBC/ODBC) | --> |   Daemon       | <-> |   (HDFS)      |
-|               |     |   (In-Memory  |     |               |
-+----------------+     |   Cache)      |     +----------------+
-        ^             +----------------+             ^
-        |                     ^                      |
-        |                     |                      |
-+----------------+     +----------------+     +----------------+
-|   HiveServer2  | --> |   YARN        | --> |   Execution   |
-|               |     |   Application |     |   Engine      |
-+----------------+     +----------------+     +----------------+
-```
+LLAP（Live Long and Process）采用独特的混合架构，结合了传统的批处理和实时查询的优势，其核心架构特点包括：
+
+1. **客户端接入层**
+
+   - 支持 JDBC/ODBC 标准接口：提供与各种 BI 工具和应用程序的兼容性
+   - 智能查询路由：根据查询复杂度自动选择执行路径（LLAP Daemon 或传统执行引擎）
+
+2. **LLAP Daemon 常驻服务层**
+
+   - 内存缓存管理：常驻进程维护热数据的内存缓存，显著减少磁盘 I/O
+   - 部分查询执行：能够直接执行简单的过滤、投影和聚合操作
+   - 数据本地化优化：缓存数据与计算节点共置，最大化数据本地性
+
+3. **混合执行协调层**
+
+   - HiveServer2 智能协调：根据查询特征决定执行策略
+   - 执行引擎动态选择：简单查询由 LLAP Daemon 直接执行，复杂查询交由传统执行引擎
+   - 资源统一管理：通过 YARN 进行统一的资源分配和调度
+
+4. **资源管理集成层**
+
+   - YARN 资源整合：LLAP Daemon 作为 YARN Application 运行，实现资源统一管理
+   - 弹性资源分配：根据工作负载动态调整 LLAP Daemon 的资源配额
+   - 资源隔离保障：确保关键查询的响应时间和资源可用性
+
+5. **数据存储访问层**
+   - HDFS 数据直接访问：LLAP Daemon 能够直接读写 HDFS 数据
+   - 缓存一致性管理：维护缓存数据与底层存储的一致性
+   - 智能数据预取：根据访问模式预测并预取可能需要的数据
+
+LLAP 架构的核心价值在于其混合执行模型，通过内存缓存和常驻服务实现亚秒级响应，同时保持了对复杂查询的完整处理能力，真正实现了交互式查询与批处理的统一。
 
 **LLAP 核心组件：**
 
@@ -1506,9 +1721,31 @@ LLAP 是 Hive 2.0 引入的混合执行模型，结合了传统的批处理和�
 - **Spark 生态集成**：Spark（需要与 Spark 其他组件配合）
 - **传统稳定环境**：MapReduce（兼容性要求高）
 
+### 2.4 本章小结
+
+本章深入解析了 Apache Hive 的核心架构组件，从元数据管理到查询优化再到多执行引擎集成，全面展现了 Hive 作为企业级数据仓库的技术深度：
+
+1. **元数据服务专业化**：Metastore 作为独立的 Thrift 服务，提供统一的元数据管理，支持多计算引擎共享元数据，实现数据治理标准化和元数据高可用性
+2. **查询编译智能化**：通过完整的编译流水线（ANTLR 解析 → AST 生成 → 逻辑计划优化 → 物理计划生成），结合基于规则的优化（RBO）和基于成本的优化（CBO），实现查询性能的显著提升
+3. **执行引擎多样化**：支持 MapReduce、Tez、Spark、LLAP 四种执行引擎，每种引擎针对不同场景优化，性能对比显示 Tez 比 MapReduce 快 2-3 倍，LLAP 实现亚秒级交互式查询
+4. **优化技术体系化**：涵盖逻辑优化（谓词下推、列裁剪、常量折叠等）和物理优化（Join 顺序调整、统计信息驱动等），形成完整的查询优化技术体系
+5. **资源配置精细化**：针对不同执行引擎提供细粒度的资源配置参数，支持根据数据规模和工作负载特征进行性能调优
+
+Hive 架构的深入解析不仅帮助我们理解其内部工作机制，更重要的是掌握了如何根据实际业务需求选择合适的执行引擎和优化策略。通过本章的学习，我们建立了从 SQL 查询到分布式执行的完整知识体系，为后续的性能优化和高级特性应用奠定了坚实基础。
+
 ---
 
 ## 第 3 章 Hive 数据存储与格式
+
+本章将深入探讨 Hive 的数据存储模型、文件格式支持和压缩技术，帮助读者掌握 Hive 数据管理的核心机制。
+
+通过本章的学习，读者将能够：
+
+1. **理解存储模型**：掌握内部表、外部表、分区表和分桶表的设计原理和应用场景
+2. **精通文件格式**：理解不同文件格式（TextFile、ORC、Parquet）的特性和适用场景
+3. **掌握压缩技术**：熟悉各种压缩算法的特性，能够根据数据特征选择合适的压缩策略
+4. **具备优化能力**：能够设计高效的数据存储方案，优化查询性能和存储效率
+5. **理解数据管理**：掌握视图和物化视图的使用，提升数据抽象和查询优化能力
 
 ### 3.1 数据存储模型
 
@@ -1789,9 +2026,230 @@ DROP MATERIALIZED VIEW mv_sales_daily;
 
 #### 3.2.1 TextFile 格式
 
+TextFile 是 Hive 中最基础的文件格式，使用纯文本文件存储数据，通常采用 CSV、TSV 或 JSON 等格式。
+
+**TextFile 特点与优势：**
+
+1. **简单易用**：人类可读的文本格式，便于调试和数据检查
+2. **兼容性好**：与各种工具和系统兼容，易于数据交换
+3. **无需压缩**：原生支持，不需要额外的编解码器
+4. **灵活性强**：支持自定义分隔符和序列化格式
+
+**TextFile 使用示例：**
+
+```sql
+-- 创建 TextFile 格式表
+CREATE TABLE text_table (
+    id INT,
+    name STRING,
+    value DOUBLE
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+-- 加载数据
+LOAD DATA INPATH '/input/data.csv' INTO TABLE text_table;
+
+-- 查看数据
+SELECT * FROM text_table LIMIT 10;
+```
+
+**TextFile 配置选项：**
+
+```sql
+-- 设置字段分隔符
+SET hive.default.field.delimiter=',';
+
+-- 设置行分隔符
+SET hive.default.line.delimiter='\n';
+
+-- 设置转义字符
+SET hive.default.escape.delimiter='\\';
+
+-- 设置空值表示
+SET hive.default.null.format='NULL';
+```
+
+**适用场景：**
+
+- 数据导入导出和交换
+- 调试和开发阶段
+- 小规模数据集
+- 需要人类可读格式的场景
+
+**性能考虑：**
+
+- 存储效率较低，无压缩
+- 查询性能较差，需要全列扫描
+- 不支持谓词下推和列裁剪
+
 #### 3.2.2 SequenceFile 格式
 
+SequenceFile 是 Hadoop 生态系统中的二进制文件格式，提供键值对存储和块压缩功能。
+
+**SequenceFile 特点与优势：**
+
+1. **二进制格式**：高效的二进制存储，支持复杂数据类型
+2. **块压缩**：支持基于块的压缩，提高压缩效率
+3. **可分片**：支持 MapReduce 作业的输入分片
+4. **元数据支持**：内置元数据存储，支持自定义属性
+
+**SequenceFile 类型：**
+
+- **未压缩**：原始键值对序列
+- **记录压缩**：每个记录单独压缩
+- **块压缩**：多个记录组成块进行压缩
+
+**SequenceFile 使用示例：**
+
+```sql
+-- 创建 SequenceFile 格式表
+CREATE TABLE seq_table (
+    key INT,
+    value STRING
+)
+STORED AS SEQUENCEFILE;
+
+-- 配置压缩
+SET mapred.output.compression.type=BLOCK;
+SET mapred.output.compression.codec=org.apache.hadoop.io.compress.GzipCodec;
+
+-- 插入数据
+INSERT INTO TABLE seq_table
+SELECT id, name FROM source_table;
+```
+
+**SequenceFile 文件结构：**
+
+```text
++---------------------+
+|   Header            |  // 文件头，包含版本、键值类名等信息
++---------------------+
+|   Record 0          |  // 记录 0
+| +-----------------+ |
+| |   Key Length    | |  // 键长度
+| +-----------------+ |
+| |   Key Data      | |  // 键数据
+| +-----------------+ |
+| |   Value Length  | |  // 值长度
+| +-----------------+ |
+| |   Value Data    | |  // 值数据
+| +-----------------+ |
++---------------------+
+|   Record 1          |  // 记录 1
+| +-----------------+ |
+| |   ...           | |
++---------------------+
+|   Sync Marker       |  // 同步标记，用于分片定位
++---------------------+
+```
+
+**适用场景：**
+
+- MapReduce 中间数据存储
+- 需要可分片二进制格式的场景
+- 键值对数据存储
+- 与其他 Hadoop 组件集成
+
 #### 3.2.3 RCFile 格式
+
+RCFile（Record Columnar File）是 Hive 早期开发的列式存储格式，为后续 ORC 格式的发展奠定了基础。
+
+**RCFile 特点与优势：**
+
+1. **行列混合存储**：按行组存储，组内按列存储，平衡扫描和压缩效率
+2. **压缩友好**：列式存储使得同类数据聚集，提高压缩比
+3. **查询优化**：支持列裁剪，减少 I/O 操作
+4. **兼容性好**：与 Hadoop 生态系统良好集成
+
+**RCFile 设计原理：**
+
+RCFile 采用"先按行分块，再按列存储"的混合策略：
+
+- 将数据划分为多个行组（Row Group）
+- 每个行组内，数据按列存储
+- 支持基于行组的并行处理
+
+**RCFile 文件结构：**
+
+```text
++---------------------+
+|   File Header       |  // 文件头，包含元数据和版本信息
++---------------------+
+|   Row Group 0       |  // 行组 0
+| +-----------------+ |
+| |   Column 1      | |  // 列 1 数据
+| +-----------------+ |
+| |   Column 2      | |  // 列 2 数据
+| +-----------------+ |
+| |   ...           | |
++---------------------+
+|   Row Group 1       |  // 行组 1
+| +-----------------+ |
+| |   Column 1      | |
+| +-----------------+ |
+| |   Column 2      | |
+| +-----------------+ |
+| |   ...           | |
++---------------------+
+|   File Footer       |  // 文件页脚，包含统计信息
++---------------------+
+```
+
+**RCFile 使用示例：**
+
+```sql
+-- 创建 RCFile 格式表
+CREATE TABLE rc_table (
+    id INT,
+    name STRING,
+    value DOUBLE
+)
+STORED AS RCFILE;
+
+-- 配置行组大小
+SET hive.exec.rcfile.record.buffer.size=4194304;  -- 4MB
+
+-- 插入数据
+INSERT INTO TABLE rc_table
+SELECT id, name, value FROM source_table;
+
+-- 查询数据
+SELECT name, AVG(value)
+FROM rc_table
+WHERE id > 1000
+GROUP BY name;
+```
+
+**RCFile 配置参数：**
+
+```sql
+-- 行组缓冲区大小
+SET hive.exec.rcfile.record.buffer.size=4194304;
+
+-- 列缓冲区大小
+SET hive.exec.rcfile.column.buffer.size=262144;
+
+-- 压缩配置
+SET hive.exec.rcfile.compress=true;
+SET hive.exec.rcfile.compress.codec=org.apache.hadoop.io.compress.SnappyCodec;
+```
+
+**适用场景：**
+
+- 历史系统兼容性要求
+- 需要列式存储但无法使用 ORC/Parquet
+- 中等规模数据集的列式存储需求
+
+**局限性：**
+
+- 性能不如 ORC 和 Parquet
+- 功能相对有限
+- 逐渐被更新的列式格式取代
+
+RCFile 作为 Hive 列式存储的早期探索，为后续更先进的 ORC 格式积累了宝贵经验，在现代 Hive 环境中通常推荐使用 ORC 或 Parquet 格式。
 
 #### 3.2.4 ORCFile 格式
 
@@ -1841,6 +2299,7 @@ ORC（Optimized Row Columnar）是 Hive 社区开发的列式存储格式，专�
 **ORC 性能优化技术：**
 
 - **索引结构**：
+
   - 文件级索引：包含每个条带的最小/最大值
   - 条带级索引：条带内每列的最小/最大值
   - 行级索引：行组内的行位置信息
@@ -1851,15 +2310,15 @@ ORC（Optimized Row Columnar）是 Hive 社区开发的列式存储格式，专�
 
 **ORC 与 Parquet 对比：**
 
-| **特性**         | **ORC**                          | **Parquet**                      |
-|------------------|----------------------------------|----------------------------------|
-| **开发背景**     | Hive 社区，Hadoop 生态优化       | Apache 顶级项目，跨平台设计      |
-| **ACID 支持**    | 原生支持                         | 需要外部支持                     |
-| **索引机制**     | 三级索引（文件、条带、行）       | 页级索引                         |
-| **压缩效率**     | 极高（通常优于 Parquet）         | 优秀                             |
-| **查询性能**     | Hive 中表现最佳                  | 跨引擎表现均衡                   |
-| **Schema 演化**  | 支持                             | 支持                             |
-| **生态系统**     | Hadoop 生态深度集成              | 多引擎广泛支持                   |
+| **特性**        | **ORC**                    | **Parquet**                 |
+| --------------- | -------------------------- | --------------------------- |
+| **开发背景**    | Hive 社区，Hadoop 生态优化 | Apache 顶级项目，跨平台设计 |
+| **ACID 支持**   | 原生支持                   | 需要外部支持                |
+| **索引机制**    | 三级索引（文件、条带、行） | 页级索引                    |
+| **压缩效率**    | 极高（通常优于 Parquet）   | 优秀                        |
+| **查询性能**    | Hive 中表现最佳            | 跨引擎表现均衡              |
+| **Schema 演化** | 支持                       | 支持                        |
+| **生态系统**    | Hadoop 生态深度集成        | 多引擎广泛支持              |
 
 #### 3.2.5 Parquet 格式
 
@@ -1939,13 +2398,13 @@ TBLPROPERTIES ('parquet.compression'='GZIP');
 
 **压缩算法对比：**
 
-| **算法**   | **压缩比**     | **压缩速度** | **解压速度** | **CPU 开销** | **适用场景**       |
-| ---------- | -------------- | ------------ | ------------ | ------------ | ------------------ |
-| **GZIP**   | 中等 (2-4x)    | 中等         | 中等         | 高           | 归档存储，冷数据   |
-| **Snappy** | 低 (1.5-2x)    | 非常快       | 非常快       | 低           | 实时处理，热数据   |
-| **LZO**    | 中等 (2-3x)    | 快           | 非常快       | 低           | MapReduce 作业     |
-| **ZSTD**   | 高 (3-5x)      | 快           | 非常快       | 中等         | 通用场景，平衡性能 |
-| **LZ4**    | 低 (2-3x)      | 极快         | 极快         | 极低         | 内存计算，实时流   |
+| **算法**   | **压缩比**  | **压缩速度** | **解压速度** | **CPU 开销** | **适用场景**       |
+| ---------- | ----------- | ------------ | ------------ | ------------ | ------------------ |
+| **GZIP**   | 中等 (2-4x) | 中等         | 中等         | 高           | 归档存储，冷数据   |
+| **Snappy** | 低 (1.5-2x) | 非常快       | 非常快       | 低           | 实时处理，热数据   |
+| **LZO**    | 中等 (2-3x) | 快           | 非常快       | 低           | MapReduce 作业     |
+| **ZSTD**   | 高 (3-5x)   | 快           | 非常快       | 中等         | 通用场景，平衡性能 |
+| **LZ4**    | 低 (2-3x)   | 极快         | 极快         | 极低         | 内存计算，实时流   |
 
 **复杂数据类型支持：**
 
@@ -2025,14 +2484,14 @@ Hive 支持多种压缩算法，每种算法在压缩率、压缩速度和解压
 
 **压缩算法特性对比：**
 
-| **压缩算法** | **压缩率**     | **压缩速度** | **解压速度** | **CPU 开销** | **适用场景**       |
-| ------------ | -------------- | ------------ | ------------ | ------------ | ------------------ |
-| **GZIP**     | 中等 (2-4x)    | 中等         | 中等         | 高           | 归档存储，冷数据   |
-| **Snappy**   | 低 (1.5-2x)    | 非常快       | 非常快       | 低           | 实时处理，热数据   |
-| **LZO**      | 中等 (2-3x)    | 快           | 非常快       | 低           | MapReduce 作业     |
-| **ZSTD**     | 高 (3-5x)      | 快           | 非常快       | 中等         | 通用场景，平衡性能 |
-| **LZ4**      | 低 (2-3x)      | 极快         | 极快         | 极低         | 内存计算，实时流   |
-| **BZIP2**    | 高 (4-6x)      | 慢           | 慢           | 非常高       | 高压缩比需求       |
+| **压缩算法** | **压缩率**  | **压缩速度** | **解压速度** | **CPU 开销** | **适用场景**       |
+| ------------ | ----------- | ------------ | ------------ | ------------ | ------------------ |
+| **GZIP**     | 中等 (2-4x) | 中等         | 中等         | 高           | 归档存储，冷数据   |
+| **Snappy**   | 低 (1.5-2x) | 非常快       | 非常快       | 低           | 实时处理，热数据   |
+| **LZO**      | 中等 (2-3x) | 快           | 非常快       | 低           | MapReduce 作业     |
+| **ZSTD**     | 高 (3-5x)   | 快           | 非常快       | 中等         | 通用场景，平衡性能 |
+| **LZ4**      | 低 (2-3x)   | 极快         | 极快         | 极低         | 内存计算，实时流   |
+| **BZIP2**    | 高 (4-6x)   | 慢           | 慢           | 非常高       | 高压缩比需求       |
 
 **算法选择建议：**
 
@@ -2114,6 +2573,18 @@ DESCRIBE FORMATTED sensor_data;
 2. **选择性解压**: 只需解压查询涉及的列，减少 I/O
 3. **更好的向量化**: 压缩数据更适合向量化处理
 4. **预测编码**: 可以利用数据分布特征进行智能编码
+
+**为什么压缩不影响查询性能：**
+
+现代列式存储格式的压缩设计确保了压缩不会对查询性能产生负面影响，反而可能提升性能：
+
+1. **列式存储特性**: 查询通常只涉及少数几个列，只需解压相关列的数据，而不是整个文件
+2. **智能编码技术**: 使用字典编码、RLE 等编码方式，压缩后的数据可以直接用于计算，无需完全解压
+3. **向量化处理**: 压缩数据块可以直接加载到内存中进行向量化操作，减少内存带宽需求
+4. **I/O 优化**: 压缩减少的数据传输量通常远超过解压的计算开销，整体性能得到提升
+5. **硬件加速**: 现代 CPU 提供专门的指令集（如 SSE/AVX）来加速压缩和解压操作
+6. **缓存友好性**: 压缩后更多数据可以放入缓存，提高缓存命中率
+7. **并行解压**: 支持多线程并行解压，充分利用多核 CPU 资源
 
 #### 3.3.3 压缩配置与优化
 
@@ -2288,5 +2759,17 @@ TBLPROPERTIES (
    - 测试真实工作负载而不是 synthetic 数据
 
 通过合理的压缩策略配置，可以在存储成本、I/O 性能和计算资源之间找到最佳平衡点，显著提升 Hive 集群的整体效率。
+
+### 3.4 本章小结
+
+本章深入探讨了 Hive 数据存储与格式的核心技术，构建了完整的数据存储知识体系：
+
+1. **数据存储模型优化**：掌握了内部表与外部表的生命周期管理，深入理解了分区表和分桶表的设计原理，学会了视图和物化视图的使用方法
+2. **文件格式体系完善**：从基础的 TextFile 到高效的 ORC 和 Parquet，全面掌握了各种文件格式的特性、优势和应用场景
+3. **压缩技术实践深入**：掌握了各种压缩算法的特性比较和选择策略，理解了列式存储压缩技术的原理和优化方法
+
+通过本章的学习，读者能够设计高效的数据存储方案，根据业务场景选择合适的文件格式和压缩策略，实施数据分区和分桶策略提升性能，利用物化视图加速复杂查询，并有效监控和调优存储性能。
+
+数据存储与格式技术是 Hive 性能优化的核心基础，现代存储技术正朝着更高效的列式存储、智能压缩和跨平台兼容性方向发展。本章建立的知识体系为后续的性能优化、数据管理和大规模数据处理奠定了坚实基础，是成为 Hive 专家的必备技能。
 
 ---
