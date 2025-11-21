@@ -77,7 +77,6 @@ clean:
 	find . -type f -name "*.pyo" -delete 2>/dev/null || true
 	rm -rf output/
 	rm -rf examples/output/
-	rm -rf benchmark_results/
 	@echo "✅ 清理完成"
 
 # 构建项目包

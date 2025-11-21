@@ -11,7 +11,7 @@ import time
 import os
 from typing import Dict, Any, Tuple
 
-from .utils import DataGenerator, PerformanceAnalyzer, verify_data_integrity
+from ..utils import DataGenerator, PerformanceAnalyzer, verify_data_integrity
 
 
 class ParquetBasicExercise:
@@ -154,7 +154,7 @@ class ParquetBasicExercise:
         print(f"正在从 {filename} 读取数据...")
         
         df_read, read_time = self.performance_analyzer.measure_time(
-            pd.read_csv, filename
+            lambda f: pd.read_csv(f, parse_dates=['RegisterTime']), filename
         )
         
         print(f"CSV 文件读取完成！")
@@ -224,9 +224,39 @@ class ParquetBasicExercise:
         
         return results
     
+    def run_exercise(self, num_records: int = None, data: pd.DataFrame = None) -> Dict[str, Any]:
+        """
+        运行练习（兼容测试接口）
+        
+        Args:
+            num_records: 记录数量
+            data: 自定义数据
+            
+        Returns:
+            练习结果字典
+        """
+        if num_records is not None:
+            self.num_records = num_records
+        
+        if data is not None:
+            self.df = data
+        
+        # 运行基础练习获取性能数据
+        performance_results = self.run_basic_exercise()
+        
+        # 提取关键信息用于测试兼容性
+        results = {
+            'data_integrity': performance_results['Parquet']['integrity'] and performance_results['CSV']['integrity'],
+            'compression_ratio': performance_results['CSV']['file_size'] / performance_results['Parquet']['file_size'] 
+                               if performance_results['Parquet']['file_size'] > 0 else 0,
+            'performance': performance_results
+        }
+        
+        return results
+    
     def cleanup(self):
         """清理临时文件"""
-        from .utils import cleanup_files
+        from ..utils import cleanup_files
         patterns = [
             os.path.join(self.output_dir, 'sample_data.*')
         ]

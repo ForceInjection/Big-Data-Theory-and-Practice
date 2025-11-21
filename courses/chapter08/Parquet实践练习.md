@@ -52,16 +52,124 @@
 4. **文件大小比较**：使用 `os.path.getsize()` 获取文件大小
 5. **性能指标**：记录文件大小（MB）、读取时间（秒）、压缩比等量化指标
 
-**关键代码提示：**
+**完整代码示例：**
 
 ```python
-# 数据生成示例
+# 基础练习完整实现
 import pandas as pd
+import numpy as np
 from faker import Faker
+import os
+import time
+from datetime import datetime, timedelta
 
-# Parquet 文件操作
-df.to_parquet('data.parquet')
-df_read = pd.read_parquet('data.parquet')
+def basic_parquet_exercise():
+    """基础 Parquet 练习完整实现"""
+
+    # 1. 数据生成
+    print("生成 100,000 条用户数据...")
+    fake = Faker('zh_CN')
+    np.random.seed(42)
+
+    cities = ['北京', '上海', '广州', '深圳', '杭州', '南京', '成都', '武汉', '西安', '重庆']
+
+    data = {
+        'user_id': range(1, 100001),
+        'username': [f'user_{i:06d}' for i in range(1, 100001)],
+        'age': np.random.randint(18, 80, 100000),
+        'city': np.random.choice(cities, 100000),
+        'register_time': [datetime.now() - timedelta(days=np.random.randint(0, 365))
+                         for _ in range(100000)],
+        'income': np.random.uniform(3000, 50000, 100000).round(2)
+    }
+
+    df = pd.DataFrame(data)
+    print(f"数据生成完成，形状: {df.shape}")
+
+    # 2. 保存为 CSV 和 Parquet
+    print("\n保存文件...")
+
+    # CSV 文件
+    csv_start = time.time()
+    df.to_csv('user_data.csv', index=False)
+    csv_time = time.time() - csv_start
+
+    # Parquet 文件
+    parquet_start = time.time()
+    df.to_parquet('user_data.parquet', engine='pyarrow')
+    parquet_time = time.time() - parquet_start
+
+    # 3. 文件大小比较
+    csv_size = os.path.getsize('user_data.csv') / (1024 * 1024)  # MB
+    parquet_size = os.path.getsize('user_data.parquet') / (1024 * 1024)  # MB
+
+    compression_ratio = csv_size / parquet_size
+    space_saving = ((csv_size - parquet_size) / csv_size) * 100
+
+    print(f"\n=== 性能对比结果 ===")
+    print(f"CSV 文件大小: {csv_size:.2f} MB")
+    print(f"Parquet 文件大小: {parquet_size:.2f} MB")
+    print(f"压缩比: {compression_ratio:.2f}")
+    print(f"存储空间节省: {space_saving:.1f}%")
+    print(f"CSV 写入时间: {csv_time:.3f} 秒")
+    print(f"Parquet 写入时间: {parquet_time:.3f} 秒")
+
+    # 4. 读取验证
+    print("\n验证数据完整性...")
+
+    csv_read_start = time.time()
+    df_csv = pd.read_csv('user_data.csv')
+    csv_read_time = time.time() - csv_read_start
+
+    parquet_read_start = time.time()
+    df_parquet = pd.read_parquet('user_data.parquet')
+    parquet_read_time = time.time() - parquet_read_start
+
+    print(f"CSV 读取时间: {csv_read_time:.3f} 秒")
+    print(f"Parquet 读取时间: {parquet_read_time:.3f} 秒")
+
+    # 数据完整性验证
+    assert df.shape == df_parquet.shape, "数据形状不匹配"
+    assert df.columns.tolist() == df_parquet.columns.tolist(), "列名不匹配"
+    assert df['user_id'].equals(df_parquet['user_id']), "数据内容不匹配"
+
+    print("✅ 数据完整性验证通过！")
+
+    return {
+        'csv_size_mb': csv_size,
+        'parquet_size_mb': parquet_size,
+        'compression_ratio': compression_ratio,
+        'space_saving_percent': space_saving,
+        'csv_write_time': csv_time,
+        'parquet_write_time': parquet_time,
+        'csv_read_time': csv_read_time,
+        'parquet_read_time': parquet_read_time
+    }
+
+if __name__ == "__main__":
+    results = basic_parquet_exercise()
+```
+
+**预期运行结果示例：**
+
+```text
+生成 100,000 条用户数据...
+数据生成完成，形状: (100000, 6)
+
+保存文件...
+
+=== 性能对比结果 ===
+CSV 文件大小: 8.73 MB
+Parquet 文件大小: 2.15 MB
+压缩比: 4.06
+存储空间节省: 75.4%
+CSV 写入时间: 0.452 秒
+Parquet 写入时间: 0.218 秒
+
+验证数据完整性...
+CSV 读取时间: 0.125 秒
+Parquet 读取时间: 0.087 秒
+✅ 数据完整性验证通过！
 ```
 
 **评分标准：**
@@ -391,11 +499,13 @@ A:
 **实践技巧：**
 
 1. **数据类型优化**：
+
    - 使用 `category` 类型存储重复的字符串字段
    - 使用合适的整数类型（int8, int16, int32）减少存储
    - 时间戳使用 datetime64 类型
 
 2. **性能优化**：
+
    - 批量处理数据，避免多次小文件操作
    - 使用合适的压缩算法平衡压缩率和速度
    - 设置合适的行组大小（通常 128MB-256MB）
@@ -408,19 +518,23 @@ A:
 **常见错误处理：**
 
 1. **内存不足错误**：
+
    - 减少数据量分批处理
    - 使用 `pd.read_parquet(..., chunksize=10000)`
    - 优化数据类型减少内存占用
 
 2. **压缩算法不支持**：
+
    - 确保安装了对应的压缩库
    - 检查 PyArrow 版本是否支持该算法
 
 3. **Schema 不匹配**：
+
    - 写入和读取时保持 Schema 一致
    - 使用明确的 Schema 定义
 
 4. **分区路径错误**：
+
    - 确保分区字段值不包含特殊字符
    - 分区目录命名符合 `column=value` 格式
 

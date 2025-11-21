@@ -10,7 +10,7 @@ import pandas as pd
 import os
 from typing import Dict, Any, List, Tuple, Optional
 
-from .utils import PerformanceAnalyzer
+from ..utils import PerformanceAnalyzer
 
 
 class ParquetQueryOptimizationExercise:
@@ -360,7 +360,7 @@ class ParquetQueryOptimizationExercise:
     
     def cleanup(self):
         """清理临时文件"""
-        from .utils import cleanup_files
+        from ..utils import cleanup_files
         patterns = [
             self.filename
         ]

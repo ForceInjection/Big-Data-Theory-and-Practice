@@ -28,17 +28,25 @@ class DataGenerator:
         np.random.seed(seed)
         self.cities = ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Hangzhou', 'Nanjing', 'Chengdu', 'Wuhan', 'Xian', 'Chongqing']
         
-    def generate_user_data(self, num_records: int = 100000) -> pd.DataFrame:
+    def generate_user_data(self, num_records: int = 100000, include_nulls: bool = False, null_probability: float = 0.1) -> pd.DataFrame:
         """
         生成用户数据
         
         Args:
             num_records: 记录数量
+            include_nulls: 是否包含空值
+            null_probability: 空值概率（当 include_nulls=True 时有效）
             
         Returns:
             包含用户数据的 DataFrame
         """
         print(f"正在生成 {num_records} 条用户记录...")
+        
+        # 设置随机种子以确保可重现性
+        np.random.seed(self.seed)
+        
+        # 使用固定的基准时间以确保可重现性
+        base_time = datetime(2024, 1, 1, 0, 0, 0)
         
         data = {
             'UserID': range(1, num_records + 1),
@@ -46,11 +54,22 @@ class DataGenerator:
             'Age': np.random.randint(18, 80, num_records),
             'City': np.random.choice(self.cities, num_records),
             'RegisterTime': [
-                datetime.now() - timedelta(days=np.random.randint(0, 365))
+                base_time + timedelta(days=np.random.randint(0, 365))
                 for _ in range(num_records)
             ],
             'Income': np.random.normal(50000, 20000, num_records).round(2)
         }
+        
+        # 如果需要包含空值
+        if include_nulls:
+            for col in ['Age', 'City', 'Income']:
+                mask = np.random.random(num_records) < null_probability
+                if col == 'Age':
+                    data[col] = [None if mask[i] else data[col][i] for i in range(num_records)]
+                elif col == 'City':
+                    data[col] = [None if mask[i] else data[col][i] for i in range(num_records)]
+                elif col == 'Income':
+                    data[col] = [None if mask[i] else data[col][i] for i in range(num_records)]
         
         df = pd.DataFrame(data)
         print("数据生成完成！")
@@ -268,6 +287,27 @@ def verify_data_integrity(original_df: pd.DataFrame, read_df: pd.DataFrame) -> b
         if col not in read_df.columns:
             print(f"❌ 缺少列 '{col}'")
             return False
+    
+    # Check data values
+    try:
+        # Reset index for comparison
+        original_df = original_df.reset_index(drop=True)
+        read_df = read_df.reset_index(drop=True)
+        
+        # Compare data values
+        for col in original_df.columns:
+            if col == 'RegisterTime':
+                # 对于时间戳列，允许微秒级别的差异
+                if not pd.Series(original_df[col].dt.floor('s')).equals(pd.Series(read_df[col].dt.floor('s'))):
+                    print(f"❌ 列 '{col}' 数据不匹配")
+                    return False
+            else:
+                if not original_df[col].equals(read_df[col]):
+                    print(f"❌ 列 '{col}' 数据不匹配")
+                    return False
+    except Exception as e:
+        print(f"❌ 数据比较出错：{e}")
+        return False
     
     print("✅ 数据完整性验证通过！")
     return True

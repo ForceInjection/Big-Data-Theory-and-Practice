@@ -11,7 +11,7 @@ import os
 import shutil
 from typing import Dict, Any, List, Optional
 
-from .utils import PerformanceAnalyzer
+from ..utils import PerformanceAnalyzer
 
 
 class ParquetPartitioningExercise:
@@ -461,7 +461,7 @@ class ParquetPartitioningExercise:
     
     def cleanup(self):
         """清理临时文件"""
-        from .utils import cleanup_files
+        from ..utils import cleanup_files
         patterns = [
             self.non_partitioned_path,
             self.partitioned_path,

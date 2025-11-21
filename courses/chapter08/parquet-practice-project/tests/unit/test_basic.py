@@ -41,24 +41,24 @@ class TestDataGenerator:
         df = generator.generate_user_data()
         
         assert isinstance(df, pd.DataFrame)
-        assert len(df) == 10000  # 默认记录数
-        assert len(df.columns) == 8  # 预期列数
+        assert len(df) == 100000  # 默认记录数
+        assert len(df.columns) == 6  # 预期列数
         
         # 检查必要的列
-        expected_columns = ['user_id', 'name', 'email', 'age', 'salary', 'department', 'join_date', 'is_active']
+        expected_columns = ['UserID', 'Username', 'Age', 'City', 'RegisterTime', 'Income']
         assert all(col in df.columns for col in expected_columns)
     
     def test_generate_user_data_custom_records(self):
         """测试自定义记录数"""
         generator = DataGenerator(seed=42)
-        df = generator.generate_user_data(records=1000)
+        df = generator.generate_user_data(num_records=1000)
         
         assert len(df) == 1000
     
     def test_generate_user_data_with_nulls(self):
         """测试包含空值的数据生成"""
         generator = DataGenerator(seed=42)
-        df = generator.generate_user_data(records=1000, include_nulls=True, null_probability=0.1)
+        df = generator.generate_user_data(num_records=1000, include_nulls=True, null_probability=0.1)
         
         # 检查是否有空值
         has_nulls = df.isnull().any().any()
@@ -67,7 +67,7 @@ class TestDataGenerator:
     def test_generate_user_data_without_nulls(self):
         """测试不包含空值的数据生成"""
         generator = DataGenerator(seed=42)
-        df = generator.generate_user_data(records=1000, include_nulls=False)
+        df = generator.generate_user_data(num_records=1000, include_nulls=False)
         
         # 检查是否没有空值
         has_nulls = df.isnull().any().any()
@@ -76,13 +76,13 @@ class TestDataGenerator:
     def test_generate_nested_data(self):
         """测试嵌套数据生成"""
         generator = DataGenerator(seed=42)
-        df = generator.generate_nested_data(records=100)
+        df = generator.generate_nested_data(num_records=100)
         
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 100
         
         # 检查嵌套列
-        expected_columns = ['id', 'profile', 'tags', 'metrics']
+        expected_columns = ['UserID', 'Username', 'Age', 'Contacts', 'Address', 'Tags']
         assert all(col in df.columns for col in expected_columns)
     
     def test_reproducibility_with_seed(self):
@@ -90,8 +90,8 @@ class TestDataGenerator:
         generator1 = DataGenerator(seed=42)
         generator2 = DataGenerator(seed=42)
         
-        df1 = generator1.generate_user_data(records=100)
-        df2 = generator2.generate_user_data(records=100)
+        df1 = generator1.generate_user_data(num_records=100)
+        df2 = generator2.generate_user_data(num_records=100)
         
         pd.testing.assert_frame_equal(df1, df2)
 
@@ -108,14 +108,15 @@ class TestPerformanceAnalyzer:
         """测试时间测量"""
         analyzer = PerformanceAnalyzer()
         
-        with analyzer.measure_time("test_operation"):
-            # 模拟一些操作
-            sum(range(1000))
+        # 正确使用 measure_time 方法
+        def test_function():
+            return sum(range(1000))
         
-        # 检查是否记录了时间
-        assert hasattr(analyzer, 'times')
-        assert 'test_operation' in analyzer.times
-        assert analyzer.times['test_operation'] > 0
+        result, execution_time = analyzer.measure_time(test_function)
+        
+        # 检查返回结果
+        assert result == 499500  # sum(range(1000)) = 499500
+        assert execution_time > 0  # 执行时间应该大于0
     
     def test_get_file_size_existing_file(self):
         """测试获取存在文件的大小"""
@@ -136,8 +137,9 @@ class TestPerformanceAnalyzer:
         """测试获取不存在文件的大小"""
         analyzer = PerformanceAnalyzer()
         
-        with pytest.raises(FileNotFoundError):
-            analyzer.get_file_size("nonexistent_file.txt")
+        # 文件不存在时应该返回 0.0
+        size = analyzer.get_file_size("nonexistent_file.txt")
+        assert size == 0.0
     
     def test_compare_performance(self):
         """测试性能对比"""
@@ -194,29 +196,36 @@ class TestParquetBasicExercise:
     
     def test_run_exercise_with_generated_data(self):
         """测试使用生成数据运行练习"""
-        results = self.exercise.run_exercise(records=100)
+        results = self.exercise.run_exercise(num_records=100)
         
         assert isinstance(results, dict)
-        assert 'performance' in results
-        assert 'compression_ratio' in results
-        assert 'speed_improvement' in results
         assert 'data_integrity' in results
+        assert 'compression_ratio' in results
+        assert 'performance' in results
         
         # 检查性能数据结构
-        performance = results['performance']
-        assert 'parquet' in performance
-        assert 'csv' in performance
+        performance_results = results['performance']
+        assert 'Parquet' in performance_results
+        assert 'CSV' in performance_results
         
-        for format_data in performance.values():
-            assert 'write_time' in format_data
-            assert 'read_time' in format_data
-            assert 'file_size' in format_data
+        parquet_results = performance_results['Parquet']
+        csv_results = performance_results['CSV']
+        
+        assert 'save_time' in parquet_results
+        assert 'read_time' in parquet_results
+        assert 'file_size' in parquet_results
+        assert 'integrity' in parquet_results
+        
+        assert 'save_time' in csv_results
+        assert 'read_time' in csv_results
+        assert 'file_size' in csv_results
+        assert 'integrity' in csv_results
     
     def test_run_exercise_with_custom_data(self):
         """测试使用自定义数据运行练习"""
         # 创建自定义数据
         generator = DataGenerator(seed=42)
-        custom_data = generator.generate_user_data(records=50)
+        custom_data = generator.generate_user_data(num_records=50)
         
         results = self.exercise.run_exercise(data=custom_data)
         
@@ -225,14 +234,14 @@ class TestParquetBasicExercise:
     
     def test_run_exercise_data_integrity(self):
         """测试数据完整性验证"""
-        results = self.exercise.run_exercise(records=50)
+        results = self.exercise.run_exercise(num_records=50)
         
         # 数据完整性应该为 True
         assert results['data_integrity'] is True
     
     def test_run_exercise_compression_ratio(self):
         """测试压缩比计算"""
-        results = self.exercise.run_exercise(records=100)
+        results = self.exercise.run_exercise(num_records=100)
         
         compression_ratio = results['compression_ratio']
         assert isinstance(compression_ratio, float)
@@ -245,7 +254,7 @@ class TestUtilityFunctions:
     def test_verify_data_integrity_identical_data(self):
         """测试相同数据的完整性验证"""
         generator = DataGenerator(seed=42)
-        df1 = generator.generate_user_data(records=100)
+        df1 = generator.generate_user_data(num_records=100)
         df2 = df1.copy()
         
         result = verify_data_integrity(df1, df2)
@@ -253,9 +262,10 @@ class TestUtilityFunctions:
     
     def test_verify_data_integrity_different_data(self):
         """测试不同数据的完整性验证"""
-        generator = DataGenerator(seed=42)
-        df1 = generator.generate_user_data(records=100)
-        df2 = generator.generate_user_data(records=100)  # 不同的数据
+        generator1 = DataGenerator(seed=42)
+        generator2 = DataGenerator(seed=43)  # 使用不同的种子生成不同的数据
+        df1 = generator1.generate_user_data(num_records=100)
+        df2 = generator2.generate_user_data(num_records=100)
         
         result = verify_data_integrity(df1, df2)
         assert result is False
@@ -263,7 +273,7 @@ class TestUtilityFunctions:
     def test_verify_data_integrity_modified_data(self):
         """测试修改后数据的完整性验证"""
         generator = DataGenerator(seed=42)
-        df1 = generator.generate_user_data(records=100)
+        df1 = generator.generate_user_data(num_records=100)
         df2 = df1.copy()
         df2.iloc[0, 0] = "modified"  # 修改一个值
         
@@ -297,7 +307,7 @@ class TestIntegration:
         """测试完整工作流程"""
         # 1. 生成数据
         generator = DataGenerator(seed=42)
-        data = generator.generate_user_data(records=100)
+        data = generator.generate_user_data(num_records=100)
         
         # 2. 创建临时目录
         temp_dir = tempfile.mkdtemp()

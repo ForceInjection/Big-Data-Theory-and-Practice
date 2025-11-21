@@ -15,12 +15,12 @@ __version__ = "1.0.0"
 __author__ = "Parquet Practice Project"
 __email__ = "example@example.com"
 
-from .basic_exercise import ParquetBasicExercise
-from .compression_exercise import ParquetCompressionExercise
-from .query_optimization_exercise import ParquetQueryOptimizationExercise
-from .partitioning_exercise import ParquetPartitioningExercise
-from .advanced_exercise import ParquetAdvancedExercise
-from .utils import DataGenerator, PerformanceAnalyzer
+from .exercises.basic import ParquetBasicExercise
+from .exercises.compression import ParquetCompressionExercise
+from .exercises.query_optimization import ParquetQueryOptimizationExercise
+from .exercises.partitioning import ParquetPartitioningExercise
+from .exercises.advanced import ParquetAdvancedExercise
+from .utils import DataGenerator, PerformanceAnalyzer, verify_data_integrity, cleanup_files
 
 __all__ = [
     'ParquetBasicExercise',
@@ -28,6 +28,10 @@ __all__ = [
     'ParquetQueryOptimizationExercise',
     'ParquetPartitioningExercise',
     'ParquetAdvancedExercise',
+    'DataGenerator',
+    'PerformanceAnalyzer',
+    'verify_data_integrity',
+    'cleanup_files',
     'DataGenerator',
     'PerformanceAnalyzer'
 ]
