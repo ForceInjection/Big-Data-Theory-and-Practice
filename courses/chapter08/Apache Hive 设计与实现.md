@@ -1190,11 +1190,11 @@ Hive 实现了多种逻辑优化策略，通过规则匹配和转换来改进查
    SELECT * FROM table WHERE age > 20;
    ```
 
-5. **空值传播（Null Propagation）**
+5. **空值传播（Null Propagation）**：识别并优化包含 NULL 值的表达式，将结果必然为 NULL 或 FALSE 的查询条件替换为常量 FALSE，避免不必要的计算和数据扫描。
 
    ```sql
    -- 优化前
-   SELECT * FROM table WHERE nullable_col = NULL;
+   SELECT * FROM table WHERE nullable_col IS NULL;
 
    -- 优化后
    SELECT * FROM table WHERE FALSE;
