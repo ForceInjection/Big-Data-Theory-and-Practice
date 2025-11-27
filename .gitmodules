@@ -1,3 +1,6 @@
 [submodule "books/SparkInternals"]
 	path = books/SparkInternals
 	url = git@github.com:JerryLead/SparkInternals.git
+[submodule "courses/chapter09/java-lsm-tree"]
+	path = courses/chapter09/java-lsm-tree
+	url = https://github.com/ForceInjection/java-lsm-tree
