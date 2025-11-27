@@ -185,8 +185,12 @@ HBase 采用**列族存储**模型，这是 HBase 的核心概念。列族是一
 
 HBase 的灵活数据模型特别适合存储半结构化和稀疏数据，对于用户画像这种字段频繁变化的场景具有巨大优势。
 
+> **代码示例说明**：以下示例展示了 HBase Shell 的使用方式，这是 HBase 提供的交互式命令行工具，基于 JRuby 实现。它主要用于表管理、数据操作和集群监控，提供了一种简单直接的管理接口。
+
 ```bash
-# HBase 建表示例 - 只需定义列族，列可以动态添加
+# HBase Shell 建表示例 - 只需定义列族，列可以动态添加
+# create 命令用于创建表，NAME 指定列族名称，VERSIONS 设置版本数
+# BLOOMFILTER 启用布隆过滤器优化查询，COMPRESSION 设置压缩算法
 create 'user_profile', {
   NAME => 'basic',
   VERSIONS => 3,
@@ -197,12 +201,13 @@ create 'user_profile', {
   COMPRESSION => 'SNAPPY'
 }
 
-# 动态添加数据 - 无需修改表结构
+# put 命令用于插入或更新数据 - 无需修改表结构
+# 格式：put '表名', '行键', '列族:列限定符', '值'
 put 'user_profile', 'user001', 'basic:name', 'Alice'
 put 'user_profile', 'user001', 'basic:age', '30'
 put 'user_profile', 'user001', 'behavior:last_login', '2024-01-01'
 put 'user_profile', 'user001', 'behavior:login_count', '15'
-# 动态添加新字段
+# 动态添加新字段 - HBase 支持动态添加列，无需预先定义
 put 'user_profile', 'user001', 'behavior:favorite_color', 'blue'
 ```
 
