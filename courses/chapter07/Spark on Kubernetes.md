@@ -116,7 +116,7 @@ Spark 官方提供了标准化的架构示意图，清晰展示了各组件间�
 
 ![Spark on Kubernetes](spark_on_kubernetes.png)
 
-**任务提交流程概述[4]:**
+**任务提交流程概述[5]:**
 
 1. **用户提交任务**: 用户在客户端执行 `/bin/spark-submit` 命令提交 Spark 应用
 2. **Driver Pod 创建**: SparkSubmit 进程通过 fabric8 Kubernetes Client 向 Kubernetes API Server 发起请求，创建 Driver Pod
@@ -243,12 +243,129 @@ kubectl logs <spark-driver-pod>
 
 ---
 
+## 6. Spark Operator 介绍
+
+### 6.1 概述
+
+Spark Operator 是 Kubernetes 上用于管理 Apache Spark 应用程序生命周期的专用 Operator。该项目最初由 Google 于 2017 年开发，2018 年开源发布，随后在 2018-2019 年期间逐步捐赠给 Kubeflow 社区。这一战略捐赠旨在通过社区驱动的模式确保项目的长期维护和发展，同时更好地集成到 Kubeflow 的机器学习生态系统中，为 Spark on Kubernetes 提供更原生、更易用的管理方式。
+
+### 6.2 核心特性
+
+Spark Operator 提供了以下核心功能：
+
+- **声明式应用管理**: 通过 Kubernetes 自定义资源 (Custom Resource Definitions, CRDs) 定义 Spark 应用程序
+- **自动化任务提交**: 自动运行 `spark-submit` 操作，简化应用程序部署流程
+- **原生定时任务支持**: 内置 cron 支持，可调度周期性 Spark 作业
+- **高级 Pod 定制**: 通过 Mutating Admission Webhook 支持复杂的 Pod 配置
+- **自动重启策略**: 支持配置化的应用程序重启策略
+- **Prometheus 监控集成**: 支持应用程序级别和 Executor 级别的指标导出
+
+### 6.3 架构设计
+
+Spark Operator 采用标准的 Kubernetes Operator 模式：
+
+1. **自定义资源定义**: 定义 `SparkApplication` 和 `ScheduledSparkApplication` CRDs
+2. **控制器模式**: 监听自定义资源变化并协调应用程序状态
+3. **Webhook 支持**: 提供 Pod 定制和验证功能
+4. **指标导出**: 集成 Prometheus 监控指标
+
+### 6.4 快速入门示例
+
+#### 6.4.1 安装 Spark Operator
+
+```bash
+# 添加 Helm 仓库
+helm repo add --force-update spark-operator https://kubeflow.github.io/spark-operator
+
+# 安装 Operator
+helm install spark-operator spark-operator/spark-operator \
+    --namespace spark-operator \
+    --create-namespace \
+    --wait
+```
+
+#### 6.4.2 创建 Spark 应用程序
+
+```yaml
+apiVersion: "sparkoperator.k8s.io/v1beta2"
+kind: SparkApplication
+metadata:
+  name: spark-pi
+  namespace: default
+spec:
+  type: Scala
+  mode: cluster
+  image: "gcr.io/spark-operator/spark:v3.1.1"
+  imagePullPolicy: Always
+  mainClass: org.apache.spark.examples.SparkPi
+  mainApplicationFile: "local:///opt/spark/examples/jars/spark-examples_2.12-3.1.1.jar"
+  restartPolicy:
+    type: OnFailure
+    onFailureRetries: 3
+    onFailureRetryInterval: 10
+    onSubmissionFailureRetries: 5
+    onSubmissionFailureRetryInterval: 20
+  driver:
+    cores: 1
+    coreLimit: "1200m"
+    memory: "512m"
+    labels:
+      version: "3.1.1"
+    serviceAccount: spark
+  executor:
+    cores: 1
+    instances: 1
+    memory: "512m"
+    labels:
+      version: "3.1.1"
+```
+
+#### 6.4.3 部署和管理
+
+```bash
+# 部署应用程序
+kubectl apply -f spark-pi.yaml
+
+# 查看应用程序状态
+kubectl get sparkapp spark-pi
+
+# 查看详细状态
+kubectl describe sparkapp spark-pi
+
+# 删除应用程序
+kubectl delete sparkapp spark-pi
+```
+
+### 6.5 与传统方式的对比
+
+| **特性**     | **原生 Spark on Kubernetes** | **Spark Operator**   |
+| ------------ | ---------------------------- | -------------------- |
+| 部署方式     | 手动 `spark-submit`          | 声明式 YAML 配置     |
+| 生命周期管理 | 手动管理 Pod                 | 自动化管理           |
+| 定时任务     | 需要外部调度器               | 内置 cron 支持       |
+| 配置复杂度   | 命令行参数复杂               | YAML 配置清晰        |
+| 运维复杂度   | 较高                         | 较低                 |
+| 监控集成     | 需要手动配置                 | 内置 Prometheus 支持 |
+
+### 6.6 适用场景
+
+Spark Operator 特别适用于以下场景：
+
+- **生产环境部署**: 需要稳定可靠的 Spark 应用程序管理
+- **批量作业调度**: 需要定时执行的周期性 Spark 作业
+- **多租户环境**: 需要细粒度的资源管理和隔离
+- **DevOps 流程**: 需要集成到 CI/CD 流水线中
+- **监控告警**: 需要完善的监控和告警机制
+
+---
+
 ## 参考资料
 
 1. [Apache Spark 官方文档](https://spark.apache.org/)
 2. [Kubernetes 官方文档](https://kubernetes.io/docs/concepts/)
-3. [Spark on Kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html)
-4. [Spark on K8s 在阿里云上的实践](http://fanyilun.me/2022/06/11/Spark%20on%20K8s%E5%9C%A8%E9%98%BF%E9%87%8C%E4%BA%91%E4%B8%8A%E7%9A%84%E5%AE%9E%E8%B7%B5/)
-5. [YARN 和 K8s 调度 Spark 作业的对比](http://fanyilun.me/2022/06/02/YARN%E5%92%8CK8s%E8%B0%83%E5%BA%A6Spark%E4%BD%9C%E4%B8%9A%E7%9A%84%E5%AF%B9%E6%AF%94/)
+3. [Kubeflow Spark Operator GitHub](https://github.com/kubeflow/spark-operator)
+4. [Spark on Kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html)
+5. [Spark on K8s 在阿里云上的实践](http://fanyilun.me/2022/06/11/Spark%20on%20K8s%E5%9C%A8%E9%98%BF%E9%87%8C%E4%BA%91%E4%B8%8A%E7%9A%84%E5%AE%9E%E8%B7%B5/)
+6. [YARN 和 K8s 调度 Spark 作业的对比](http://fanyilun.me/2022/06/02/YARN%E5%92%8CK8s%E8%B0%83%E5%BA%A6Spark%E4%BD%9C%E4%B8%9A%E7%9A%84%E5%AF%B9%E6%AF%94/)
 
 ---
