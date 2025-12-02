@@ -1537,21 +1537,21 @@ class GlobalDeployment:
 
 ---
 
-## 参考文献
+## 10. 参考文献
 
-1. MySQL AB. "MySQL 5.0 Reference Manual: Optimization and Performance Tuning", 2006. <https://downloads.mysql.com/docs/mysql-5.0-refman-en.pdf>
-2. High Scalability. "Friendster Lost Lead Because of a Failure to Scale", 2007. <https://highscalability.com/friendster-lost-lead-because-of-a-failure-to-scale/>
-3. Raffi Krikorian. "Timelines at Scale", 2012. <https://www.infoq.com/presentations/Twitter-Timeline-Scalability/>
-4. Facebook Research. "TAO: Facebook's Distributed Data Store for the Social Graph", 2013. <https://www.usenix.org/conference/atc13/technical-sessions/presentation/bronson>
-5. Jay Kreps. "The Log: What every software engineer should know about real-time data's unifying abstraction", 2013. <https://engineering.linkedin.com/distributed-systems/log-what-every-software-engineer-should-know-about-real-time-datas-unifying>
-6. 陈波. "微博应对日访问量百亿级的缓存架构设计", 2018. <https://www.techug.com/post/weibo-cache-design/>
-7. LinkedIn Engineering Blog. "Running Kafka At Scale", 2015. <https://engineering.linkedin.com/kafka/running-kafka-scale>
-8. Twitter Engineering Blog. "Twitter's Kafka adoption story", 2018. <https://blog.twitter.com/engineering/en_us/topics/insights/2018/twitters-kafka-adoption-story>
-9. Uber Engineering. "Stream Processing with Kafka in Uber", 2016. <https://www.confluent.io/resources/kafka-summit-2016/stream-processing-kafka-uber/>
-10. Nicolas Koumchatzky, Anton Andryeyev. "Using Deep Learning at Scale in Twitter's Timelines", 2017. <https://blog.twitter.com/engineering/en_us/topics/insights/2017/using-deep-learning-at-scale-in-twitters-timelines>
-11. Facebook. "News Feed Ranking in Three Minutes Flat", 2018. <https://about.fb.com/news/2018/05/inside-feed-news-feed-ranking/>
-12. Instagram Engineering. "Scaling the Instagram Explore recommendations system", 2023. <https://engineering.fb.com/2023/08/09/ml-applications/scaling-instagram-explore-recommendations-system/>
-13. Twitter Engineering. "Manhattan, our real-time, multi-tenant distributed database for Twitter scale", 2014. <https://blog.twitter.com/engineering/en_us/a/2014/manhattan-our-real-time-multi-tenant-distributed-database-for-twitter-scale>
-14. ByteDance. "Monolith: Real Time Recommendation System With Collisionless Embedding Table", 2022. <https://arxiv.org/abs/2209.07663>
+[1] **MySQL AB.** "MySQL 5.0 Reference Manual: Optimization and Performance Tuning." MySQL. 2006. Accessed: Dec. 2, 2025. [Online]. Available: https://downloads.mysql.com/docs/mysql-5.0-refman-en.pdf
+[2] **High Scalability.** "Friendster Lost Lead Because of a Failure to Scale." High Scalability. 2007. Accessed: Dec. 2, 2025. [Online]. Available: https://highscalability.com/friendster-lost-lead-because-of-a-failure-to-scale/
+[3] **Krikorian, R.** "Timelines at Scale." InfoQ. 2012. Accessed: Dec. 2, 2025. [Online]. Available: https://www.infoq.com/presentations/Twitter-Timeline-Scalability/
+[4] **Facebook Research.** "TAO: Facebook's Distributed Data Store for the Social Graph." USENIX ATC. 2013. Accessed: Dec. 2, 2025. [Online]. Available: https://www.usenix.org/conference/atc13/technical-sessions/presentation/bronson
+[5] **Kreps, J.** "The Log: What every software engineer should know about real-time data's unifying abstraction." LinkedIn Engineering. 2013. Accessed: Dec. 2, 2025. [Online]. Available: https://engineering.linkedin.com/distributed-systems/log-what-every-software-engineer-should-know-about-real-time-datas-unifying
+[6] **陈波.** "微博应对日访问量百亿级的缓存架构设计." 技术客. 2018. Accessed: Dec. 2, 2025. [Online]. Available: https://www.techug.com/post/weibo-cache-design/
+[7] **LinkedIn Engineering Blog.** "Running Kafka At Scale." LinkedIn. 2015. Accessed: Dec. 2, 2025. [Online]. Available: https://engineering.linkedin.com/kafka/running-kafka-scale
+[8] **Twitter Engineering Blog.** "Twitter's Kafka adoption story." Twitter. 2018. Accessed: Dec. 2, 2025. [Online]. Available: https://blog.twitter.com/engineering/en_us/topics/insights/2018/twitters-kafka-adoption-story
+[9] **Uber Engineering.** "Stream Processing with Kafka in Uber." Confluent. 2016. Accessed: Dec. 2, 2025. [Online]. Available: https://www.confluent.io/resources/kafka-summit-2016/stream-processing-kafka-uber/
+[10] **Koumchatzky, N., & Andryeyev, A.** "Using Deep Learning at Scale in Twitter's Timelines." Twitter Engineering. 2017. Accessed: Dec. 2, 2025. [Online]. Available: https://blog.twitter.com/engineering/en_us/topics/insights/2017/using-deep-learning-at-scale-in-twitters-timelines
+[11] **Facebook.** "News Feed Ranking in Three Minutes Flat." Facebook Newsroom. 2018. Accessed: Dec. 2, 2025. [Online]. Available: https://about.fb.com/news/2018/05/inside-feed-news-feed-ranking/
+[12] **Instagram Engineering.** "Scaling the Instagram Explore recommendations system." Facebook Engineering. 2023. Accessed: Dec. 2, 2025. [Online]. Available: https://engineering.fb.com/2023/08/09/ml-applications/scaling-instagram-explore-recommendations-system/
+[13] **Twitter Engineering.** "Manhattan, our real-time, multi-tenant distributed database for Twitter scale." Twitter. 2014. Accessed: Dec. 2, 2025. [Online]. Available: https://blog.twitter.com/engineering/en_us/a/2014/manhattan-our-real-time-multi-tenant-distributed-database-for-twitter-scale
+[14] **ByteDance.** "Monolith: Real Time Recommendation System With Collisionless Embedding Table." In _Proceedings of the 5th Workshop on Online Recommender Systems and User Modeling (ORSUM@ACM RecSys 2022)_, pp. 1-10. Seattle, WA, USA. 2022. [Online]. Available: https://ceur-ws.org/Vol-3303/paper8.pdf
 
 ---

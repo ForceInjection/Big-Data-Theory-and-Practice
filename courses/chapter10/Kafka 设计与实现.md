@@ -3432,13 +3432,13 @@ Apache Kafka 的成功不仅在于其技术实现，更在于其卓越的架构�
 
 ## 参考文献
 
-[1] **Apache Kafka 官方文档**．Apache Software Foundation, 2024．[Online]. Available: <https://kafka.apache.org/documentation/>
-[2] **Kafka Improvement Proposals (KIPs)**．Apache Kafka Wiki, 2024．[Online]. Available: <https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Improvement+Proposals>
-[3] **Confluent Documentation**．Confluent, Inc., 2024．[Online]. Available: <https://docs.confluent.io/>
-[4] **Kafka Protocol Guide**．Apache Kafka, 2024．[Online]. Available: <https://kafka.apache.org/protocol.html>
-[5] **Kafka: The Definitive Guide**．Neha Narkhede, Gwen Shapira, and Todd Palino．O'Reilly Media, 2017．ISBN: 978-1491936160
-[6] **Designing Data-Intensive Applications**．Martin Kleppmann．O'Reilly Media, 2017．ISBN: 978-1449373320
-[7] **Streaming Systems**．Tyler Akidau, Slava Chernyak, and Reuven Lax．O'Reilly Media, 2018．ISBN: 978-1491983874
-[8] **Kafka Streams in Action**．William P. Bejeck Jr．Manning Publications, 2018．ISBN: 978-1617294472
+[1] **Apache Software Foundation.** "Apache Kafka 官方文档." Apache Kafka. 2024. Accessed: Dec. 2, 2025. [Online]. Available: https://kafka.apache.org/documentation/
+[2] **Apache Software Foundation.** "Kafka Improvement Proposals (KIPs)." Apache Kafka Wiki. 2024. Accessed: Dec. 2, 2025. [Online]. Available: https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Improvement+Proposals
+[3] **Confluent, Inc.** "Confluent Documentation." Confluent. 2024. Accessed: Dec. 2, 2025. [Online]. Available: https://docs.confluent.io/
+[4] **Apache Software Foundation.** "Kafka Protocol Guide." Apache Kafka. 2024. Accessed: Dec. 2, 2025. [Online]. Available: https://kafka.apache.org/protocol.html
+[5] **Narkhede, N., Shapira, G., & Palino, T.** _Kafka: The Definitive Guide_. Sebastopol, CA: O'Reilly Media, 2017.
+[6] **Kleppmann, M.** _Designing Data-Intensive Applications_. Sebastopol, CA: O'Reilly Media, 2017.
+[7] **Akidau, T., Chernyak, S., & Lax, R.** _Streaming Systems_. Sebastopol, CA: O'Reilly Media, 2018.
+[8] **Bejeck, W. P., Jr.** _Kafka Streams in Action_. Shelter Island, NY: Manning Publications, 2018.
 
 ---

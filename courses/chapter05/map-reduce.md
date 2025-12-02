@@ -2397,44 +2397,44 @@ MapReduce 作为大数据处理的奠基性技术，其"简单而强大"的设�
 
 ## 参考文献
 
-[1] Dean, J., & Ghemawat, S. (2008). MapReduce: Simplified data processing on large clusters. _Communications of the ACM_, 51(1), 107-113. DOI: 10.1145/1327452.1327492
+[1] **Dean, J., & Ghemawat, S.** "MapReduce: Simplified data processing on large clusters." _Communications of the ACM_, 51(1), 107-113. 2008. DOI: 10.1145/1327452.1327492
 
-[2] Ghemawat, S., Gobioff, H., & Leung, S. T. (2003). The Google file system. _ACM SIGOPS Operating Systems Review_, 37(5), 29-43. DOI: 10.1145/1165389.945450
+[2] **Ghemawat, S., Gobioff, H., & Leung, S. T.** "The Google file system." _ACM SIGOPS Operating Systems Review_, 37(5), 29-43. 2003. DOI: 10.1145/1165389.945450
 
-[3] Lamport, L. (1978). Time, clocks, and the ordering of events in a distributed system. _Communications of the ACM_, 21(7), 558-565. DOI: 10.1145/359545.359563
+[3] **Lamport, L.** "Time, clocks, and the ordering of events in a distributed system." _Communications of the ACM_, 21(7), 558-565. 1978. DOI: 10.1145/359545.359563
 
-[4] Chen, C., & Zhang, J. (2014). The data model and algebra for NoSQL databases. _Journal of Computer Science and Technology_, 29(3), 353-374. DOI: 10.1007/s11390-014-1438-9
+[4] **Chen, C., & Zhang, J.** "The data model and algebra for NoSQL databases." _Journal of Computer Science and Technology_, 29(3), 353-374. 2014. DOI: 10.1007/s11390-014-1438-9
 
-[5] Carbone, P., Katsifodimos, A., Ewen, S., Markl, V., Haridi, S., & Tzoumas, K. (2015). Apache Flink: Stream and batch processing in a single engine. _IEEE Data Engineering Bulletin_, 38(4), 28-38.
+[5] **Carbone, P., Katsifodimos, A., Ewen, S., Markl, V., Haridi, S., & Tzoumas, K.** "Apache Flink: Stream and batch processing in a single engine." _IEEE Data Engineering Bulletin_, 38(4), 28-38. 2015.
 
-[6] Zaharia, M., Chowdhury, M., Franklin, M. J., Shenker, S., & Stoica, I. (2010). Spark: Cluster computing with working sets. In _Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing_ (HotCloud '10), Boston, MA, USA.
+[6] **Zaharia, M., Chowdhury, M., Franklin, M. J., Shenker, S., & Stoica, I.** "Spark: Cluster computing with working sets." In _Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing (HotCloud '10)_, pp. 1-7. Boston, MA, USA. 2010.
 
-[7] Zaharia, M., Chowdhury, M., Das, T., Dave, A., Ma, J., McCauley, M., ... & Stoica, I. (2012). Resilient distributed datasets: A fault-tolerant abstraction for in-memory cluster computing. In _Proceedings of the 9th USENIX Symposium on Networked Systems Design and Implementation_ (NSDI '12), San Jose, CA, USA, pp. 15-28.
+[7] **Zaharia, M., Chowdhury, M., Das, T., Dave, A., Ma, J., McCauley, M., ... & Stoica, I.** "Resilient distributed datasets: A fault-tolerant abstraction for in-memory cluster computing." In _Proceedings of the 9th USENIX Symposium on Networked Systems Design and Implementation (NSDI '12)_, pp. 15-28. San Jose, CA, USA. 2012.
 
-[8] Thusoo, A., Sarma, J. S., Jain, N., Shao, Z., Chakka, P., Anthony, S., ... & Murthy, R. (2009). Hive: A warehousing solution over a map-reduce framework. _Proceedings of the VLDB Endowment_, 2(2), 1626-1629.
+[8] **Thusoo, A., Sarma, J. S., Jain, N., Shao, Z., Chakka, P., Anthony, S., ... & Murthy, R.** "Hive: A warehousing solution over a map-reduce framework." _Proceedings of the VLDB Endowment_, 2(2), 1626-1629. 2009.
 
-[9] Apache Software Foundation. (2025). _Apache Hadoop MapReduce Tutorial_. Retrieved from <https://hadoop.apache.org/docs/stable/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html/>
+[9] **Apache Software Foundation.** _Apache Hadoop MapReduce Tutorial_. 2025. Accessed: Dec. 2, 2025. [Online]. Available: https://hadoop.apache.org/docs/stable/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html/
 
-[10] Intel Corporation. (2014). _Hadoop Performance Tuning Guide_. Technical Report. Intel Corporation.
+[10] **Intel Corporation.** _Hadoop Performance Tuning Guide_. Technical Report. Intel Corporation. 2014.
 
-[11] Yahoo! Inc. (2008-2010). _Large-scale Hadoop Performance Studies_. Technical Report Series. Yahoo! Research.
+[11] **Yahoo! Inc.** _Large-scale Hadoop Performance Studies_. Technical Report Series. Yahoo! Research. 2008-2010.
 
-[12] Cloudera Inc. (2025). _Cloudera Data Platform Documentation_. Retrieved from <https://docs.cloudera.com/>
+[12] **Cloudera Inc.** _Cloudera Data Platform Documentation_. 2025. Accessed: Dec. 2, 2025. [Online]. Available: https://docs.cloudera.com/
 
-[13] White, T. (2015). _Hadoop: The Definitive Guide_ (4th ed.). O'Reilly Media, Inc.
+[13] **White, T.** _Hadoop: The Definitive Guide_. 4th ed. Sebastopol, CA: O'Reilly Media, Inc., 2015.
 
-[14] Lynch, N. A. (1996). _Distributed Algorithms_. Morgan Kaufmann Publishers.
+[14] **Lynch, N. A.** _Distributed Algorithms_. San Francisco, CA: Morgan Kaufmann Publishers, 1996.
 
-[15] Kleppmann, M. (2017). _Designing Data-Intensive Applications: The Big Ideas Behind Reliable, Scalable, and Maintainable Systems_. O'Reilly Media, Inc.
+[15] **Kleppmann, M.** _Designing Data-Intensive Applications: The Big Ideas Behind Reliable, Scalable, and Maintainable Systems_. Sebastopol, CA: O'Reilly Media, Inc., 2017.
 
-[16] Apache Hadoop Project. (2025). _Apache Hadoop_. Retrieved from <https://hadoop.apache.org/>
+[16] **Apache Hadoop Project.** _Apache Hadoop_. 2025. Accessed: Dec. 2, 2025. [Online]. Available: https://hadoop.apache.org/
 
-[17] Apache Software Foundation. (2025). _Hadoop MapReduce API Documentation_. Retrieved from <https://hadoop.apache.org/docs/stable/api/>
+[17] **Apache Software Foundation.** _Hadoop MapReduce API Documentation_. 2025. Accessed: Dec. 2, 2025. [Online]. Available: https://hadoop.apache.org/docs/stable/api/
 
-[18] Facebook Engineering. (2010-2015). _Large-scale Data Processing with Hadoop_. Facebook Engineering Blog. Retrieved from <https://engineering.fb.com/>
+[18] **Facebook Engineering.** "Large-scale Data Processing with Hadoop." Facebook Engineering Blog. 2010-2015. Accessed: Dec. 2, 2025. [Online]. Available: https://engineering.fb.com/
 
-[19] Netflix Technology Blog. (2012-2018). _Big Data Platform Evolution_. Netflix Technology Blog. Retrieved from <https://netflixtechblog.com/>
+[19] **Netflix Technology Blog.** "Big Data Platform Evolution." Netflix Technology Blog. 2012-2018. Accessed: Dec. 2, 2025. [Online]. Available: https://netflixtechblog.com/
 
-[20] Alibaba Cloud. (2016-2025). _MaxCompute (ODPS) Best Practices_. Alibaba Cloud Documentation. Retrieved from <https://www.alibabacloud.com/help/maxcompute/>
+[20] **Alibaba Cloud.** "MaxCompute (ODPS) Best Practices." Alibaba Cloud Documentation. 2016-2025. Accessed: Dec. 2, 2025. [Online]. Available: https://www.alibabacloud.com/help/maxcompute/
 
 ---

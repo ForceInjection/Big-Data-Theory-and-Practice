@@ -6004,16 +6004,16 @@ YARN 正在向着更加智能化、云原生化的方向演进，未来将更多
 
 ## 参考文献
 
-[1] **Tom White**. _Hadoop: The Definitive Guide, 4th Edition_. O'Reilly Media, 2015.
+[1] White, T. _Hadoop: The Definitive Guide_. 4th ed. Sebastopol, CA: O'Reilly Media, 2015.
 
-[2] **Arun C. Murthy, et al.** "Apache Hadoop YARN: Yet Another Resource Negotiator." _Proceedings of the 4th Annual Symposium on Cloud Computing_, 2013.
+[2] Murthy, A. C., Douglas, C., Agarwal, S., Konar, M., Evans, R., Graves, T., ... & Baldeschwieler, E. "Apache Hadoop YARN: Yet Another Resource Negotiator." In _Proceedings of the 4th Annual Symposium on Cloud Computing_, pp. 1-16, 2013.
 
-[3] **Vinod Kumar Vavilapalli, et al.** "Apache Hadoop YARN: Moving beyond MapReduce and Batch Processing with Apache Hadoop 2." _ACM Queue_, Vol. 11, No. 11, 2013.
+[3] Vavilapalli, V. K., Murthy, A. C., Douglas, C., Agarwal, S., Konar, M., Evans, R., ... & Baldeschwieler, E. "Apache Hadoop YARN: Moving beyond MapReduce and Batch Processing with Apache Hadoop 2." _ACM Queue_, vol. 11, no. 11, pp. 1-22, 2013.
 
-[4] **Ali Ghodsi, et al.** "Dominant Resource Fairness: Fair Allocation of Multiple Resource Types." _NSDI_, 2011.
+[4] Ghodsi, A., Zaharia, M., Hindman, B., Konwinski, A., Shenker, S., & Stoica, I. "Dominant Resource Fairness: Fair Allocation of Multiple Resource Types." In _Proceedings of the 8th USENIX Conference on Networked Systems Design and Implementation (NSDI)_, pp. 323-336, 2011.
 
-[5] **Matei Zaharia, et al.** "Delay Scheduling: A Simple Technique for Achieving Locality and Fairness in Cluster Scheduling." _EuroSys_, 2010.
+[5] Zaharia, M., Borthakur, D., Sen Sarma, J., Elmeleegy, K., Shenker, S., & Stoica, I. "Delay Scheduling: A Simple Technique for Achieving Locality and Fairness in Cluster Scheduling." In _Proceedings of the 5th European Conference on Computer Systems (EuroSys)_, pp. 265-278, 2010.
 
-[6] **Benjamin Hindman, et al.** "Mesos: A Platform for Fine-Grained Resource Sharing in the Data Center." _NSDI_, 2011.
+[6] Hindman, B., Konwinski, A., Zaharia, M., Ghodsi, A., Joseph, A. D., Katz, R., ... & Stoica, I. "Mesos: A Platform for Fine-Grained Resource Sharing in the Data Center." In _Proceedings of the 8th USENIX Conference on Networked Systems Design and Implementation (NSDI)_, pp. 295-308, 2011.
 
 ---

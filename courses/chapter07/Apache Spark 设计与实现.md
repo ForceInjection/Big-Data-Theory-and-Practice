@@ -83,7 +83,7 @@ Spark 的核心设计目标体现了对传统大数据处理框架局限性的�
 
 **4. 广泛的兼容性**确保了 Spark 能够适应各种部署环境。它可以运行在 Hadoop YARN、Kubernetes 等多种集群管理器上，提供了灵活的部署模式来适应不同的基础设施环境。这种良好的生态兼容性使得 Spark 能够与现有的大数据技术栈无缝集成，降低了技术迁移的成本和风险。
 
-**5. 可靠的容错机制**基于 RDD 的血缘关系实现了自动故障恢复。RDD 的不可变性和完整的血缘信息确保了数据处理过程的可靠性，当节点发生故障时，系统能够根据血缘关系自动重建丢失的数据分区，实现细粒度的容错恢复，最大程度地减少故障对整体计算任务的影响 [15]。
+**5. 可靠的容错机制**基于 RDD 的血缘关系实现了自动故障恢复。RDD 的不可变性和完整的血缘信息确保了数据处理过程的可靠性，当节点发生故障时，系统能够根据血缘关系自动重建丢失的数据分区，实现细粒度的容错恢复，最大程度地减少故障对整体计算任务的影响 [14]。
 
 **6. 线性扩展能力**支持 Spark 从单机环境扩展到数千节点的大规模集群。自适应的资源管理和智能的任务调度机制确保了计算资源的高效利用，动态资源分配功能能够根据工作负载的实际需求自动调整资源配置，在提高集群资源利用率的同时保证了应用程序的性能表现。
 
@@ -150,9 +150,9 @@ MapReduce 在每个阶段之间都必须将中间结果写入磁盘，导致大�
 
 Spark 针对 MapReduce 的以上问题，提出了革命性的解决方案。
 
-**1. RDD 抽象 + 内存计算**：[17]
+**1. RDD 抽象 + 内存计算**：[1]
 
-Spark 引入 **RDD**（Resilient Distributed Dataset，弹性分布式数据集）[18]抽象，这是 Spark 的核心概念。RDD 是一个不可变的、分布式的数据集合，具有以下关键特性：
+Spark 引入 **RDD**（Resilient Distributed Dataset，弹性分布式数据集）[1]抽象，这是 Spark 的核心概念。RDD 是一个不可变的、分布式的数据集合，具有以下关键特性：
 
 - **弹性（Resilient）**：具备容错能力，当节点失败时可以通过血缘关系（Lineage）自动重建丢失的数据分区
 - **分布式（Distributed）**：数据分布在集群的多个节点上，支持并行计算
@@ -173,7 +173,7 @@ wordCounts.collect().foreach(println)  // 收集结果并打印
 
 可以看到，Spark 的 WordCount 实现极其简洁，仅用几行代码就完成了 MapReduce 需要上百行代码才能实现的功能。
 
-**2. DAG 执行引擎**：[16]
+**2. DAG 执行引擎**：[15]
 
 Spark 支持复杂的 DAG（有向无环图）计算，可以将多个操作串联在一个作业中执行，减少中间结果的磁盘写入。
 
@@ -291,7 +291,7 @@ val doubled = numbers
 
 基于上述设计理念，RDD 在具体实现中体现出以下核心技术特性。理解这些特性是掌握 Spark 计算模型的关键，它们不仅体现了 RDD 的设计哲学，也确保了 RDD 在大规模分布式环境下的可靠性和高性能。通过深入理解这些特性，我们能够更好地设计和优化 Spark 应用程序。
 
-**1. 不可变性（Immutability）**[11]：
+**1. 不可变性（Immutability）**[9]：
 
 RDD 一旦创建就不能修改，任何转换操作都会生成新的 RDD。这种设计简化了并发控制，避免了分布式环境下的数据一致性问题。
 
@@ -300,7 +300,7 @@ val numbers = sc.parallelize(List(1, 2, 3, 4, 5))  // 创建 RDD
 val doubled = numbers.map(_ * 2)                    // 生成新的 RDD，原 RDD 不变
 ```
 
-**2. 惰性求值（Lazy Evaluation）**[12]：
+**2. 惰性求值（Lazy Evaluation）**[10]：
 
 RDD 的转换操作（如 map、filter）不会立即执行，只有遇到行动操作（如 collect、save）时才会触发实际计算。这种设计允许 Spark 进行全局优化。
 
@@ -311,7 +311,7 @@ val wordCount = words.map((_, 1)).reduceByKey(_ + _)  // 转换操作，不立�
 wordCount.collect()                               // 行动操作，触发实际计算
 ```
 
-**3. 分区（Partitioning）**[13]：
+**3. 分区（Partitioning）**[11]：
 
 RDD 的数据被分为多个分区，每个分区可以在不同的节点上并行处理。合理的分区策略对性能至关重要。
 
@@ -320,7 +320,7 @@ val data = sc.parallelize(1 to 1000, numSlices = 4)  // 创建 4 个分区的 RD
 println(s"分区数量: ${data.getNumPartitions}")        // 输出：分区数量: 4
 ```
 
-**4. 血缘关系（Lineage）**[14]：
+**4. 血缘关系（Lineage）**[12]：
 
 RDD 维护着从原始数据到当前状态的完整转换路径，即**血缘关系图 (Lineage Graph)**。当某个分区数据丢失时，Spark 可以根据这个图谱，从源头开始重新计算，自动恢复丢失的数据。这是 Spark 实现自动容错的核心机制，避免了传统分布式系统中昂贵的数据复制。
 
@@ -897,15 +897,15 @@ _图 2-4 Cluster 模式架构图。_
 
 **Client 模式 vs Cluster 模式对比：**
 
-| **特性**        | **Client 模式**               | **Cluster 模式**              |
-| --------------- | ----------------------------- | ----------------------------- |
-| **Driver 位置** | 客户端机器                    | 集群中的 Worker 节点          |
-| **网络通信**    | Driver 与 Executor 跨网络通信 | Driver 与 Executor 在同一网络 |
-| **故障恢复**    | 客户端故障导致应用失败        | 集群管理器可以重启 Driver     |
-| **适用场景**    | 交互式应用、调试              | 生产环境、长时间运行的作业    |
+| **特性**        | **Client 模式**                       | **Cluster 模式**                            |
+| --------------- | ------------------------------------- | ------------------------------------------- |
+| **Driver 位置** | 客户端机器                            | 集群中的 Worker 节点                        |
+| **网络通信**    | Driver 与 Executor 跨网络通信         | Driver 与 Executor 在同一网络               |
+| **故障恢复**    | 客户端故障导致应用失败                | 集群管理器可以重启 Driver                   |
+| **适用场景**    | 交互式应用、调试                      | 生产环境、长时间运行的作业                  |
 | **网络开销**    | 较高（Driver 与 Executor 跨网络通信） | 较低（Driver 与 Executor 在同一集群网络内） |
-| **调试便利性**  | 容易调试和监控                | 调试相对困难                  |
-| **资源占用**    | 客户端需要足够资源            | 集群统一管理资源              |
+| **调试便利性**  | 容易调试和监控                        | 调试相对困难                                |
+| **资源占用**    | 客户端需要足够资源                    | 集群统一管理资源                            |
 
 **实际应用示例：**
 
@@ -1279,7 +1279,7 @@ class Executor {
 
 #### 2.1.4 Application、Job、Stage、Task 的层次结构
 
-Spark 应用程序具有清晰的层次结构： [19]
+Spark 应用程序具有清晰的层次结构： [13]
 
 ```text
 Application (应用程序)
@@ -1302,10 +1302,10 @@ Application (应用程序)
 
 **层次关系说明：**
 
-1. **Application**：一个 Spark 应用程序，对应一个 SparkContext [19]
-2. **Job**：由 Action 操作（如 collect、save）触发的计算作业 [19]
-3. **Stage**：根据 Shuffle 依赖划分的执行阶段，Stage 内部可以 Pipeline 执行 [19]
-4. **Task**：最小的执行单元，处理一个 RDD 分区的数据 [19]
+1. **Application**：一个 Spark 应用程序，对应一个 SparkContext [13]
+2. **Job**：由 Action 操作（如 collect、save）触发的计算作业 [13]
+3. **Stage**：根据 Shuffle 依赖划分的执行阶段，Stage 内部可以 Pipeline 执行 [13]
+4. **Task**：最小的执行单元，处理一个 RDD 分区的数据 [13]
 
 ```scala
 // 示例：一个应用程序包含多个作业
@@ -2579,7 +2579,7 @@ class ShuffleDependency[K, V, C](
 
 #### 3.3.2 窄依赖（Narrow Dependency）详解
 
-窄依赖是指父 RDD 的每个分区最多被子 RDD 的一个分区使用，这种依赖关系允许在同一个节点上进行流水线执行 [20]。
+窄依赖是指父 RDD 的每个分区最多被子 RDD 的一个分区使用，这种依赖关系允许在同一个节点上进行流水线执行 [14]。
 
 **窄依赖的类型和实现：**
 
@@ -2684,7 +2684,7 @@ public class NarrowDependencyDemo {
 
 #### 3.3.3 宽依赖（Wide Dependency）详解
 
-宽依赖是指子 RDD 的分区依赖于父 RDD 的多个分区，这种依赖关系需要进行 Shuffle 操作来重新分布数据 [21]。
+宽依赖是指子 RDD 的分区依赖于父 RDD 的多个分区，这种依赖关系需要进行 Shuffle 操作来重新分布数据 [15]。
 
 **宽依赖的实现和特征：**
 
@@ -2922,7 +2922,7 @@ val preview = rdd.take(100)
 
 Shuffle 是 Spark 中最复杂和最耗时的操作之一，它涉及数据的重新分布、网络传输、磁盘 I/O 等多个方面。理解其内部机制对性能优化至关重要。
 
-#### 3.4.3 Shuffle 概述与演进历程 [23]
+#### 3.4.3 Shuffle 概述与演进历程 [16]
 
 Shuffle 是将数据从一个分区重新分布到另一个分区的过程，通常发生在需要跨分区聚合或连接数据的操作中。
 
@@ -2956,7 +2956,7 @@ abstract class ShuffleManager {
 }
 ```
 
-#### 3.4.4 Shuffle Write 过程详解 [24]
+#### 3.4.4 Shuffle Write 过程详解 [17]
 
 **ShuffleMapTask 的执行流程**：
 
@@ -3145,7 +3145,7 @@ class ShuffleExternalSorter {
 }
 ```
 
-#### 3.4.5 Shuffle Read 过程详解 [25]
+#### 3.4.5 Shuffle Read 过程详解 [18]
 
 Shuffle Read 是 Reduce Task 从 Map Task 的输出中读取属于自己分区的数据的过程。这个过程涉及网络传输、数据反序列化、聚合和排序等多个步骤：
 
@@ -3612,7 +3612,7 @@ val result2 = rdd.mapPartitions { iter =>
 
 #### 3.6.2 常见陷阱和解决方案
 
-**1. 数据倾斜问题** [26]：
+**1. 数据倾斜问题** [19]：
 
 ```scala
 // 问题：某些键的数据量过大
@@ -3939,7 +3939,7 @@ class DAGScheduler(taskScheduler: TaskScheduler) {
 
 #### 4.2.1 Stage 划分算法
 
-Stage 的划分基于 RDD 的依赖关系，宽依赖会导致 Stage 的边界： [22]
+Stage 的划分基于 RDD 的依赖关系，宽依赖会导致 Stage 的边界： [20]
 
 ```scala
 // 创建 ResultStage 的核心过程（简化版）
@@ -4034,7 +4034,7 @@ class ResultStage(rdd: RDD, func: (Iterator) => Unit) extends Stage {
 }
 ```
 
-### 4.3 Task 调度和执行 [27]
+### 4.3 Task 调度和执行 [21]
 
 #### 4.3.1 TaskScheduler 的实现
 
@@ -5627,41 +5627,24 @@ Tungsten 执行引擎通过内存管理优化、缓存友好的数据布局和 C
 
 ## 参考文献
 
-[1] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-[2] **Matei Zaharia, et al.** "Spark: Cluster Computing with Working Sets." _Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing_, 2010.
-[3] **Reynold Xin, et al.** "Project Tungsten: Bringing Spark Closer to Bare Metal." _Spark Summit_, 2015.
-[4] **Michael Armbrust, et al.** "Adaptive Query Execution in Spark SQL." _Proceedings of the VLDB Endowment_, Vol. 14, No. 12, 2021.
-[5] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-[6] **Michael Armbrust, et al.** "Spark SQL: Relational Data Processing in Spark." _Proceedings of the 2015 ACM SIGMOD International Conference on Management of Data_, 2015.
-[7] **Michael Armbrust, et al.** "Structured Streaming: A Declarative API for Real-Time Applications in Apache Spark." _Proceedings of the 2018 International Conference on Management of Data_, 2018.
-[8] **Michael Armbrust, et al.** "Spark SQL: Relational Data Processing in Spark." _Proceedings of the 2015 ACM SIGMOD International Conference on Management of Data_, 2015.
-[9] **Tathagata Das, et al.** "Discretized Streams: Fault-Tolerant Streaming Computation at Scale." _Proceedings of the Twenty-Fourth ACM Symposium on Operating Systems Principles_, 2013.
-[10] **Michael Armbrust, et al.** "Structured Streaming: A Declarative API for Real-Time Applications in Apache Spark." _Proceedings of the 2018 International Conference on Management of Data_, 2018.
-[11] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-[12] **Matei Zaharia, et al.** "Spark: Cluster Computing with Working Sets." _Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing_, 2010.
-[13] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-[14] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-[15] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-[16] **Patrick Wendell, et al.** "Managing Apache Spark Workloads with Dynamic Resource Allocation." _Spark Summit_, 2014.
-[17] **Matei Zaharia, et al.** "Spark: Cluster Computing with Working Sets." _Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing_, 2010.
-[18] **Matei Zaharia, et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, 2012.
-[19] **Apache Software Foundation.** "Apache Spark Documentation." Retrieved from <https://spark.apache.org/docs/latest/>
-[20] **Apache Software Foundation.** "Spark Programming Guide." Retrieved from <https://spark.apache.org/docs/latest/programming-guide.html>
-[21] **Apache Software Foundation.** "Spark SQL and DataFrames." Retrieved from <https://spark.apache.org/docs/latest/sql-programming-guide.html>
-[22] **Apache Software Foundation.** "Structured Streaming Programming Guide." Retrieved from <https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html>
-[23] **Apache Software Foundation.** "MLlib: Machine Learning Library." Retrieved from <https://spark.apache.org/docs/latest/ml-guide.html>
-[24] **Apache Software Foundation.** "GraphX: Graph Processing in Spark." Retrieved from <https://spark.apache.org/docs/latest/graphx-programming-guide.html>
-[25] **Apache Software Foundation.** "Spark Configuration." Retrieved from <https://spark.apache.org/docs/latest/configuration.html>
-[26] **Apache Software Foundation.** "Spark Performance Tuning." Retrieved from <https://spark.apache.org/docs/latest/tuning.html>
-[27] **Apache Software Foundation.** "Spark Monitoring and Instrumentation." Retrieved from <https://spark.apache.org/docs/latest/monitoring.html>
-[28] **Apache Software Foundation.** "Spark Security." Retrieved from <https://spark.apache.org/docs/latest/security.html>
-[29] **Apache Software Foundation.** "Spark Cluster Overview." Retrieved from <https://spark.apache.org/docs/latest/cluster-overview.html>
-[30] **Apache Software Foundation.** "Running Spark on YARN." Retrieved from <https://spark.apache.org/docs/latest/running-on-yarn.html>
-[31] **Apache Software Foundation.** "Running Spark on Kubernetes." Retrieved from <https://spark.apache.org/docs/latest/running-on-kubernetes.html>
-[32] **Apache Software Foundation.** "Spark RDD API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/rdd/RDD.html>
-[33] **Apache Software Foundation.** "Spark DataFrame API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/Dataset.html>
-[34] **Apache Software Foundation.** "Spark SQL Functions." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/functions$.html>
-[35] **Apache Software Foundation.** "Spark MLlib API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/index.html>
-[36] **Apache Software Foundation.** "Spark GraphX API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/graphx/index.html>
-[37] **Apache Software Foundation.** "Spark Streaming API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/streaming/index.html>
-[38] **Apache Software Foundation.** "Structured Streaming API." Retrieved from <https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/streaming/index.html>
+[1] **Zaharia, M., et al.** "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing." _Proceedings of the 9th USENIX Conference on Networked Systems Design and Implementation_, pp. 15-28, 2012.
+[2] **Zaharia, M., et al.** "Spark: Cluster Computing with Working Sets." _Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing_, 2010.
+[3] **Xin, R., et al.** "Project Tungsten: Bringing Spark Closer to Bare Metal." _Spark Summit_, 2015.
+[4] **Armbrust, M., et al.** "Adaptive Query Execution in Spark SQL." _Proceedings of the VLDB Endowment_, Vol. 14, No. 12, pp. 2115-2128, 2021.
+[5] **Armbrust, M., et al.** "Spark SQL: Relational Data Processing in Spark." _Proceedings of the 2015 ACM SIGMOD International Conference on Management of Data_, pp. 1383-1394, 2015.
+[6] **Armbrust, M., et al.** "Structured Streaming: A Declarative API for Real-Time Applications in Apache Spark." _Proceedings of the 2018 International Conference on Management of Data_, pp. 601-613, 2018.
+[7] **Das, T., et al.** "Discretized Streams: Fault-Tolerant Streaming Computation at Scale." _Proceedings of the Twenty-Fourth ACM Symposium on Operating Systems Principles_, pp. 423-438, 2013.
+[8] **Wendell, P., et al.** "Managing Apache Spark Workloads with Dynamic Resource Allocation." _Spark Summit_, 2014.
+[9] **Apache Software Foundation.** "Apache Spark Documentation." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/
+[10] **Apache Software Foundation.** "Spark Programming Guide." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/programming-guide.html
+[11] **Apache Software Foundation.** "Spark SQL and DataFrames." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/sql-programming-guide.html
+[12] **Apache Software Foundation.** "Structured Streaming Programming Guide." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html
+[13] **Apache Software Foundation.** "MLlib: Machine Learning Library." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/ml-guide.html
+[14] **Apache Software Foundation.** "GraphX: Graph Processing in Spark." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/graphx-programming-guide.html
+[15] **Apache Software Foundation.** "Spark Configuration." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/configuration.html
+[16] **Apache Software Foundation.** "Spark Performance Tuning." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/tuning.html
+[17] **Apache Software Foundation.** "Spark Monitoring and Instrumentation." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/monitoring.html
+[18] **Apache Software Foundation.** "Spark Security." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/security.html
+[19] **Apache Software Foundation.** "Spark Cluster Overview." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/cluster-overview.html
+[20] **Apache Software Foundation.** "Running Spark on YARN." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/running-on-yarn.html
+[21] **Apache Software Foundation.** "Running Spark on Kubernetes." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/running-on-kubernetes.html

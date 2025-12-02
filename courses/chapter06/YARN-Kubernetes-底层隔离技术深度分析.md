@@ -4971,72 +4971,70 @@ Kubernetes [2] 社区正在构建原生的大数据处理能力，这一趋势�
 
 ## 参考文献
 
-1. Apache Software Foundation. _Apache Hadoop 3.4.2 Documentation - YARN Architecture_. <https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/YARN.html>
+[1] Apache Software Foundation. "Apache Hadoop 3.4.2 Documentation - YARN Architecture." Apache Hadoop Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/YARN.html
 
-2. Kubernetes. _Kubernetes Documentation - Concepts_. <https://kubernetes.io/docs/concepts/>
+[2] Kubernetes. "Kubernetes Documentation - Concepts." Kubernetes Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://kubernetes.io/docs/concepts/
 
-3. Apache Software Foundation. _Apache Spark Documentation - Running Spark on Kubernetes_. <https://spark.apache.org/docs/latest/running-on-kubernetes.html>
+[3] Apache Software Foundation. "Apache Spark Documentation - Running Spark on Kubernetes." Apache Spark Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/running-on-kubernetes.html
 
-4. Vavilapalli, V. K., Murthy, A. C., Douglas, C., Agarwal, S., Konar, M., Evans, R., ... & Baldeschwieler, E. (2013). _Apache Hadoop YARN: Yet another resource negotiator_. In Proceedings of the 4th annual Symposium on Cloud Computing (pp. 1-16).
+[4] Vavilapalli, V. K., Murthy, A. C., Douglas, C., Agarwal, S., Konar, M., Evans, R., ... & Baldeschwieler, E. "Apache Hadoop YARN: Yet another resource negotiator." In _Proceedings of the 4th annual Symposium on Cloud Computing_, pp. 1-16, 2013.
 
-5. Kubernetes. _Kubernetes Documentation - Pod Security Standards_. <https://kubernetes.io/docs/concepts/security/pod-security-standards/>
+[5] Kubernetes. "Kubernetes Documentation - Pod Security Standards." Kubernetes Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://kubernetes.io/docs/concepts/security/pod-security-standards/
 
-6. Linux Foundation. _Linux Namespaces_. <https://man7.org/linux/man-pages/man7/namespaces.7.html>
+[6] Linux Foundation. "Linux Namespaces." Linux Manual Pages. Accessed: Dec. 2, 2025. [Online]. Available: https://man7.org/linux/man-pages/man7/namespaces.7.html
 
-7. Linux Foundation. _Control Groups version 1_. <https://www.kernel.org/doc/Documentation/admin-guide/cgroup-v1/cgroups.rst>
+[7] Linux Foundation. "Control Groups version 1." Linux Kernel Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://www.kernel.org/doc/Documentation/admin-guide/cgroup-v1/cgroups.rst
 
-8. Linux Foundation. _Control Groups version 2_. <https://www.kernel.org/doc/Documentation/admin-guide/cgroup-v2.rst>
+[8] Linux Foundation. "Control Groups version 2." Linux Kernel Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://www.kernel.org/doc/Documentation/admin-guide/cgroup-v2.rst
 
-9. Red Hat Inc. _SELinux User's and Administrator's Guide_. <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/using_selinux/>
+[9] Red Hat Inc. "SELinux User's and Administrator's Guide." Red Hat Enterprise Linux Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/using_selinux/
 
-10. Ubuntu. _AppArmor Documentation_. <https://ubuntu.com/server/docs/security-apparmor>
+[10] Ubuntu. "AppArmor Documentation." Ubuntu Server Guide. Accessed: Dec. 2, 2025. [Online]. Available: https://ubuntu.com/server/docs/security-apparmor
 
-11. Linux Foundation. _Seccomp BPF (SECure COMPuting with filters)_. <https://www.kernel.org/doc/Documentation/userspace-api/seccomp_filter.rst>
+[11] Linux Foundation. "Seccomp BPF (SECure COMPuting with filters)." Linux Kernel Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://www.kernel.org/doc/Documentation/userspace-api/seccomp_filter.rst
 
-12. Google. _gVisor Documentation_. <https://gvisor.dev/docs/>
+[12] Google. "gVisor Documentation." gVisor Project Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://gvisor.dev/docs/
 
-13. Linux Foundation. _Linux Capabilities_. <https://man7.org/linux/man-pages/man7/capabilities.7.html>
+[13] Linux Foundation. "Linux Capabilities." Linux Manual Pages. Accessed: Dec. 2, 2025. [Online]. Available: https://man7.org/linux/man-pages/man7/capabilities.7.html
 
-14. containerd. _containerd Documentation_. <https://containerd.io/docs/>
+[14] containerd. "containerd Documentation." containerd Project Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://containerd.io/docs/
 
-15. CRI-O. _CRI-O Documentation_. <https://cri-o.io/>
+[15] CRI-O. "CRI-O Documentation." CRI-O Project Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://cri-o.io/
 
-16. Kata Containers. _Kata Containers Architecture_. <https://katacontainers.io/docs/>
+[16] Kata Containers. "Kata Containers Architecture." Kata Containers Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://katacontainers.io/docs/
 
-17. Apache Software Foundation. _Apache Hadoop 3.4.2 Documentation - ResourceManager_. <https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/ResourceManagerHA.html>
+[17] Apache Software Foundation. "Apache Hadoop 3.4.2 Documentation - ResourceManager." Apache Hadoop Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/ResourceManagerHA.html
 
-18. Apache Software Foundation. _Apache Hadoop 3.4.2 Documentation - NodeManager_. <https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/NodeManager.html>
+[18] Apache Software Foundation. "Apache Hadoop 3.4.2 Documentation - NodeManager." Apache Hadoop Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/NodeManager.html
 
-19. Apache Software Foundation. _Apache Spark Documentation - Running on YARN_. <https://spark.apache.org/docs/latest/running-on-yarn.html>
+[19] Apache Software Foundation. "Apache Spark Documentation - Running on YARN." Apache Spark Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://spark.apache.org/docs/latest/running-on-yarn.html
 
-20. Apache Software Foundation. _Apache Hadoop 3.4.2 Documentation - Resource Model_. <https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/ResourceModel.html>
+[20] Apache Software Foundation. "Apache Hadoop 3.4.2 Documentation - Resource Model." Apache Hadoop Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/ResourceModel.html
 
-21. Apache Software Foundation. _Apache Hadoop 3.4.2 Documentation - NodeManager Cgroups_. <https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/NodeManagerCgroups.html>
+[21] Apache Software Foundation. "Apache Hadoop 3.4.2 Documentation - NodeManager Cgroups." Apache Hadoop Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/NodeManagerCgroups.html
+[22] Project Calico. "Calico Documentation." Project Calico Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://docs.projectcalico.org/
 
-22. Project Calico. _Calico Documentation_. <https://docs.projectcalico.org/>
+[23] Cloud Native Computing Foundation. "Container Network Interface (CNI) Specification." CNI Specification. Accessed: Dec. 2, 2025. [Online]. Available: https://github.com/containernetworking/cni/blob/master/SPEC.md
 
-23. Cloud Native Computing Foundation. _Container Network Interface (CNI) Specification_. <https://github.com/containernetworking/cni/blob/master/SPEC.md>
+[24] Flannel. "Flannel Documentation." Flannel Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://github.com/flannel-io/flannel
 
-24. Flannel. _Flannel Documentation_. <https://github.com/flannel-io/flannel>
+[25] Kubernetes. "Kubernetes Documentation - Network Policies." Kubernetes Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://kubernetes.io/docs/concepts/services-networking/network-policies/
 
-25. Kubernetes. _Kubernetes Documentation - Network Policies_. <https://kubernetes.io/docs/concepts/services-networking/network-policies/>
+[26] Kubernetes. "Container Runtime Interface (CRI)." Kubernetes Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://kubernetes.io/docs/concepts/architecture/cri/
+[27] Weave. "Weave Net Documentation." Weaveworks Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://www.weave.works/docs/net/latest/overview/
 
-26. Kubernetes. _Container Runtime Interface (CRI)_. <https://kubernetes.io/docs/concepts/architecture/cri/>
+[28] Kubernetes. "Container Storage Interface (CSI)." Kubernetes Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://kubernetes.io/docs/concepts/storage/volumes/#csi
 
-27. Weave. _Weave Net Documentation_. <https://www.weave.works/docs/net/latest/overview/>
+[29] Kubernetes. "Storage Classes." Kubernetes Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://kubernetes.io/docs/concepts/storage/storage-classes/
 
-28. Kubernetes. _Container Storage Interface (CSI)_. <https://kubernetes.io/docs/concepts/storage/volumes/#csi>
+[30] Kubernetes. "Persistent Volumes." Kubernetes Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
 
-29. Kubernetes. _Storage Classes_. <https://kubernetes.io/docs/concepts/storage/storage-classes/>
+[31] Apache Software Foundation. "Apache Hadoop 3.4.2 Documentation - Docker Containers." Apache Hadoop Documentation. Accessed: Dec. 2, 2025. [Online]. Available: https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/DockerContainers.html
 
-30. Kubernetes. _Persistent Volumes_. <https://kubernetes.io/docs/concepts/storage/persistent-volumes/>
+[32] Burns, B., & Beda, J. _Kubernetes: Up and Running: Dive into the Future of Infrastructure_. 2nd ed. Sebastopol, CA: O'Reilly Media, 2019.
 
-31. Apache Software Foundation. _Apache Hadoop 3.4.2 Documentation - Docker Containers_. <https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/DockerContainers.html>
+[33] Open Container Initiative. _OCI Runtime Specification_, version 1.0.2. 2017. [Online]. Available: https://github.com/opencontainers/runtime-spec
 
-32. Burns, B., & Beda, J. (2019). _Kubernetes: up and running: dive into the future of infrastructure_. O'Reilly Media.
-
-33. Open Container Initiative. _OCI Runtime Specification_. <https://github.com/opencontainers/runtime-spec>
-
-34. Open Container Initiative. _OCI Image Specification_. <https://github.com/opencontainers/image-spec>
+[34] Open Container Initiative. _OCI Image Specification_, version 1.0.1. 2017. [Online]. Available: https://github.com/opencontainers/image-spec
 
 ---

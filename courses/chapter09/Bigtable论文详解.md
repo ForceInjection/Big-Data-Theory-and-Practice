@@ -14,7 +14,7 @@
 
 **版本说明**：
 
-- 本文基于原始论文："Bigtable: A Distributed Storage System for Structured Data" (OSDI 2006)
+- 本文基于原始论文："`Bigtable: A Distributed Storage System for Structured Data`" (OSDI 2006)
 - 所有技术实现细节以原始论文描述为准
 - 代码示例和伪代码用于说明核心算法和数据结构
 - 数据与结论的来源均标注参考文献，确保准确性和可追溯性
@@ -37,7 +37,7 @@
 
 ### 1.1 论文基本信息
 
-**Bigtable: A Distributed Storage System for Structured Data** 是 Google 团队在 2006 年 **OSDI**（操作系统设计与实现研讨会）上发表的里程碑式论文。这篇论文由 Fay Chang、Jeffrey Dean 等 Google 核心工程师撰写，首次详细披露了 Google 内部的大规模分布式存储系统设计。
+**Bigtable: A Distributed Storage System for Structured Data** 是 Google 团队在 2006 年 **OSDI**（操作系统设计与实现研讨会）上发表的里程碑式论文 [1]。这篇论文由 Fay Chang、Jeffrey Dean 等 Google 核心工程师撰写，首次详细披露了 Google 内部的大规模分布式存储系统设计。
 
 **关键元数据**：
 
@@ -125,7 +125,7 @@ Bigtable 的提出标志着分布式存储系统设计的重大突破，其核�
 
 Bigtable 论文的主要贡献体现在四个层面，这些技术创新彻底改变了大规模分布式存储系统的设计范式：
 
-1. **技术范式创新**：首次将 LSM-tree（Log-Structured Merge-tree）应用于生产环境，解决了高吞吐写入的技术难题
+1. **技术范式创新**：首次将 LSM-tree（Log-Structured Merge-tree）[4] 应用于生产环境，解决了高吞吐写入的技术难题
 
    - **写入优化**：通过追加写和后台合并机制，避免了传统 B+ 树的写放大问题
    - **顺序 I/O**：充分利用磁盘顺序写入性能，显著提升写入吞吐量
@@ -134,8 +134,8 @@ Bigtable 论文的主要贡献体现在四个层面，这些技术创新彻底�
 2. **架构设计革命**：采用主从架构和分布式锁服务，实现了真正的线性扩展能力
 
    - **主从分离**：Tablet Server 负责数据存储和访问，Master 负责元数据管理和负载均衡
-   - **分布式协调**：基于 Chubby 分布式锁服务实现节点发现、故障检测和领导选举
-   - **存储依赖**：底层依赖 GFS（Google File System）提供可靠的数据持久化存储
+   - **分布式协调**：基于 Chubby 分布式锁服务 [3] 实现节点发现、故障检测和领导选举
+   - **存储依赖**：底层依赖 GFS（Google File System）[2] 提供可靠的数据持久化存储
 
 3. **数据模型革新**：引入列族（Column Family）概念，支持稀疏数据的高效存储
 
@@ -144,11 +144,11 @@ Bigtable 论文的主要贡献体现在四个层面，这些技术创新彻底�
    - **模式灵活**：支持半结构化和稀疏数据，无需预定义完整表结构
 
 4. **一致性方案**：在分布式环境下提供合理的一致性保证和容错机制
-   - **最终一致性**：在可用性和一致性之间取得平衡，支持大规模分布式部署
+   - **最终一致性**：在可用性和一致性之间取得平衡 [7]，支持大规模分布式部署
    - **故障恢复**：通过 Tablet 迁移和 Master 重分配实现自动故障恢复
    - **监控体系**：构建完善的监控和告警系统，确保服务高可用性
 
-这些技术创新不仅解决了 Google 内部的海量数据存储问题，更重要的是为后续的 NoSQL 运动和大数据技术发展奠定了理论基础和实践范本，直接影响了 Hadoop HBase、Cassandra 等开源项目的设计理念。
+这些技术创新不仅解决了 Google 内部的海量数据存储问题，更重要的是为后续的 NoSQL 运动和大数据技术发展奠定了理论基础和实践范本，直接影响了 Hadoop HBase [6]、Cassandra [5] 等开源项目的设计理念。
 
 ### 1.4 典型应用场景：全球网站内容存储
 
@@ -2548,10 +2548,20 @@ Bigtable 论文的价值不仅在于其技术贡献，更在于它展示了一�
 
 ---
 
-## 9. 参考文献
+## 参考文献
 
-1. Chang, F., Dean, J., Ghemawat, S., Hsieh, W. C., Wallach, D. A., Burrows, M., ... & Gruber, R. E. (2006). Bigtable: A distributed storage system for structured data. _Google Research Publication_.
-2. Apache HBase Project. (2023). _HBase Official Documentation_. <https://hbase.apache.org>
-3. O'Neil, P., Cheng, E., Gawlick, D., & O'Neil, E. (1996). The log-structured merge-tree (LSM-tree). _Acta Informatica_, 33(4), 351-385.
-4. Lakshman, A., & Malik, P. (2010). Cassandra: a decentralized structured storage system. _ACM SIGOPS Operating Systems Review_, 44(2), 35-40.
-5. Google Cloud. (2023). _Cloud Bigtable Documentation_. <https://cloud.google.com/bigtable>
+[1] Chang, F., Dean, J., Ghemawat, S., Hsieh, W. C., Wallach, D. A., Burrows, M., ... & Gruber, R. E. "Bigtable: A Distributed Storage System for Structured Data." _Proceedings of the 7th USENIX Symposium on Operating Systems Design and Implementation (OSDI '06)_, pp. 205-218, 2006.
+[2] Ghemawat, S., Gobioff, H., & Leung, S. T. "The Google File System." _Proceedings of the 19th ACM Symposium on Operating Systems Principles (SOSP '03)_, pp. 29-43, 2003. DOI: 10.1145/945445.945450
+[3] Burrows, M. "The Chubby Lock Service for Loosely-Coupled Distributed Systems." _Proceedings of the 7th USENIX Symposium on Operating Systems Design and Implementation (OSDI '06)_, pp. 335-350, 2006.
+[4] O'Neil, P., Cheng, E., Gawlick, D., & O'Neil, E. "The Log-Structured Merge-Tree (LSM-Tree)." _Acta Informatica_, vol. 33, no. 4, pp. 351-385, 1996. DOI: 10.1007/s002360050048
+[5] Lakshman, A., & Malik, P. "Cassandra: A Decentralized Structured Storage System." _ACM SIGOPS Operating Systems Review_, vol. 44, no. 2, pp. 35-40, 2010. DOI: 10.1145/1773912.1773922
+[6] George, L. _HBase: The Definitive Guide_. O'Reilly Media, Inc., 2011.
+[7] Brewer, E. A. "Towards Robust Distributed Systems." In _Proceedings of the 19th Annual ACM Symposium on Principles of Distributed Computing (PODC '00)_, pp. 7-10, 2000. DOI: 10.1145/343477.343502
+[8] Lamport, L. "The Part-Time Parliament." _ACM Transactions on Computer Systems_, vol. 16, no. 2, pp. 133-169, 1998. DOI: 10.1145/279227.279229
+[9] Corbett, J. C., Dean, J., Epstein, M., Fikes, A., Frost, C., Furman, J. J., ... & Woodford, D. "Spanner: Google's Globally-Distributed Database." In _Proceedings of the 10th USENIX Symposium on Operating Systems Design and Implementation (OSDI '12)_, pp. 261-264, 2012.
+[10] Shvachko, K., Kuang, H., Radia, S., & Chansler, R. "The Hadoop Distributed File System." In _Proceedings of the 2010 IEEE 26th Symposium on Mass Storage Systems and Technologies (MSST '10)_, pp. 1-10, 2010. DOI: 10.1109/MSST.2010.5496972
+[11] Hunt, P., Konar, M., Junqueira, F. P., & Reed, B. "ZooKeeper: Wait-free Coordination for Internet-scale Systems." In _Proceedings of the 2010 USENIX Annual Technical Conference (USENIX ATC '10)_, pp. 11-25, 2010.
+[12] Stonebraker, M., & Çetintemel, U. "'One Size Fits All': An Idea Whose Time Has Come and Gone." In _Proceedings of the 21st International Conference on Data Engineering (ICDE '05)_, pp. 2-11, 2005. DOI: 10.1109/ICDE.2005.1
+[13] DeCandia, G., Hastorun, D., Jampani, M., Kakulapati, G., Lakshman, A., Pilchin, A., ... & Vogels, W. "Dynamo: Amazon's Highly Available Key-value Store." In _Proceedings of the 21st ACM Symposium on Operating Systems Principles (SOSP '07)_, pp. 205-220, 2007. DOI: 10.1145/1294261.1294281
+[14] Cooper, B. F., Silberstein, A., Tam, E., Ramakrishnan, R., & Sears, R. "Benchmarking Cloud Serving Systems with YCSB." In _Proceedings of the 1st ACM Symposium on Cloud Computing (SoCC '10)_, pp. 143-154, 2010. DOI: 10.1145/1807128.1807152
+[15] Abadi, D. J., Boncz, P. A., & Harizopoulos, S. "Column-Oriented Database Systems." _Proceedings of the VLDB Endowment_, vol. 2, no. 2, pp. 1664-1665, 2009. DOI: 10.14778/1687553.1687625

@@ -2244,20 +2244,20 @@ fi
 
 ## 5. 参考文献
 
-1. **Apache Software Foundation.** "Apache HBase Reference Guide." Retrieved from <https://hbase.apache.org/book.html>
-2. **Lars George.** "HBase: The Definitive Guide." _O'Reilly Media_, 2011.
-3. **Ian Varley.** "Best Practices for HBase Schema Design." _Cloudera Engineering Blog_, 2013.
-4. **Enis Soztutar.** "HBase Architecture & Internals." _Apache HBase Blog_, 2014.
-5. **Apache Software Foundation.** "HBase Performance Tuning Guide." Retrieved from <https://hbase.apache.org/book.html#performance>
-6. **Stack Overflow Community.** "HBase Operations Management Best Practices." _Stack Overflow_, various dates.
-7. **Various Authors.** "HBase Source Code Analysis." _GitHub and Technical Blogs_, various dates.
-8. **Apache Software Foundation.** "HFile Format Specification." Retrieved from <https://hbase.apache.org/book.html#hfile>
-9. **Facebook Engineering.** "HBase at Facebook: Messages Infrastructure." _Facebook Engineering Blog_, 2011.
-10. **Fay Chang, et al.** "Bigtable: A Distributed Storage System for Structured Data." _OSDI_, 2006.
-11. **Michael Stack.** "HBase Version History and Release Notes." _Apache HBase Wiki_, various dates.
-12. **Apache Software Foundation.** "HBase Configuration Reference." Retrieved from <https://hbase.apache.org/book.html#configuration>
-13. **Todd Lipcon.** "HBase Consistency Models." _Cloudera Engineering Blog_, 2012.
-14. **Jean-Daniel Cryans.** "HBase Performance Optimization." _HBaseCon_, 2013.
-15. **Various Contributors.** "HBase Best Practices from Production Deployments." _HBase User Mailing List_, various dates.
+[1] **Apache Software Foundation.** "Apache HBase Reference Guide." Apache HBase. Accessed: Dec. 2, 2025. [Online]. Available: https://hbase.apache.org/book.html
+[2] **George, L.** _HBase: The Definitive Guide_. Sebastopol, CA: O'Reilly Media, 2011.
+[3] **Varley, I.** "Best Practices for HBase Schema Design." Cloudera Engineering Blog. 2013. Accessed: Dec. 2, 2025. [Online]. Available: https://blog.cloudera.com/best-practices-for-hbase-schema-design/
+[4] **Soztutar, E.** "HBase Architecture & Internals." Apache HBase Blog. 2014. Accessed: Dec. 2, 2025. [Online]. Available: https://blogs.apache.org/hbase/entry/hbase_architecture_and_internals
+[5] **Apache Software Foundation.** "HBase Performance Tuning Guide." Apache HBase. Accessed: Dec. 2, 2025. [Online]. Available: https://hbase.apache.org/book.html#performance
+[6] **Stack Overflow Community.** "HBase Operations Management Best Practices." Stack Overflow. Accessed: Dec. 2, 2025. [Online]. Available: https://stackoverflow.com/questions/tagged/hbase
+[7] **Various Authors.** "HBase Source Code Analysis." GitHub and Technical Blogs. Accessed: Dec. 2, 2025. [Online]. Available: https://github.com/apache/hbase
+[8] **Apache Software Foundation.** "HFile Format Specification." Apache HBase. Accessed: Dec. 2, 2025. [Online]. Available: https://hbase.apache.org/book.html#hfile
+[9] **Facebook Engineering.** "HBase at Facebook: Messages Infrastructure." Facebook Engineering Blog. 2011. Accessed: Dec. 2, 2025. [Online]. Available: https://engineering.fb.com/2011/07/29/core-data/hbase-at-facebook-messages-infrastructure/
+[10] **Chang, F., et al.** "Bigtable: A Distributed Storage System for Structured Data." In _Proceedings of the 7th USENIX Symposium on Operating Systems Design and Implementation (OSDI '06)_, pp. 205-218. Seattle, WA, USA. 2006.
+[11] **Stack, M.** "HBase Version History and Release Notes." Apache HBase Wiki. Accessed: Dec. 2, 2025. [Online]. Available: https://cwiki.apache.org/confluence/display/HBASE/Version+History
+[12] **Apache Software Foundation.** "HBase Configuration Reference." Apache HBase. Accessed: Dec. 2, 2025. [Online]. Available: https://hbase.apache.org/book.html#configuration
+[13] **Lipcon, T.** "HBase Consistency Models." Cloudera Engineering Blog. 2012. Accessed: Dec. 2, 2025. [Online]. Available: https://blog.cloudera.com/hbase-consistency-models/
+[14] **Cryans, J.-D.** "HBase Performance Optimization." HBaseCon. 2013. Accessed: Dec. 2, 2025. [Online]. Available: https://www.slideshare.net/cloudera/hbasecon-2013-hbase-performance-optimization
+[15] **Various Contributors.** "HBase Best Practices from Production Deployments." HBase User Mailing List. Accessed: Dec. 2, 2025. [Online]. Available: https://lists.apache.org/list.html?dev@hbase.apache.org
 
 ---

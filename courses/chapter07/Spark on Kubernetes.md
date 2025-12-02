@@ -116,7 +116,7 @@ Spark 官方提供了标准化的架构示意图，清晰展示了各组件间�
 
 ![Spark on Kubernetes](spark_on_kubernetes.png)
 
-**任务提交流程概述:**
+**任务提交流程概述[4]:**
 
 1. **用户提交任务**: 用户在客户端执行 `/bin/spark-submit` 命令提交 Spark 应用
 2. **Driver Pod 创建**: SparkSubmit 进程通过 fabric8 Kubernetes Client 向 Kubernetes API Server 发起请求，创建 Driver Pod
@@ -248,5 +248,7 @@ kubectl logs <spark-driver-pod>
 1. [Apache Spark 官方文档](https://spark.apache.org/)
 2. [Kubernetes 官方文档](https://kubernetes.io/docs/concepts/)
 3. [Spark on Kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html)
+4. [Spark on K8s 在阿里云上的实践](http://fanyilun.me/2022/06/11/Spark%20on%20K8s%E5%9C%A8%E9%98%BF%E9%87%8C%E4%BA%91%E4%B8%8A%E7%9A%84%E5%AE%9E%E8%B7%B5/)
+5. [YARN 和 K8s 调度 Spark 作业的对比](http://fanyilun.me/2022/06/02/YARN%E5%92%8CK8s%E8%B0%83%E5%BA%A6Spark%E4%BD%9C%E4%B8%9A%E7%9A%84%E5%AF%B9%E6%AF%94/)
 
 ---

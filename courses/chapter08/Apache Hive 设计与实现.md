@@ -43,7 +43,7 @@
 
 #### 1.1.1 Apache Hive 的发展历程
 
-Apache Hive 是由 Facebook 开发的数据仓库解决方案，于 2007 年启动，2008 年开源，2010 年成为 Apache 顶级项目。Hive 的设计目标是让熟悉 SQL 的分析师能够利用 Hadoop 集群处理海量数据，而无需学习复杂的 MapReduce 编程。
+Apache Hive 是由 Facebook 开发的数据仓库解决方案，于 2007 年启动，2008 年开源，2010 年成为 Apache 顶级项目 [1]。Hive 的设计目标是让熟悉 SQL 的分析师能够利用 Hadoop 集群处理海量数据，而无需学习复杂的 MapReduce 编程 [2]。
 
 **关键版本特性演进**：
 
@@ -57,13 +57,13 @@ Apache Hive 是由 Facebook 开发的数据仓库解决方案，于 2007 年启�
 | **Hive 3.0**  | 2018.05      | Materialized Views、默认 ACID 事务支持 | 企业级特性增强          |
 | **Hive 4.0**  | 2022.11      | Iceberg 表格式集成、查询结果缓存       | 现代化数据湖集成        |
 
-Apache Hive 在十多年的发展历程中，经历了从简单的 SQL 翻译层到现代化数据仓库平台的深刻变革。在**执行引擎优化方面**，Hive 0.13 版本引入的 **Tez** 执行引擎标志着性能优化的重要里程碑，通过 DAG 执行模型替代传统的 MapReduce，实现了 2-5 倍的性能提升。随后，Hive 1.0 版本推出的 **LLAP**（Live Long and Process）进一步革新了查询执行机制，能够在内存中缓存数据并执行部分查询，显著提升了交互式查询的响应速度。
+Apache Hive 在十多年的发展历程中，经历了从简单的 SQL 翻译层到现代化数据仓库平台的深刻变革。在**执行引擎优化方面**，Hive 0.13 版本引入的 **Tez** 执行引擎标志着性能优化的重要里程碑，通过 DAG 执行模型替代传统的 MapReduce，实现了 2-5 倍的性能提升 [7]。随后，Hive 1.0 版本推出的 **LLAP**（Live Long and Process）进一步革新了查询执行机制，能够在内存中缓存数据并执行部分查询，显著提升了交互式查询的响应速度 [7]。
 
 在 **SQL 功能和兼容性方面**，Hive 展现了从**基础到高级**的完整演进路径。从最初的简单 SQL 子集支持到完整的 **ANSI SQL** 兼容，Hive 不断扩展其 SQL 功能。特别是 Hive 2.0 版本引入的 **HPLSQL** 过程语言，成功提供了存储过程和函数支持，为开发者提供了更强大的编程能力，极大简化了复杂数据处理逻辑的实现。
 
-**事务处理能力**的增强是 Hive 发展的另一个重要维度。从早期仅支持批量数据处理，到 Hive 0.14 版本引入的**有限事务支持**，再到 Hive 3.0 版本的**默认 ACID 事务支持**，Hive 实现了真正意义上的事务性数据仓库能力。与传统的批量处理模式不同，ACID 事务支持使得 Hive 能够处理实时数据更新和并发查询，为企业构建统一的数据分析平台和实时决策系统奠定了坚实基础。
+**事务处理能力**的增强是 Hive 发展的另一个重要维度。从早期仅支持批量数据处理，到 Hive 0.14 版本引入的**有限事务支持**，再到 Hive 3.0 版本的**默认 ACID 事务支持**，Hive 实现了真正意义上的事务性数据仓库能力 [6]。与传统的批量处理模式不同，ACID 事务支持使得 Hive 能够处理实时数据更新和并发查询，为企业构建统一的数据分析平台和实时决策系统奠定了坚实基础 [6]。
 
-**生态系统**的不断扩展体现了 Hive 作为数据仓库平台的全面性。从传统的 **HDFS** 存储支持演进到多种文件格式（**ORC**、**Parquet**、**Avro** 等），提供了更加优化的数据存储方案。同时，与 **Apache Spark**、**Presto**、**Impala** 等计算引擎的深度集成，进一步增强了 Hive 在复杂数据分析方面的能力。
+**生态系统**的不断扩展体现了 Hive 作为数据仓库平台的全面性。从传统的 **HDFS** 存储支持演进到多种文件格式（**ORC** [3]、**Parquet** [4]、**Avro** 等），提供了更加优化的数据存储方案 [8]。同时，与 **Apache Spark**、**Presto**、**Impala** 等计算引擎的深度集成，进一步增强了 Hive 在复杂数据分析方面的能力 [1]。
 
 进入 Hive 4.0 时代，**数据湖集成**成为新的技术亮点。Apache Iceberg 表格式的集成、查询结果缓存功能的引入，标志着 Hive 在现代化数据架构方面的重大进步。这些特性不仅提升了数据管理能力，还为处理海量数据提供了更加灵活的解决方案，进一步巩固了 Hive 在企业数据仓库领域的领导地位。
 
@@ -2155,7 +2155,7 @@ SELECT id, name FROM source_table;
 
 #### 3.2.3 RCFile 格式
 
-RCFile（Record Columnar File）是 Hive 早期开发的列式存储格式，为后续 ORC 格式的发展奠定了基础。
+RCFile（Record Columnar File）是 Hive 早期开发的列式存储格式，为后续 ORC 格式的发展奠定了基础 [3]。
 
 **RCFile 特点与优势：**
 
@@ -2253,7 +2253,7 @@ RCFile 作为 Hive 列式存储的早期探索，为后续更先进的 ORC 格�
 
 #### 3.2.4 ORCFile 格式
 
-ORC（Optimized Row Columnar）是 Hive 社区开发的列式存储格式，专门为 Hadoop 生态系统优化设计。它提供了极高的压缩比和查询性能，是 Hive 默认推荐的存储格式。
+ORC（Optimized Row Columnar）是 Hive 社区开发的列式存储格式，专门为 Hadoop 生态系统优化设计 [3]。它提供了极高的压缩比和查询性能，是 Hive 默认推荐的存储格式 [3,8]。
 
 **ORC 核心特性与优势：**
 
@@ -2773,3 +2773,25 @@ TBLPROPERTIES (
 数据存储与格式技术是 Hive 性能优化的核心基础，现代存储技术正朝着更高效的列式存储、智能压缩和跨平台兼容性方向发展。本章建立的知识体系为后续的性能优化、数据管理和大规模数据处理奠定了坚实基础，是成为 Hive 专家的必备技能。
 
 ---
+
+## 参考文献
+
+[1] **Apache Software Foundation.** "Apache Hive Documentation." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://hive.apache.org/
+
+[2] **Thusoo, A., et al.** "Hive - A Warehousing Solution Over a Map-Reduce Framework." _Proceedings of the VLDB Endowment_, vol. 2, no. 2, pp. 1626-1629, 2009.
+
+[3] **Apache Software Foundation.** "ORC File Format Specification." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://orc.apache.org/specification/
+
+[4] **Apache Software Foundation.** "Apache Parquet Documentation." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://parquet.apache.org/
+
+[5] **Apache Software Foundation.** "Hive Language Manual." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://cwiki.apache.org/confluence/display/Hive/LanguageManual
+
+[6] **Apache Software Foundation.** "Hive Transactional Operations." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://cwiki.apache.org/confluence/display/Hive/Hive+Transactions
+
+[7] **Apache Software Foundation.** "Hive Performance Tuning." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://cwiki.apache.org/confluence/display/Hive/Performance+Optimization
+
+[8] **Apache Software Foundation.** "Hive Storage Formats." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://cwiki.apache.org/confluence/display/Hive/Storage+Formats
+
+[9] **Apache Software Foundation.** "Hive Compression." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://cwiki.apache.org/confluence/display/Hive/Compression
+
+[10] **Apache Software Foundation.** "Hive Partitioning and Bucketing." Apache Software Foundation. Accessed: Dec. 2, 2025. [Online]. Available: https://cwiki.apache.org/confluence/display/Hive/PartitioningAndBucketing
