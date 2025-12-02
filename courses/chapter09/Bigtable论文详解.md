@@ -2555,7 +2555,7 @@ Bigtable 论文的价值不仅在于其技术贡献，更在于它展示了一�
 [3] Burrows, M. "The Chubby Lock Service for Loosely-Coupled Distributed Systems." _Proceedings of the 7th USENIX Symposium on Operating Systems Design and Implementation (OSDI '06)_, pp. 335-350, 2006.
 [4] O'Neil, P., Cheng, E., Gawlick, D., & O'Neil, E. "The Log-Structured Merge-Tree (LSM-Tree)." _Acta Informatica_, vol. 33, no. 4, pp. 351-385, 1996. DOI: 10.1007/s002360050048
 [5] Lakshman, A., & Malik, P. "Cassandra: A Decentralized Structured Storage System." _ACM SIGOPS Operating Systems Review_, vol. 44, no. 2, pp. 35-40, 2010. DOI: 10.1145/1773912.1773922
-[6] George, L. _HBase: The Definitive Guide_. O'Reilly Media, Inc., 2011.
+[6] George, L. _HBase: The Definitive Guide_. 1st ed. Sebastopol, CA: O'Reilly Media, Inc., 2011.
 [7] Brewer, E. A. "Towards Robust Distributed Systems." In _Proceedings of the 19th Annual ACM Symposium on Principles of Distributed Computing (PODC '00)_, pp. 7-10, 2000. DOI: 10.1145/343477.343502
 [8] Lamport, L. "The Part-Time Parliament." _ACM Transactions on Computer Systems_, vol. 16, no. 2, pp. 133-169, 1998. DOI: 10.1145/279227.279229
 [9] Corbett, J. C., Dean, J., Epstein, M., Fikes, A., Frost, C., Furman, J. J., ... & Woodford, D. "Spanner: Google's Globally-Distributed Database." In _Proceedings of the 10th USENIX Symposium on Operating Systems Design and Implementation (OSDI '12)_, pp. 261-264, 2012.
