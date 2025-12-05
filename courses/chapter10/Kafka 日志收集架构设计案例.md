@@ -14,6 +14,8 @@
 
 本案例假设我们需要为 **100 台业务服务器** 构建一个高可用的日志收集平台。这些服务器运行着核心业务应用，产生的日志数据对于故障排查、业务监控、安全审计和数据分析至关重要，要求系统具备高吞吐、低延迟和高可靠性。
 
+此外，业务部门提出了新的**离线分析需求**：除了实时的日志检索（ES），还需要将全量日志归档到 **HDFS**，用于后续的 T+1 报表统计和深度挖掘（如使用 Spark/Hive）。这一需求突显了 Kafka 作为数据枢纽的核心价值。
+
 ### 1.2 关键指标假设
 
 为了进行有效的架构设计，我们需要将模糊的业务需求转化为可量化的技术指标（教学场景下采用较高负载假设以突显设计难点）：
@@ -69,6 +71,7 @@ graph LR
     subgraph Storage_Layer [存储与展示层]
         ES[Elasticsearch 集群]
         Kibana[Kibana]
+        HDFS[HDFS 离线存储]
     end
 
     Server1 --> FB1
@@ -78,6 +81,8 @@ graph LR
     Kafka --> Logstash
     Logstash --> ES
     ES --> Kibana
+    Kafka -.-> HDFS
+    note right of HDFS: 新增离线分析路径
 ```
 
 ### 2.2 物理部署架构图
@@ -115,10 +120,13 @@ Source: 100x Servers (Filebeat)
 |  [ Storage: SSD/RAID10 ]   [ Storage: SSD/RAID10 ]   [ Storage: SSD/RAID10 ]   [ Storage: SSD/RAID10 ]   [ Storage: SSD/RAID10 ]  |
 |                                                                                                                                   |
 +-----------------------------------------------------------------------------------------------------------------------------------+
-     │
-     │ Consumer Fetch (Parallel Processing)
-     ▼
-[ Consumer Group: Logstash Cluster (20 Nodes) ]
+     │                                      │
+     │ Consumer Group A                     │ Consumer Group B (New)
+     ▼                                      ▼
+[ Logstash Cluster (20 Nodes) ]        [ HDFS Sink Connector / Flume ]
+     │                                      │
+     ▼                                      ▼
+[ Elasticsearch ]                      [ HDFS / Data Lake ]
 ```
 
 **各组件职责**：
@@ -127,7 +135,8 @@ Source: 100x Servers (Filebeat)
 - **Kafka (Broker)**: **核心缓冲层**。
   - **Topic**: 逻辑归类（如 `app-logs`）。
   - **Partition**: 物理分片，吞吐扩展的基础。
-- **Logstash (Consumer)**: 较重的处理引擎，负责从 Kafka 消费，执行 Grok 解析、脱敏、格式转换，最后入库 ES。
+- **Logstash (Consumer A)**: 实时处理链路。负责从 Kafka 消费，执行 Grok 解析、脱敏、格式转换，最后入库 ES。
+- **HDFS Sink (Consumer B)**: 离线分析链路。负责将原始日志或处理后的日志批量写入 HDFS，供 Spark/Hive 进行 T+1 分析。
 - **Elasticsearch**: 搜索引擎，提供近实时的索引和查询能力。
 - **Kibana**: 数据可视化仪表盘。
 
@@ -168,7 +177,9 @@ Source: 100x Servers (Filebeat)
 ### 3.2 生产与消费解耦 (Decoupling)
 
 - **维护隔离**: 当 Logstash 或 ES 需要停机维护/升级时，Filebeat 无需停止采集。数据会暂时堆积在 Kafka 的磁盘 Partition 中（支持 TB 级积压），待后端恢复后，消费者通过 Offset 机制自动追平数据。
-- **多路分发**: Kafka 支持 Consumer Group 机制。同一份日志数据可以被不同的消费组订阅（例如：一组写入 ES 做搜索，另一组写入 HDFS 做归档），彼此进度互不干扰。
+- **多路分发 (Multi-Path Distribution)**:
+  - **场景**: 同一份日志数据既需要写入 ES 做**实时搜索**，又需要写入 HDFS 做**离线归档**。
+  - **价值**: 如果没有 Kafka，Filebeat 需要同时发送给两个目标，任何一个目标故障都会阻塞采集。引入 Kafka 后，Filebeat 只需发送一次。不同的消费者组 (Consumer Group A & B) 独立订阅同一份数据，彼此进度互不干扰。即使 HDFS 写入变慢，也不会影响 ES 的实时性。
 
 ### 3.3 数据可靠性保障 (Reliability)
 
