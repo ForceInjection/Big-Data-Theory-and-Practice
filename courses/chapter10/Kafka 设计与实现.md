@@ -411,15 +411,6 @@ public class KafkaProducer<K, V> {
         // 关闭 Producer 释放资源
     }
 }
-
-    public void flush() {
-        // 强制刷新所有缓冲消息
-    }
-
-    public void close() {
-        // 关闭 Producer 释放资源
-    }
-}
 ```
 
 **各组件功能说明**：
