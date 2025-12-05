@@ -147,16 +147,22 @@ Kafka 的核心设计目标体现了对传统消息队列局限性的深刻反�
 
 为了更全面地理解 Kafka 的技术优势，下表从多个维度进行详细对比：
 
-| **对比维度**   | **传统消息队列**         | **Kafka**                          | **优势说明**             |
-| -------------- | ------------------------ | ---------------------------------- | ------------------------ |
-| **消息持久化** | 通常内存存储，持久化可选 | 磁盘持久化，可配置保留时间         | 支持长期存储和回溯消费   |
-| **吞吐量**     | 万级/秒                  | 百万级/秒                          | 高吞吐量设计             |
-| **延迟**       | 低延迟（毫秒级）         | 低延迟（毫秒级）                   | 两者都提供低延迟         |
-| **扩展性**     | 垂直扩展为主             | 水平扩展，天然支持                 | 更容易应对数据增长       |
-| **消息顺序**   | 通常保证顺序             | 分区内顺序保证                     | 分区级别的顺序保证       |
-| **重播能力**   | 有限支持                 | 原生支持，可配置保留时间           | 更好的数据重播支持       |
-| **生态系统**   | 相对简单                 | 丰富的生态系统（Connect、Streams） | 更完整的数据处理解决方案 |
-| **适用场景**   | 应用解耦、异步处理       | 实时数据管道、流处理、日志聚合     | 更广泛的实时数据处理场景 |
+| **对比维度**   | **传统消息队列**         | **Kafka**                          | **优势说明**              |
+| -------------- | ------------------------ | ---------------------------------- | ------------------------- |
+| **消息持久化** | 通常内存存储，持久化可选 | 磁盘持久化，可配置保留时间         | 支持长期存储和回溯消费    |
+| **吞吐量**     | 万级/秒                  | 百万级/秒                          | 高吞吐量设计              |
+| **延迟**       | 低延迟（毫秒级）         | 低延迟（毫秒级）                   | 两者都提供低延迟          |
+| **扩展性**     | 垂直扩展为主             | 水平扩展，天然支持                 | 更容易应对数据增长        |
+| **消息顺序**   | 通常保证顺序             | 分区内顺序保证                     | 分区级别的顺序保证        |
+| **事务模型**   | **ACID/XA 事务**         | **流式事务 (Stream Transaction)**  | 专注流处理的 Exactly-Once |
+| **重播能力**   | 有限支持                 | 原生支持，可配置保留时间           | 更好的数据重播支持        |
+| **生态系统**   | 相对简单                 | 丰富的生态系统（Connect、Streams） | 更完整的数据处理解决方案  |
+| **适用场景**   | 应用解耦、异步处理       | 实时数据管道、流处理、日志聚合     | 更广泛的实时数据处理场景  |
+
+**关键差异点：事务模型**：
+
+- **传统 MQ (RabbitMQ/ActiveMQ)**: 侧重于**客户端与 Broker 之间**的原子性。例如，消费者确认消息和数据库写入操作的原子性（往往需要 XA 支持）。
+- **Kafka**: 侧重于**流处理环节中**的原子性（Read-Process-Write）。Kafka 的事务主要是为了解决 `consume-transform-produce` 循环中的精确一次语义（Exactly-Once Semantics, EOS），确保跨分区写入的原子性。它**不直接支持**类似于数据库的外部 XA 分布式事务。
 
 #### 1.2.4 Kafka 生态系统组件概览
 
@@ -216,9 +222,9 @@ _图 1-1 Kafka 生态系统组件概览。_
 
 **Topic（主题）**：Topic 是消息的逻辑分类，类似于数据库中的表。每个 Topic 都有一个唯一的名称，Producer 将消息发送到特定的 Topic，Consumer 从特定的 Topic 消费消息。
 
-**Partition（分区）**：每个 Topic 可以被分为多个 Partition，Partition 是 Kafka 实现水平扩展和并行处理的基础。每个 Partition 是一个有序的、不可变的消息序列。
+**Partition（分区）**：每个 Topic 可以被分为多个 Partition，Partition 是 Kafka 实现水平扩展和并行处理的基础。每个 Partition 是一个**有序的**、**不可变的**消息序列。
 
-**Broker（代理）**：Broker 是 Kafka 集群中的单个服务器节点，负责消息的存储和传递。一个 Kafka 集群通常包含多个 Broker。
+**Broker（代理）**：Broker 是 Kafka 集群中的单个服务器节点，负责消息的**存储**和**传递**。一个 Kafka 集群通常包含多个 Broker。
 
 **Producer（生产者）**：Producer 是向 Kafka Topic 发送消息的客户端应用程序。Producer 负责决定将消息发送到哪个 Partition。
 
@@ -228,7 +234,7 @@ _图 1-1 Kafka 生态系统组件概览。_
 
 **Offset（偏移量）**：Offset 是消息在 Partition 中的唯一标识，表示消息的位置。Consumer 通过维护 Offset 来跟踪消费进度。
 
-**Replication（副本）**：每个 Partition 可以有多个副本，分布在不同的 Broker 上。副本分为 Leader 和 Follower，Leader 负责处理读写请求，Follower 从 Leader 同步数据。
+**Replication（副本）**：每个 Partition 可以有多个副本，分布在不同的 Broker 上。副本分为 **Leader** 和 **Follower**，Leader 负责处理读写请求，Follower 从 Leader 同步数据。
 
 #### 1.3.2 Kafka 架构概述
 
@@ -259,6 +265,11 @@ Kafka 的架构设计体现了分布式系统的经典原则，主要包括以�
            │  │  │  Partition1 │  │  Partition1 │  │ │
            │  │  │  (Leader)   │  │  (Leader)   │  │ │
            │  │  └─────────────┘  └─────────────┘  │ │
+           │  │  ┌─────────────┐  ┌─────────────┐  │ │
+           │  │  │  Topic A    │  │  Topic B    │  │ │
+           │  │  │  Partition0 │  │  Partition0 │  │ │
+           │  │  │  (Follower) │  │  (Follower) │  │ │
+           │  │  └─────────────┘  └─────────────┘  │ │
            │  └────────────────────────────────────┘ │
            │                                         │
            │  ┌────────────────────────────────────┐ │
@@ -266,6 +277,11 @@ Kafka 的架构设计体现了分布式系统的经典原则，主要包括以�
            │  │  ┌─────────────┐  ┌─────────────┐  │ │
            │  │  │  Topic A    │  │  Topic B    │  │ │
            │  │  │  Partition0 │  │  Partition0 │  │ │
+           │  │  │  (Follower) │  │  (Follower) │  │ │
+           │  │  └─────────────┘  └─────────────┘  │ │
+           │  │  ┌─────────────┐  ┌─────────────┐  │ │
+           │  │  │  Topic A    │  │  Topic B    │  │ │
+           │  │  │  Partition1 │  │  Partition1 │  │ │
            │  │  │  (Follower) │  │  (Follower) │  │ │
            │  │  └─────────────┘  └─────────────┘  │ │
            │  └────────────────────────────────────┘ │
@@ -283,19 +299,42 @@ _图 1-2 Kafka 集群架构示意图。_
 
 在这个架构中：
 
-- **生产者**将消息发送到 Kafka 集群的特定 Topic
-- **Kafka 集群**由多个 Broker 组成，每个 Broker 存储部分数据
-- **Topic**被分为多个 Partition，每个 Partition 有多个副本
-- **消费者组**中的消费者并行消费不同 Partition 的消息
-- **副本机制**确保数据的可靠性和高可用性
+- **生产者 (Producer)**：负责将消息发送到 Kafka 集群。如图所示，Producer A/B/C 可以向不同的 Topic 发送消息。
+- **Broker 集群**：由 Broker 1/2/3 组成，共同承担数据存储和流量转发。每个 Broker 既是 Leader 也是 Follower，实现负载均衡。
+- **Topic 与 Partition**：Topic A 和 B 均被切分为 Partition 0 和 1，分布在不同的 Broker 上以实现水平扩展。
+- **副本机制 (Replication)**：每个 Partition 都有 Leader 和 Follower 副本（如 Broker 3 上的 Follower），确保单机故障时不丢失数据。
+- **消费者组 (Consumer Group)**：Consumer Group X/Y/Z 订阅 Topic，组内的消费者实例并行消费不同的 Partition，实现高吞吐消费。
 
 #### 1.3.3 消息传递语义
 
-Kafka 支持三种消息传递语义，满足不同场景的需求：
+Kafka 支持三种消息传递语义。理解这些语义对于构建可靠的分布式系统至关重要：
 
-1. **至少一次（At Least Once）**：消息不会丢失，但可能重复。这是 Kafka 的默认语义，通过 Producer 的重试机制和 Consumer 的手动提交 Offset 实现。
-2. **至多一次（At Most Once）**：消息可能丢失，但不会重复。通过 Producer 不重试和 Consumer 自动提交 Offset 实现。
-3. **精确一次（Exactly Once）**：消息既不丢失也不重复。通过 Kafka 的事务机制和幂等生产者实现，适用于金融交易等对一致性要求极高的场景。
+1. **至少一次 (At Least Once)**
+
+   - **含义**: 消息**绝不会丢失**，但**可能重复**。
+   - **场景**: 只要处理成功即可，允许少量重复数据（如日志收集、页面点击流）。
+   - **实现**: Producer 开启重试（`retries > 0`），Consumer 在处理完消息后手动提交 Offset。这是 Kafka 的**默认**且最常用的配置。
+
+2. **至多一次 (At Most Once)**
+
+   - **含义**: 消息**可能丢失**，但**绝不重复**。
+   - **场景**: 对数据丢失不敏感，但追求极高吞吐量的场景（如实时监控指标采样）。
+   - **实现**: Producer 不重试（`retries = 0`），Consumer 获取消息后立即自动提交 Offset（`enable.auto.commit = true`）。
+
+3. **精确一次 (Exactly Once)**
+   - **含义**: 消息**既不丢失也不重复**，就像只发送了一次一样。
+   - **场景**: 对数据一致性要求极高的场景（如金融交易、订单计费）。
+   - **实现**: 依赖 Kafka 的 **幂等性 (Idempotence)** 和 **事务 (Transaction)** 机制。
+     - _幂等性_: 通过 `enable.idempotence=true` 开启。Producer 被分配一个 PID，每条消息带有序列号。Broker 会自动去重。
+     - _事务_: 解决跨 Partition 写入的原子性（如 `Consume-Transform-Produce` 模式）。通过 `isolation.level=read_committed` 确保消费者只读取已提交事务的消息。
+
+> **注意：Kafka 与传统 MQ 的 "Exactly-Once" 区别**
+>
+> - **传统 MQ (如 RabbitMQ)**: 这里的 Exactly-Once 通常指 **"端到端"** 的业务处理。即 Broker 保证消息不丢，且消费端结合业务逻辑（如数据库去重）实现最终的业务幂等。
+>
+> - **Kafka**: 这里的 Exactly-Once 是一个 **"流处理语义"**。它保证的是从**读取** Kafka 消息，经过**处理**，再**写入** Kafka（另一个 Topic）的整个链路中，每条消息只被精确处理一次。
+>   - _为什么写入 Kafka?_ 这是流处理（Stream Processing）的典型模式。例如：从 `raw-logs` Topic 读取原始日志，清洗后写入 `clean-logs` Topic 供下游使用。
+>   - _外部系统_: 它**不直接**保证写入外部数据库的 Exactly-Once，写入外部系统仍需配合幂等设计。
 
 #### 1.3.4 数据持久化与存储
 
@@ -1134,7 +1173,22 @@ _图 3-3 Kafka 存储层次结构示意图。_
 
 #### 3.2.2 日志文件结构
 
-每个 Partition 在物理上由多个 Segment 文件组成：
+每个 Partition 对应一个物理目录（命名规则 `<topic>-<partition>`），目录下包含多个 Log Segment。
+
+**目录结构示例**：
+
+```text
+/var/lib/kafka/data/
+├── app-logs-0/
+│   ├── 00000000000000000000.log        # 消息数据文件
+│   ├── 00000000000000000000.index      # 偏移量索引文件
+│   ├── 00000000000000000000.timeindex  # 时间戳索引文件
+│   ├── 00000000000000000000.snapshot   # 生产者状态快照（支持幂等/事务）
+│   ├── leader-epoch-checkpoint         # Leader Epoch 检查点（用于数据截断与恢复）
+│   └── partition.metadata              # 分区元数据
+```
+
+每个 Partition 在物理上由多个 Segment 文件组成，代码层面由 `LogSegment` 类表示：
 
 ```java
 // 来源：org.apache.kafka.storage.internals.log.LogSegment
@@ -1306,13 +1360,39 @@ public class LogCleaner {
 }
 ```
 
+#### 3.2.6 存储结构对比：Log vs WAL vs SSTable
+
+Kafka 的存储设计常常被拿来与数据库的 WAL 或 NoSQL 的 LSM-Tree 进行比较。理解它们的区别有助于更深刻地把握 Kafka 的设计哲学。
+
+| **特性**      | **Kafka Log (Commit Log)**                                          | **数据库 WAL (Write-Ahead Log)**                         | **LSM-Tree (SSTable)**                                          |
+| :------------ | :------------------------------------------------------------------ | :------------------------------------------------------- | :-------------------------------------------------------------- |
+| **核心定位**  | **数据本身**。Log 是数据的唯一真实来源。                            | **辅助手段**。用于故障恢复，数据最终落入 B-Tree 等结构。 | **分层存储**。数据先入内存(MemTable)，再刷盘(SSTable)。         |
+| **写入模式**  | **Append-Only (追加写)**。严格顺序写入。                            | **Append-Only**。严格顺序写入。                          | **Append-Only**。内存排序后顺序写盘。                           |
+| **读取模式**  | **顺序读 + 零拷贝**。依赖 Page Cache 和 sendfile。                  | **随机读**。通常不直接读 WAL，而是读 B-Tree 数据页。     | **多层归并读**。可能需要查询 Bloom Filter 和多个 SSTable。      |
+| **修改/删除** | **不支持原地修改**。仅支持基于保留策略的批量删除或 Log Compaction。 | **不支持**。WAL 仅记录变更操作。                         | **墓碑机制 (Tombstone)**。写入删除标记，Compaction 时真正删除。 |
+| **典型应用**  | 消息队列、流存储 (Kafka, Pulsar)                                    | 关系型数据库 (MySQL, PostgreSQL)                         | NoSQL 数据库 (HBase, Cassandra, RocksDB)                        |
+
+**核心区别解析**：
+
+1. **Kafka Log vs WAL**：
+
+   - 在 MySQL 中，WAL (Redo Log) 只是为了保证 ACID 中的持久性（Durability），数据最终要通过 Checkpoint 机制同步到表空间（B+ Tree）。
+   - 在 Kafka 中，**Log 就是数据**。没有额外的"表空间"或"B+ Tree"。Consumer 直接从 Log 中读取数据。这种"Log-Centric"的设计极大地简化了存储引擎，使得 Kafka 能够达到极致的 I/O 吞吐量。
+
+2. **Kafka Log vs SSTable**：
+   - SSTable (Sorted String Table) 是有序的键值对集合，设计目标是支持**高频随机写入**和**键值查询**。
+   - Kafka Log 是**按时间/Offset 排序**的消息序列，设计目标是支持**高吞吐流式读写**。
+   - 虽然 Kafka 的 **Log Compaction** 机制在理念上与 LSM-Tree 的 Compaction 相似（保留 Key 的最新 Value），但 Kafka 的实现更简单，不涉及 MemTable 排序和复杂的多层级归并。
+
+**总结**：Kafka 选择最朴素的 **Append-Only Log** 结构，是因为它放弃了复杂的"随机查找"和"原地更新"能力，换取了**顺序读写**的极致性能和**零拷贝**的高效传输，这完美契合了"消息流"的处理场景。
+
 ### 3.3 副本同步与一致性保障
 
-Kafka 通过副本机制提供数据可靠性和高可用性。
+Kafka 通过副本机制提供数据可靠性和高可用性。本节将深入探讨副本架构、状态管理、同步流程以及 Leader 选举机制。
 
 #### 3.3.1 副本架构
 
-每个 Partition 有多个副本，分布在不同的 Broker 上：
+每个 Partition 有多个副本（Replica），分布在不同的 Broker 上。为了保证高可用性，通常设置 3 个副本：1 个 Leader 和 2 个 Follower。
 
 ```text
 ┌──────────────────────────────────────────────────┐
@@ -1531,7 +1611,7 @@ replica.lag.time.max.ms=30000
 
 通过对 Kafka Broker 内部机制的深入分析，我们可以看到 Kafka 在存储引擎、网络处理和副本同步方面的精心设计。这些机制共同确保了 Kafka 的高性能、高可靠性和强一致性，使其成为现代分布式系统中不可或缺的消息中间件。
 
-### 3.7 本章小结
+### 3.4 本章小结
 
 本章深入分析了 Kafka Broker 的内部机制和核心架构，包括：
 
@@ -1684,7 +1764,7 @@ public class KRaftMetadataManager {
 3. **更强一致性**：基于 Raft 协议的强一致性保证
 4. **更好扩展性**：支持更大规模的集群
 
-#### 4.1.5 Kafka 3.6.x KRaft 模式最新改进
+#### 4.1.4 Kafka 3.6.x KRaft 模式最新改进
 
 Kafka 3.6.x 在 KRaft 模式方面带来了多项重要改进：
 
@@ -1790,7 +1870,7 @@ public class FaultToleranceManager {
 
 这些改进使得 Kafka 3.6.x 的 KRaft 模式在生产环境中更加稳定和高效，特别适合大规模集群部署。
 
-#### 4.1.4 控制器（Controller）机制
+#### 4.1.5 控制器（Controller）机制
 
 控制器是 Kafka 集群的大脑，负责管理集群状态：
 
@@ -1849,7 +1929,7 @@ public class KafkaController {
 4. **元数据同步**：维护和同步集群元数据
 5. **配置管理**：管理 Topic 和 Broker 的配置
 
-#### 4.1.5 集群扩展与容错
+#### 4.1.6 集群扩展与容错
 
 **水平扩展策略**：
 
@@ -2379,7 +2459,7 @@ offset-syncs.topic.replication.factor=3
 
 通过对 Kafka 集群管理、性能优化、监控告警和最佳实践的深入分析，我们可以看到构建稳定高效 Kafka 集群需要综合考虑架构设计、资源配置、监控体系和运维流程。合理的规划和管理能够确保 Kafka 集群在大规模生产环境中稳定可靠地运行。
 
-### 4.7 本章小结
+### 4.5 本章小结
 
 本章全面探讨了 Kafka 集群管理与性能优化的各个方面，包括：
 
@@ -3279,7 +3359,7 @@ public class StreamTableJoinExample {
 
 通过对 Kafka 生态集成与流处理的全面分析，我们可以看到 Kafka 如何与 Spark、Flink 等计算框架深度集成，以及如何通过 Kafka Connect 和 Kafka Streams 构建完整的流处理解决方案。这些技术组合提供了从数据摄入、处理到输出的完整流水线，能够满足各种实时数据处理需求。
 
-### 5.5 本章小结
+### 5.6 本章小结
 
 本章深入探讨了 Kafka 生态集成与流处理的各个方面，包括：
 
