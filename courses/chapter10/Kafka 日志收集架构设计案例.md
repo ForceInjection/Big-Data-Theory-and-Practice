@@ -66,6 +66,7 @@ graph LR
 
     subgraph Processing_Layer [处理层]
         Logstash[Logstash/Fluentd 集群]
+        HDFS_Sink[HDFS Sink Connector]
     end
 
     subgraph Storage_Layer [存储与展示层]
@@ -78,11 +79,13 @@ graph LR
     ServerN --> FBN
     FB1 --> Kafka
     FBN --> Kafka
+
     Kafka --> Logstash
     Logstash --> ES
     ES --> Kibana
-    Kafka -.-> HDFS
-    note right of HDFS: 新增离线分析路径
+
+    Kafka -.-> HDFS_Sink
+    HDFS_Sink -.-> HDFS
 ```
 
 ### 2.2 物理部署架构图
@@ -178,8 +181,9 @@ Source: 100x Servers (Filebeat)
 
 - **维护隔离**: 当 Logstash 或 ES 需要停机维护/升级时，Filebeat 无需停止采集。数据会暂时堆积在 Kafka 的磁盘 Partition 中（支持 TB 级积压），待后端恢复后，消费者通过 Offset 机制自动追平数据。
 - **多路分发 (Multi-Path Distribution)**:
-  - **场景**: 同一份日志数据既需要写入 ES 做**实时搜索**，又需要写入 HDFS 做**离线归档**。
-  - **价值**: 如果没有 Kafka，Filebeat 需要同时发送给两个目标，任何一个目标故障都会阻塞采集。引入 Kafka 后，Filebeat 只需发送一次。不同的消费者组 (Consumer Group A & B) 独立订阅同一份数据，彼此进度互不干扰。即使 HDFS 写入变慢，也不会影响 ES 的实时性。
+  - **机制**: 利用 Kafka 的 **Consumer Group** 机制。
+  - **原理**: Kafka 允许同一份数据被多个不同的 Consumer Group 订阅。每个 Group 维护自己独立的 Offset（消费进度）。
+  - **应用**: 在本案中，Logstash 集群属于 `Group A`，HDFS Sink 属于 `Group B`。它们可以同时消费同一个 `app-logs` Topic，互不影响。即使 HDFS 写入变慢或停止，也不会影响 ES 的实时数据消费。
 
 ### 3.3 数据可靠性保障 (Reliability)
 
