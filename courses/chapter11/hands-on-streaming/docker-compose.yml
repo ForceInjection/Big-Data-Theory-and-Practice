@@ -1,0 +1,119 @@
+services:
+  # Zookeeper - Kafka 依赖
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - streaming-network
+
+  # Kafka 消息队列
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+    ports:
+      - "9092:29092"
+    networks:
+      - streaming-network
+
+  # Kafka UI 管理界面
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+    ports:
+      - "8082:8080"
+    networks:
+      - streaming-network
+
+  # Flink JobManager
+  flink-jobmanager:
+    image: flink:2.1-java11
+    container_name: flink-jobmanager
+    ports:
+      - "8081:8081"
+      - "6123:6123"
+    command: jobmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+      - REST_PORT=8081
+    volumes:
+      - ./target:/opt/flink/usrlib
+      - ./data:/opt/flink/data
+    networks:
+      - streaming-network
+
+  # Flink TaskManager
+  flink-taskmanager:
+    image: flink:2.1-java11
+    depends_on:
+      - flink-jobmanager
+    command: taskmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+      - TASK_MANAGER_NUMBER_OF_TASK_SLOTS=2
+    volumes:
+      - ./target:/opt/flink/usrlib
+      - ./data:/opt/flink/data
+    deploy:
+      replicas: 2
+    networks:
+      - streaming-network
+
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: streaming123
+      MYSQL_DATABASE: streaming_db
+      MYSQL_USER: streaming_user
+      MYSQL_PASSWORD: streaming123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./config/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - streaming-network
+
+  # Redis 缓存
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - streaming-network
+
+volumes:
+  mysql-data:
+  redis-data:
+
+networks:
+  streaming-network:
+    driver: bridge
