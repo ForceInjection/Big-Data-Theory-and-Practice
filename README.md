@@ -17,6 +17,7 @@
 《**大数据处理框架 Apache Spark 设计与实现**》：
 
 ![大数据处理框架Apache Spark设计与实现](https://img1.doubanio.com/view/subject/l/public/s33687169.jpg)
+来源：豆瓣，访问日期：2025-12-10
 
 ---
 
@@ -72,10 +73,24 @@
   - [Parquet 实践项目](./courses/chapter08/parquet-practice-project/)
 
 - **第九讲**:
+
   - [HBase 设计与实现](./courses/chapter09/HBase%20设计与实现.md)
   - [Bigtable 论文详解](./courses/chapter09/Bigtable论文详解.md)
   - [Feed 流系统架构演进综述](./courses/chapter09/feed_stream_architecture_review.md)
   - [LSM-Tree 实践项目](./courses/chapter09/java-lsm-tree/)
+
+- **第十讲**：
+
+  - [分布式消息队列 Kafka 设计与实现](./courses/chapter10/Kafka%20设计与实现.md)
+  - [Kafka 日志收集架构设计案例](./courses/chapter10/Kafka%20日志收集架构设计案例.md)
+  - [第 09 讲：分布式消息队列 Kafka](./courses/chapter10/第09讲-分布式消息队列Kafka.pdf)
+  - [Kafka 实践示例](./courses/chapter10/examples/README.md)
+
+- **第十一讲**：
+  - [Flink 设计与实现](./courses/chapter11/Flink%20设计与实现.md)
+  - [Lambda 与 Kappa 架构](./courses/chapter11/Lambda_and_Kappa_Architecture.md)
+  - [从 ETL 到 流式计算：理论与实践入门](./courses/chapter11/从ETL到流式计算入门.md)
+  - [流式计算动手实践系列](./courses/chapter11/hands-on-streaming/README.md)
 
 ---
 
