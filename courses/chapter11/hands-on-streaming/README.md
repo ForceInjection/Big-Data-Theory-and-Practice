@@ -90,17 +90,71 @@
 - **技术要点**：状态后端、精确一次语义、规则引擎集成
 - **业务价值**：风险控制、资金安全保护
 
+**运行脚本：**
+
+```bash
+# 启动环境后运行风控示例脚本，自动生成并发送交易数据到 Kafka
+./scripts/run-fraud-detection.sh
+```
+
+**脚本说明：**
+
+- **输入数据**：脚本自动生成模拟交易数据并写入 Kafka Topic `transactions`。
+- **结果输出**：告警结果写入 `data/output/fraud-alerts`，包含 `part-*` 或 `.inprogress` 文件。
+- **作业监控**：可在 Flink Web UI `http://localhost:8081` 查看作业状态与任务明细。
+- **Topic 管理**：如 `transactions` 不存在，脚本会自动创建该 Topic。
+
+**查看结果：**
+
+脚本会自动轮询输出目录，展示最新告警文件的前 20 行内容。
+
 ### 4. IoT 设备实时监控
 
 - **场景描述**：实时监控物联网设备状态和告警
 - **技术要点**：时间序列处理、自定义源/接收器、告警规则
 - **业务价值**：设备健康管理、预测性维护
 
+**运行脚本：**
+
+```bash
+# 启动环境后运行 IoT 监控示例脚本，自动生成并发送设备数据到 Kafka
+./scripts/run-iot-monitoring.sh
+```
+
+**脚本说明：**
+
+- **输入数据**：脚本自动生成模拟设备数据并写入 Kafka Topic `iot-device-data`。
+- **结果输出**：告警结果写入 `data/output/iot-alerts`，包含 `part-*` 或 `.inprogress` 文件。
+- **作业监控**：可在 Flink Web UI `http://localhost:8081` 查看作业状态与任务明细。
+- **Topic 管理**：如 `iot-device-data` 不存在，脚本会自动创建该 Topic。
+
+**查看结果：**
+
+脚本会自动轮询输出目录，展示最新告警文件的前 20 行内容。
+
 ### 5. 实时数据 ETL 管道
 
 - **场景描述**：构建实时数据清洗和转换管道
 - **技术要点**：数据质量检查、格式转换、多目标输出
 - **业务价值**：实时数据仓库、数据湖集成
+
+**运行脚本：**
+
+```bash
+# 启动环境后运行 ETL 示例脚本，自动生成并发送用户/订单数据到 Kafka
+./scripts/run-realtime-etl.sh
+```
+
+**脚本说明：**
+
+- **输入数据**：脚本自动生成模拟用户数据写入 `user-events`，订单数据写入 `order-events`。
+- **结果输出**：清洗与转换后的统一记录写入 `data/output/realtime-etl`，包含 `part-*` 或 `.inprogress` 文件。
+- **作业监控**：可在 Flink Web UI `http://localhost:8081` 查看作业状态与任务明细。
+- **Topic 管理**：如 `user-events` 或 `order-events` 不存在，脚本会自动创建。
+
+**查看结果：**
+
+脚本会自动轮询输出目录，展示最新结果文件的前 20 行内容。
 
 ---
 
@@ -115,8 +169,8 @@
 ### 一键启动
 
 ```bash
-# 进入 hands-on-streaming 项目目录
-cd hands-on-streaming
+# 进入项目目录
+cd courses/chapter11/hands-on-streaming
 
 # 启动所有服务（包含 Kafka、Flink、MySQL、Redis 等）
 ./scripts/start-environment.sh
@@ -136,15 +190,15 @@ cd hands-on-streaming
 hands-on-streaming/
 ├── docker-compose.yml          # Docker 编排文件
 ├── scripts/                    # 运行脚本
-├── config/                    # 配置文件
-├── data/                      # 测试数据
-├── src/                       # 源代码
-│   ├── wordcount/             # 词频统计示例
-│   ├── user-behavior/         # 用户行为分析
-│   ├── fraud-detection/       # 风控检测
-│   ├── iot-monitoring/        # IoT 监控
-│   └── realtime-etl/          # 实时 ETL
-└── README.md                  # 项目说明
+├── config/                     # 配置文件
+├── data/                       # 测试数据
+├── examples/                   # 示例代码
+│   ├── wordcount/              # 词频统计示例
+│   ├── user-behavior/          # 用户行为分析
+│   ├── fraud-detection/        # 风控检测
+│   ├── iot-monitoring/         # IoT 监控
+│   └── realtime-etl/           # 实时 ETL
+└── README.md                   # 项目说明
 ```
 
 ---
@@ -185,7 +239,7 @@ A: 调整 Docker 内存限制或减少服务启动数量
 
 ### Q: 如何添加新的示例？
 
-A: 参考现有示例结构，在 `src/` 目录下创建新模块
+A: 参考现有示例结构，在 `examples/` 目录下创建新模块
 
 ---
 

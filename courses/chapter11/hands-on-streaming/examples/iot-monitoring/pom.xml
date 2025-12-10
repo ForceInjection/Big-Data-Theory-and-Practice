@@ -56,6 +56,14 @@
                 <scope>compile</scope>
             </dependency>
 
+        <!-- File System Connector for FileSink -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-files</artifactId>
+            <version>${flink.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- JSON Processing -->
         <dependency>
             <groupId>org.apache.flink</groupId>

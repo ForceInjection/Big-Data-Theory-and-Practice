@@ -121,7 +121,8 @@ public class IoTMonitoring {
     public static void main(String[] args) throws Exception {
         // 创建执行环境
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(2);
+        env.setParallelism(1);
+        env.enableCheckpointing(10000);
 
         // 1. 创建Kafka数据源
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
@@ -129,6 +130,7 @@ public class IoTMonitoring {
                 .setTopics("iot-device-data")
                 .setGroupId("iot-monitoring-group")
                 .setStartingOffsets(OffsetsInitializer.earliest())
+                .setValueOnlyDeserializer(new org.apache.flink.api.common.serialization.SimpleStringSchema())
                 .build();
 
         // 2. 从Kafka读取数据流
@@ -147,6 +149,21 @@ public class IoTMonitoring {
 
         // 4. 输出告警信息
         alertStream.print().name("Alert Sink");
+
+        org.apache.flink.connector.file.sink.FileSink<DeviceAlert> sink =
+                org.apache.flink.connector.file.sink.FileSink
+                        .forRowFormat(new org.apache.flink.core.fs.Path("data/output/iot-alerts"),
+                                new org.apache.flink.api.common.serialization.SimpleStringEncoder<DeviceAlert>("UTF-8"))
+                        .withRollingPolicy(
+                                org.apache.flink.streaming.api.functions.sink.filesystem.rollingpolicies.DefaultRollingPolicy
+                                        .builder()
+                                        .withRolloverInterval(java.time.Duration.ofSeconds(10))
+                                        .withInactivityInterval(java.time.Duration.ofSeconds(10))
+                                        .withMaxPartSize(1024 * 1024 * 1024)
+                                        .build())
+                        .build();
+
+        alertStream.sinkTo(sink).name("File Sink");
 
         // 5. 执行作业
         env.execute("Real-time IoT Device Monitoring");

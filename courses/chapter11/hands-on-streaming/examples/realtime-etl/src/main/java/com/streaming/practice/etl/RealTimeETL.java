@@ -94,7 +94,8 @@ public class RealTimeETL {
     public static void main(String[] args) throws Exception {
         // 创建执行环境
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(3);
+        env.setParallelism(1);
+        env.enableCheckpointing(10000);
 
         // 1. 创建Kafka数据源 - 用户数据
         KafkaSource<String> userSource = KafkaSource.<String>builder()
@@ -102,6 +103,7 @@ public class RealTimeETL {
                 .setTopics("user-events")
                 .setGroupId("etl-user-group")
                 .setStartingOffsets(OffsetsInitializer.earliest())
+                .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
 
         // 2. 创建Kafka数据源 - 订单数据
@@ -110,6 +112,7 @@ public class RealTimeETL {
                 .setTopics("order-events")
                 .setGroupId("etl-order-group")
                 .setStartingOffsets(OffsetsInitializer.earliest())
+                .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
 
         // 3. 从多个数据源读取数据
@@ -156,6 +159,21 @@ public class RealTimeETL {
         ).name("MySQL Sink");
         */
         processedStream.print("MySQL Sink (Simulated): ").name("MySQL Sink");
+
+        org.apache.flink.connector.file.sink.FileSink<UnifiedDataRecord> sink =
+                org.apache.flink.connector.file.sink.FileSink
+                        .forRowFormat(new org.apache.flink.core.fs.Path("data/output/realtime-etl"),
+                                new org.apache.flink.api.common.serialization.SimpleStringEncoder<UnifiedDataRecord>("UTF-8"))
+                        .withRollingPolicy(
+                                org.apache.flink.streaming.api.functions.sink.filesystem.rollingpolicies.DefaultRollingPolicy
+                                        .builder()
+                                        .withRolloverInterval(java.time.Duration.ofSeconds(10))
+                                        .withInactivityInterval(java.time.Duration.ofSeconds(10))
+                                        .withMaxPartSize(1024 * 1024 * 1024)
+                                        .build())
+                        .build();
+
+        processedStream.sinkTo(sink).name("File Sink");
 
         // 6. 获取侧输出流 - 错误数据处理
         DataStream<String> errorStream = ((SingleOutputStreamOperator<UnifiedDataRecord>) processedStream)

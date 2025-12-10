@@ -113,6 +113,8 @@ public class FraudDetection {
         // 创建执行环境
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(2);
+        // 开启检查点，确保 FileSink 能提交成品文件
+        env.enableCheckpointing(10000);
 
         // 1. 创建Kafka数据源
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
@@ -120,6 +122,7 @@ public class FraudDetection {
                 .setTopics("transactions")
                 .setGroupId("fraud-detection-group")
                 .setStartingOffsets(OffsetsInitializer.earliest())
+                .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
 
         // 2. 从Kafka读取数据流
@@ -139,31 +142,24 @@ public class FraudDetection {
                 })
                 .filter(transaction -> transaction != null && "SUCCESS".equals(transaction.status));
 
+        transactionStream
+                .map((MapFunction<Transaction, String>) Transaction::toString)
+                .name("Debug Transaction Print")
+                .print();
+
         // 4. 定义CEP欺诈检测模式
         
         // 模式1：短时间内多次交易（可能的盗刷）
         Pattern<Transaction, ?> multipleTransactionsPattern = Pattern.<Transaction>
-                begin("first")
+                begin("transactions")
                 .where(new SimpleCondition<Transaction>() {
                     @Override
                     public boolean filter(Transaction transaction) {
                         return transaction.amount > 0;
                     }
                 })
-                .next("second")
-                .where(new SimpleCondition<Transaction>() {
-                    @Override
-                    public boolean filter(Transaction transaction) {
-                        return transaction.amount > 0;
-                    }
-                })
-                .next("third")
-                .where(new SimpleCondition<Transaction>() {
-                    @Override
-                    public boolean filter(Transaction transaction) {
-                        return transaction.amount > 0;
-                    }
-                })
+                .times(3)
+                .consecutive()
                 .within(Duration.ofMinutes(5));
 
         // 模式2：大额交易检测
@@ -193,10 +189,13 @@ public class FraudDetection {
                     @Override
                     public void processMatch(Map<String, List<Transaction>> match, 
                                            Context ctx, Collector<FraudAlert> out) throws Exception {
-                        Transaction first = match.get("first").get(0);
-                        Transaction second = match.get("second").get(0);
-                        Transaction third = match.get("third").get(0);
-                        
+                        List<Transaction> txs = match.get("transactions");
+                        if (txs == null || txs.size() < 3) {
+                            return;
+                        }
+                        Transaction first = txs.get(0);
+                        Transaction second = txs.get(1);
+                        Transaction third = txs.get(2);
                         double totalAmount = first.amount + second.amount + third.amount;
                         
                         FraudAlert alert = new FraudAlert(
@@ -239,7 +238,24 @@ public class FraudDetection {
         // 7. 合并告警流并输出
         DataStream<FraudAlert> allAlerts = multipleTransactionsAlerts.union(highAmountAlerts);
 
+        // 控制台输出，便于调试
         allAlerts.print().name("Fraud Alert Sink");
+
+        // 文件输出，便于脚本轮询展示
+        org.apache.flink.connector.file.sink.FileSink<FraudAlert> alertSink =
+                org.apache.flink.connector.file.sink.FileSink
+                        .forRowFormat(new org.apache.flink.core.fs.Path("data/output/fraud-alerts"),
+                                new org.apache.flink.api.common.serialization.SimpleStringEncoder<FraudAlert>("UTF-8"))
+                        .withRollingPolicy(
+                                org.apache.flink.streaming.api.functions.sink.filesystem.rollingpolicies.DefaultRollingPolicy
+                                        .builder()
+                                        .withRolloverInterval(java.time.Duration.ofSeconds(10))
+                                        .withInactivityInterval(java.time.Duration.ofSeconds(10))
+                                        .withMaxPartSize(1024 * 1024 * 1024)
+                                        .build())
+                        .build();
+
+        allAlerts.sinkTo(alertSink).name("File Sink");
 
         // 8. 执行作业
         env.execute("Real-time Fraud Detection");
