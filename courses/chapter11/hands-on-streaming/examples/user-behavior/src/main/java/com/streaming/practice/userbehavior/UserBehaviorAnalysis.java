@@ -34,15 +34,15 @@ import java.util.concurrent.TimeUnit;
  * 
  * 本示例演示了电商场景下的实时用户行为分析：
  * 1. 从 Kafka 实时消费用户行为事件
- * 2. 解析 JSON 格式的用户行为数据
- * 3. 按用户和事件类型进行窗口聚合统计
- * 4. 将统计结果写入 MySQL 数据库
+ * 2. 解析 CSV/文本格式的用户行为数据
+ * 3. 按用户和事件类型进行滚动窗口聚合统计
+ * 4. 将统计结果写入文件系统（FileSink）并打印到控制台
  * 
  * 技术要点：
  * - Kafka 源连接器使用
  * - 事件时间处理和 Watermark 生成
- * - 滚动窗口聚合
- * - JDBC Sink 数据输出
+ * - 滚动窗口与增量聚合
+ * - FileSink 数据输出与控制台打印
  * 
  * @author Streaming Practice Team
  * @version 1.0.0

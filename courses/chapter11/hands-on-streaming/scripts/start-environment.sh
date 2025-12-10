@@ -43,11 +43,17 @@ for service in "${services[@]}"; do
     fi
 done
 
-# 创建 Kafka Topic
+# 创建 Kafka Topic（与示例代码保持一致）
 echo "📝 创建 Kafka Topic..."
-docker-compose exec kafka kafka-topics --create --topic user-behavior-events --partitions 3 --replication-factor 1 --bootstrap-server localhost:9092
-docker-compose exec kafka kafka-topics --create --topic financial-transactions --partitions 3 --replication-factor 1 --bootstrap-server localhost:9092
-docker-compose exec kafka kafka-topics --create --topic iot-device-metrics --partitions 3 --replication-factor 1 --bootstrap-server localhost:9092
+# 用户行为分析示例
+docker-compose exec kafka kafka-topics --create --topic user-behavior-events --partitions 1 --replication-factor 1 --bootstrap-server kafka:9092 --if-not-exists
+# 欺诈检测示例
+docker-compose exec kafka kafka-topics --create --topic transactions --partitions 3 --replication-factor 1 --bootstrap-server kafka:9092 --if-not-exists
+# IoT 监控示例
+docker-compose exec kafka kafka-topics --create --topic iot-device-data --partitions 3 --replication-factor 1 --bootstrap-server kafka:9092 --if-not-exists
+# 实时 ETL 示例
+docker-compose exec kafka kafka-topics --create --topic user-events --partitions 3 --replication-factor 1 --bootstrap-server kafka:9092 --if-not-exists
+docker-compose exec kafka kafka-topics --create --topic order-events --partitions 3 --replication-factor 1 --bootstrap-server kafka:9092 --if-not-exists
 
 echo "🎉 环境启动完成！"
 echo ""
@@ -60,4 +66,4 @@ echo ""
 echo "🚀 接下来可以运行示例程序："
 echo "   ./scripts/run-wordcount.sh"
 echo "   ./scripts/run-user-behavior.sh"
-echo "   ./scripts/run-fraud-detection.sh"
+echo "   （如需运行更多示例，请参考 README 模块说明）"

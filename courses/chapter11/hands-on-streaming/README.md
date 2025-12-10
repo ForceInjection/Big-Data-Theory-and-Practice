@@ -4,6 +4,8 @@
 
 本实践系列基于《从 ETL 到流式计算入门》课程设计，提供从基础到进阶的流式计算实践体验。通过 Docker 容器化技术，您可以在单机环境下快速搭建完整的流式计算环境，并运行多个典型业务场景的示例。
 
+---
+
 ## 核心特性
 
 - **单机环境部署**：基于 Docker Compose 一键部署完整流式计算栈
@@ -12,17 +14,21 @@
 - **详细文档**：每个示例都有详细的技术说明和代码注释
 - **生产就绪**：代码遵循最佳实践，可直接用于生产环境
 
+---
+
 ## 技术栈
 
-| **组件**       | **版本** | **用途**     |
-| -------------- | -------- | ------------ |
-| Apache Flink   | 2.2.0    | 流处理引擎   |
-| Apache Kafka   | 3.5.0    | 消息队列     |
-| Zookeeper      | 3.8.0    | 协调服务     |
-| MySQL          | 8.0      | 结果存储     |
-| Redis          | 7.0      | 实时状态存储 |
-| Docker         | 20.10+   | 容器化环境   |
-| Docker Compose | 2.0+     | 容器编排     |
+| **组件**       | **版本**                     | **用途**     |
+| -------------- | ---------------------------- | ------------ |
+| Apache Flink   | 运行镜像: `flink:2.1-java11` | 流处理引擎   |
+| Apache Kafka   | Confluent Platform `7.4.0`   | 消息队列     |
+| Zookeeper      | Confluent Platform `7.4.0`   | 协调服务     |
+| MySQL          | 8.0                          | 结果存储     |
+| Redis          | 7.0 (alpine)                 | 实时状态存储 |
+| Docker         | 20.10+                       | 容器化环境   |
+| Docker Compose | 2.0+                         | 容器编排     |
+
+---
 
 ## 实践场景与运行示例
 
@@ -45,7 +51,7 @@
 **脚本说明：**
 
 - **输入数据**：脚本会自动读取 `data/input/wordcount-input.txt` 文件内容（如果不存在会自动生成）。
-- **数据发送**：使用 `nc` (Netcat) 工具在 9999 端口模拟实时数据流。
+- **数据发送**：脚本自动在容器内启动 `nc` (Netcat) 于 9999 端口，持续推送文本流。
 - **结果输出**：作业运行结果保存在 `data/output/wordcount-result` 目录下。
 
 **查看结果：**
@@ -55,7 +61,7 @@
 ### 2. 电商实时用户行为分析
 
 - **场景描述**：实时分析用户浏览、点击、购买行为
-- **技术要点**：事件时间处理、会话窗口、CEP 复杂事件处理
+- **技术要点**：事件时间处理、滚动窗口、增量聚合
 - **业务价值**：实时用户画像、个性化推荐基础
 
 **运行指南：**
@@ -96,6 +102,8 @@
 - **技术要点**：数据质量检查、格式转换、多目标输出
 - **业务价值**：实时数据仓库、数据湖集成
 
+---
+
 ## 快速开始
 
 ### 环境要求
@@ -107,16 +115,20 @@
 ### 一键启动
 
 ```bash
-# 克隆项目
-git clone <repository-url>
+# 进入 hands-on-streaming 项目目录
 cd hands-on-streaming
 
-# 启动所有服务
-docker-compose up -d
+# 启动所有服务（包含 Kafka、Flink、MySQL、Redis 等）
+./scripts/start-environment.sh
 
-# 查看服务状态
-docker-compose ps
+# 运行基础示例
+./scripts/run-wordcount.sh
+
+# 运行用户行为分析示例
+./scripts/run-user-behavior.sh
 ```
+
+---
 
 ## 目录结构
 
@@ -135,40 +147,7 @@ hands-on-streaming/
 └── README.md                  # 项目说明
 ```
 
-## 详细文档
-
-每个实践场景都有独立的详细文档：
-
-- [词频统计示例文档](./docs/wordcount-guide.md)
-- [用户行为分析指南](./docs/user-behavior-guide.md)
-- [风控检测实现详解](./docs/fraud-detection-guide.md)
-- [IoT 监控配置说明](./docs/iot-monitoring-guide.md)
-- [实时 ETL 最佳实践](./docs/realtime-etl-guide.md)
-
-## 开发指南
-
-### 本地开发环境搭建
-
-```bash
-# 安装 Java 11 和 Maven
-brew install openjdk@11 maven
-
-# 设置 JAVA_HOME
-export JAVA_HOME=/usr/local/opt/openjdk@11
-
-# 编译项目
-mvn clean package
-```
-
-### 提交 Flink 作业
-
-```bash
-# 提交到本地 Flink 集群
-./flink run target/wordcount-1.0.jar
-
-# 提交到 Docker 环境中的 Flink
-./scripts/submit-job.sh wordcount
-```
+---
 
 ## 监控和调试
 
@@ -192,6 +171,8 @@ docker-compose logs flink-jobmanager
 docker-compose logs kafka
 ```
 
+---
+
 ## 常见问题
 
 ### Q: 端口冲突怎么办？
@@ -205,6 +186,8 @@ A: 调整 Docker 内存限制或减少服务启动数量
 ### Q: 如何添加新的示例？
 
 A: 参考现有示例结构，在 `src/` 目录下创建新模块
+
+---
 
 ## 参考文献
 

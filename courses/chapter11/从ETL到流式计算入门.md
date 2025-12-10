@@ -1,4 +1,4 @@
-# 从 ETL 到流式计算入门
+# 从 ETL 到流式计算：理论与实践入门
 
 ## 第一部分：基础概念篇
 
@@ -35,6 +35,8 @@
 - 异常交易的排查和处理
 
 此类批处理作业通常需要在 4-6 小时的夜间窗口期内完成，对数据处理的速度、准确性和可靠性要求极高。
+
+> 说明：上述交易规模与金额为教学示例，用于说明典型处理压力与工程考量，具体数值因机构与业务而异。
 
 #### 1.1.1 跨行转账对账数据来源分析
 
@@ -154,7 +156,7 @@
 - **具体实现**：
   - 事实表：`fact_reconciliation` - 存储每日对账汇总结果
   - 维度表：`dim_channel`, `dim_trans_type` - 支持多维分析
-  - 保留 13 个月的历史数据以满足监管要求
+  - 保留至少 13 个月的历史数据；实际保留周期依监管与内控要求确定（在某些场景可能需要 5 年或更长）
 
 **4. 文件存储 - HDFS 集群**：
 
@@ -332,6 +334,8 @@ CREATE TABLE reconciliation_results (
 - 业务报表和决策支持
 
 此类数据处理作业需要在有限的时间内处理海量数据，对数据处理的吞吐量、可靠性和扩展性要求极高。
+
+> 说明：上述数据规模为教学示例，旨在说明分布式批处理的工程挑战，实际规模依平台与业务差异较大。
 
 #### 1.2.1 用户行为数据来源分析
 
@@ -586,7 +590,7 @@ ORDER BY (analysis_date, user_id);
    - 使用 Debezium 实时捕获 MySQL/PostgreSQL 数据库变更事件
    - 基于数据库日志（binlog/WAL）的变更数据捕获，零侵入性
    - 支持全量快照和增量变更两种数据同步模式
-   - 事务一致性保证和 Exactly-Once 语义
+   - 保证事务一致性与至少一次投递；端到端 Exactly-Once 需在处理与写入环节通过幂等/事务机制实现
 
 3. **Kafka 消息队列配置**：
    - **Topic 分区策略**：按用户 ID、商品 ID 等业务键进行分区，保证相同键的数据进入同一分区
@@ -652,14 +656,19 @@ val resultDF = behaviorDF
     countDistinct("data.session_id").alias("session_count")
   )
 
-// 输出到ClickHouse
+// 输出到 ClickHouse（Structured Streaming 不支持直接 JDBC sink，使用 foreachBatch）
 resultDF.writeStream
   .outputMode("update")
-  .format("jdbc")
-  .option("url", "jdbc:clickhouse://clickhouse:8123/default")
-  .option("driver", "ru.yandex.clickhouse.ClickHouseDriver")
-  .option("dbtable", "user_behavior_realtime")
   .option("checkpointLocation", "/tmp/checkpoint")
+  .foreachBatch { (batchDF: DataFrame, batchId: Long) =>
+    batchDF.write
+      .mode("append")
+      .format("jdbc")
+      .option("url", "jdbc:clickhouse://clickhouse:8123/default")
+      .option("driver", "ru.yandex.clickhouse.ClickHouseDriver")
+      .option("dbtable", "user_behavior_realtime")
+      .save()
+  }
   .start()
 ```
 
@@ -785,6 +794,8 @@ resultDF.writeStream
 - 监管合规的实时风险监控
 
 此类流式处理作业需要 7×24 小时不间断运行，对数据处理的实时性、准确性和可靠性要求极高。
+
+> 说明：上述 TPS 与时延指标为目标工程指标的示例表述，实际可达性能取决于硬件规模、网络条件与具体实现。
 
 #### 1.3.1 实时欺诈检测数据来源分析
 
@@ -1147,7 +1158,7 @@ resultDF.writeStream
   - 计算复杂度：多项式时间算法主导，关注数据完整性约束
 
 - **流处理模型**：基于数据流理论和自动机理论，处理无限序列 $S = \{s_1, s_2, s_3, ...\}$，其中序列长度 $|S| = \infty$
-  - 理论基础：Leslie Valiant 的流算法理论（1990s）[3]，关注亚线性空间复杂度
+  - 理论基础：Alon、Matias、Szegedy（1996）的数据流算法基础工作[3]与 Muthukrishnan（2005）综述[4]，关注亚线性空间复杂度
   - 形式化模型：$\forall t \in \mathbb{T}, process(s_t, state_{t-1}) \rightarrow (output_t, state_t)$
 
 **2. 时间语义的理论深化**：
@@ -1158,7 +1169,7 @@ resultDF.writeStream
   - 适用场景：离线分析，延迟不敏感应用。**如银行日终批处理（案例 1.1）采用处理时间语义，因为所有交易都在同一批次内处理，无需考虑事件时间顺序。**
 
 - **流处理时间观**：事件时间（Event Time）为核心，基于事件时间戳 $t_{event}$
-  - 理论基础：Lamport 的逻辑时钟理论（1978）[4]，支持因果一致性
+  - 理论基础：Lamport 的逻辑时钟理论（1978）[5]，支持因果一致性
   - 技术机制：水印（Watermark）机制处理乱序事件，形式化为 $watermark(t) = max(event\_time) - \delta$
   - 支持场景：实时监控、复杂事件处理、时序分析。**如电商用户行为分析（案例 1.2）中，用户点击事件的时间顺序对分析结果至关重要，因此必须使用事件时间语义。**
 
@@ -1166,19 +1177,21 @@ resultDF.writeStream
 
 - **批处理**：强一致性，ACID 事务（Atomicity, Consistency, Isolation, Durability）
 
-  - 理论基础：Jim Gray 的事务处理概念（1981）[5]
+  - 理论基础：Jim Gray 的事务处理概念（1981）[6]
   - 实现机制：两阶段提交（2PC）、悲观锁机制
 
 - **流处理**：精确一次语义（Exactly-Once Semantics），支持状态一致性
-  - 理论基础：Chandy-Lamport 分布式快照算法（1985）[6]
+  - 理论基础：Chandy-Lamport 分布式快照算法（1985）[7]
   - 实现机制：检查点（Checkpointing）、状态后端（State Backend）、异步屏障快照（ABS）
   - 形式化保证：$\forall e \in Events, process(e)$ 恰好执行一次
+
+> 说明：端到端 Exactly-Once 需源/汇/连接器协同（如两阶段提交、幂等写入）；仅处理层保证不等同于外部系统精准一次
 
 **4. 并发模型的演进**：
 
 - **批处理并发**：基于数据并行（Data Parallelism），$map(f, D) \rightarrow reduce(g, intermediate)$
 
-  - 理论基础：Valiant 的 Bulk Synchronous Parallel（BSP）模型（1990）[3]
+  - 理论基础：Valiant 的 Bulk Synchronous Parallel（BSP）模型（1990）[8]
 
 - **流处理并发**：基于流水线并行（Pipeline Parallelism）和任务并行（Task Parallelism）
   - 理论基础：数据流图（Dataflow Graph）、操作符链（Operator Chaining）
@@ -1204,11 +1217,11 @@ resultDF.writeStream
 
 **3. 硬件技术的革命性进步**：
 
-- **网络基础设施**：从千兆以太网到万兆、25G、100G 网络的普及，网络延迟大幅降低
+- **网络基础设施**：从千兆以太网到万兆、25G、100G 网络的普及，网络延迟显著降低
 - **存储技术演进**：
-  - 磁盘：从 HDD 到 SSD，IOPS 提升 100 倍以上
-  - 内存：DDR4 → DDR5，容量和带宽持续提升
-  - 新兴存储：NVMe、持久内存（PMEM）技术成熟
+  - 磁盘：从 HDD 到 SSD，IOPS 数量级提升（视设备与负载而异）
+  - 内存：DDR4 → DDR5，容量与带宽持续提升
+  - 新兴存储：NVMe、持久内存（PMEM）逐步成熟
 - **计算架构创新**：
   - 多核处理器：从单核到多核到众核架构
   - GPU/TPU：专用加速器用于流处理计算
@@ -1218,7 +1231,7 @@ resultDF.writeStream
 
 - **分布式系统理论**：
 
-  - CAP 定理的理解深化（Brewer, 2000）[7]
+  - CAP 定理的理解深化（Brewer, 2000）[9]
   - 一致性模型的发展（强一致性 → 最终一致性 → 因果一致性）
   - 分布式共识算法（Paxos、Raft）的成熟应用
 
@@ -1265,7 +1278,7 @@ resultDF.writeStream
 
 #### 2.2.1 ETL 的理论渊源与发展历程
 
-ETL（Extract-Transform-Load）概念最早可追溯到 1970 年代的数据集成需求，但其理论体系在 1990 年代随着数据仓库技术的兴起而系统化。Bill Inmon 在 1992 年提出的数据仓库定义 [8] 为 ETL 流程奠定了理论基础。
+ETL（Extract-Transform-Load）概念最早可追溯到 1970 年代的数据集成需求，但其理论体系在 1990 年代随着数据仓库技术的兴起而系统化。Bill Inmon 在 1992 年提出的数据仓库定义 [10] 为 ETL 流程奠定了理论基础。
 
 **ETL 的理论基础**：
 
@@ -1515,7 +1528,7 @@ windowedStream = dataStream
 **容错机制的理论基础**：
 
 **检查点机制（Checkpoint）**：
-基于 Chandy-Lamport 分布式快照算法[6]，其核心思想是：
+基于 Chandy-Lamport 分布式快照算法[7]，其核心思想是：
 
 - **一致性快照**：所有通道中的消息要么在快照前发送，要么在快照后发送
 - **终止性保证**：算法能够在有限时间内完成
@@ -1533,13 +1546,13 @@ windowedStream = dataStream
 
 不同状态后端的理论特性对比：
 
-| **后端类型**   | **一致性模型** | **性能特征**     | **适用场景**       |
-| -------------- | -------------- | ---------------- | ------------------ |
-| **内存后端**   | 弱一致性       | 低延迟、高吞吐   | 测试环境、小状态   |
-| **文件后端**   | 强一致性       | 中等延迟         | 生产环境、中等状态 |
-| **数据库后端** | 强一致性       | 高延迟、高持久性 | 关键业务、大状态   |
+| **后端类型**              | **一致性模型**           | **性能特征**       | **适用场景**                  |
+| ------------------------- | ------------------------ | ------------------ | ----------------------------- |
+| **HashMap（内存）**       | 与检查点结合的一致性保证 | 低延迟、高吞吐     | 小状态、测试/低延迟场景       |
+| **RocksDB（本地持久化）** | 与检查点结合的一致性保证 | 较高延迟、强持久化 | 生产环境、大状态、复杂算子    |
+| **Checkpoint 存储**       | N/A（非运行时状态后端）  | 持久化快照         | 保存状态快照（文件/对象存储） |
 
-这一选择体现了 CAP 理论在流处理系统中的具体应用。
+> 说明：Checkpoint 存储用于保存快照，不属于运行时状态后端；选型受一致性与性能权衡影响。
 
 **容错性的数学度量**：
 
@@ -1557,7 +1570,7 @@ windowedStream = dataStream
 
 **理论基础**：
 
-- **数据流模型**：Leslie Valiant 在 1970 年代提出的流算法（Streaming Algorithms）理论[3]
+- **数据流算法**：Alon、Matias、Szegedy（1996）频率矩理论[3]与 Muthukrishnan（2005）综述[4]
 - **复杂事件处理**：David Luckham 的 CEP（Complex Event Processing）理论框架
 - **分布式系统理论**：Lamport 的逻辑时钟、Chandy-Lamport 分布式快照算法
 - **数据库理论**：ACID 事务模型向流处理环境的扩展
@@ -1566,19 +1579,19 @@ windowedStream = dataStream
 
 1. **2003 年**：Stanford 的 STREAM 项目提出连续查询语言 CQL
 2. **2005 年**：UC Berkeley 的 TelegraphCQ 项目探索自适应数据流处理
-3. **2010 年**：Google 发表 MillWheel 论文 [9]，提出精确一次语义的流处理系统
+3. **2010 年**：Google 发表 MillWheel 论文 [11]，提出精确一次语义的流处理系统
 4. **2015 年**：Apache Flink 社区提出流处理的理论框架和实践体系
 
 #### 2.3.3 架构演进与实践应用
 
 从 Lambda 架构到 Kappa 架构的演进体现了流处理理论的成熟：
 
-**Lambda 架构**（Nathan Marz, 2011）[10]：
+**Lambda 架构**（Nathan Marz, 2011）[12]：
 
 - **理论贡献**：首次系统化提出批流一体的大数据处理架构
 - **局限性**：维护两套系统带来的复杂性和一致性挑战。**如电商用户行为分析（案例 1.2）早期常采用此架构，导致开发运维成本高企。**
 
-**Kappa 架构**（Jay Kreps, 2014）[11]：
+**Kappa 架构**（Jay Kreps, 2014）[13]：
 
 - **理论创新**：提出完全基于流处理的数据架构范式
 - **核心思想**：通过重播数据流来替代批处理层
@@ -1715,7 +1728,7 @@ windowedStream = dataStream
 
 ### 3.1 Flink 核心架构与运行机制
 
-Apache Flink 采用 Master-Slave 架构，其运行时体系不仅包含物理组件，还涉及核心的逻辑概念。
+Apache Flink 采用 Master-Worker 架构，其运行时体系不仅包含物理组件，还涉及核心的逻辑概念。
 
 #### 3.1.1 物理组件
 
@@ -1733,13 +1746,13 @@ Apache Flink 采用 Master-Slave 架构，其运行时体系不仅包含物理�
 
 ### 3.2 与其他流处理框架对比
 
-| **特性**         | **Apache Flink** | **Spark Streaming** | **Storm**     |
-| ---------------- | ---------------- | ------------------- | ------------- |
-| **处理模型**     | 原生流处理       | 微批处理            | 原生流处理    |
-| **延迟**         | 毫秒级           | 秒级                | 毫秒级        |
-| **状态管理**     | 内置完善         | 需要额外组件        | 有限支持      |
-| **Exactly-Once** | 支持             | 支持                | At-Least-Once |
-| **SQL 支持**     | 完善             | 完善                | 有限          |
+| **特性**         | **Apache Flink**           | **Spark Streaming**        | **Storm**                             |
+| ---------------- | -------------------------- | -------------------------- | ------------------------------------- |
+| **处理模型**     | 原生流处理                 | 微批处理                   | 原生流处理                            |
+| **延迟**         | 毫秒级                     | 秒级                       | 毫秒级                                |
+| **状态管理**     | 内置完善                   | 需要额外组件               | 有限支持                              |
+| **Exactly-Once** | 支持（受源/汇/连接器约束） | 支持（受源/汇/连接器约束） | At-Least-Once（Trident 可达精确一次） |
+| **SQL 支持**     | 完善                       | 完善                       | 有限                                  |
 
 ### 3.3 开发环境搭建
 
@@ -1755,6 +1768,19 @@ Apache Flink 采用 Master-Slave 架构，其运行时体系不仅包含物理�
     <groupId>org.apache.flink</groupId>
     <artifactId>flink-clients</artifactId>
     <version>1.18.0</version>
+ </dependency>
+```
+
+> 说明：请保持依赖版本与运行集群一致。建议使用 Maven BOM 统一管理 Flink 版本，避免跨模块版本不一致导致的运行时冲突。
+
+如需使用 KafkaSource/KafkaSink 等连接器，请同时引入 Kafka 连接器依赖（版本需与 Flink 保持一致）：
+
+```xml
+<!-- Kafka 连接器 -->
+<dependency>
+  <groupId>org.apache.flink</groupId>
+  <artifactId>flink-connector-kafka</artifactId>
+  <version>1.18.0</version>
 </dependency>
 ```
 
@@ -1768,6 +1794,8 @@ StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironm
 env.enableCheckpointing(5000); // 每 5 秒一次检查点
 env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
 ```
+
+> 说明：端到端的精确一次（Exactly-Once）需要源/处理/汇三端协同与连接器支持（如 Kafka 事务写入、幂等外部存储等），仅开启检查点并不足以保证对外部系统的精准一次。
 
 ### 3.4 第一个 Flink 程序
 
@@ -1861,6 +1889,8 @@ DataStream<String> fileStream = env.readTextFile("path/to/file.txt");
 DataStream<String> socketStream = env.socketTextStream("localhost", 9999);
 ```
 
+> 说明：本地测试可使用 `nc -lk 9999` 向端口发送文本。
+
 #### 4.1.2 生产级 Source：Kafka
 
 在生产环境中，**Kafka Source** 是最常用的数据源。基于 Flink 1.17+ 的新版 API，我们可以构建健壮的 Kafka 消费者：
@@ -1895,7 +1925,9 @@ DataStream<String> words = stream.flatMap((String value, Collector<String> out) 
     for (String word : value.split(" ")) {
         out.collect(word);
     }
-});
+}).returns(Types.STRING);
+
+// 说明：使用 lambda 时为避免类型擦除导致的推断问题，可使用 `.returns(Types.STRING)` 显式指定输出类型；在泛型明确的场景可省略。
 
 // Filter: 过滤 (例如：保留以 'A' 开头的字符串)
 DataStream<String> filtered = stream.filter(value -> value.startsWith("A"));
@@ -1949,6 +1981,8 @@ public static class AverageAggregate implements AggregateFunction<
 }
 ```
 
+> 说明：事件时间窗口需在上游通过 `WatermarkStrategy` 分配事件时间与水位线，否则窗口无法按事件时间正确触发与计算。
+
 ### 4.3 数据汇（Sink）操作
 
 Sink 是流处理管道的出口，负责将处理结果写入外部存储或下游系统。
@@ -1976,7 +2010,7 @@ KafkaSink<String> sink = KafkaSink.<String>builder()
         .setValueSerializationSchema(new SimpleStringSchema())
         .build()
     )
-    .setDeliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
+    .setDeliveryGuarantee(DeliveryGuarantee.EXACTLY_ONCE)
     .build();
 stream.sinkTo(sink);
 
@@ -1997,6 +2031,11 @@ ElasticsearchSink.Builder<String> esSinkBuilder = new ElasticsearchSink.Builder<
 
 stream.addSink(esSinkBuilder.build());
 ```
+
+> 说明：
+>
+> - 使用 Elasticsearch 需要引入对应版本的 Flink Elasticsearch 连接器依赖，并与 Flink 版本保持一致。
+> - Kafka EXACTLY_ONCE 需启用检查点（Checkpointing）并配置 Kafka 事务参数；端到端精准一次还需上游源与处理环节保证一致性与幂等。
 
 ### 4.4 基本流处理模式
 
@@ -2036,6 +2075,8 @@ DataStream<Result> intervalConnected = stream1
     .between(Time.minutes(-1), Time.minutes(1)) // stream2 在 stream1 前后 1 分钟内
     .process(new IntervalJoinFunction());
 ```
+
+> 说明：窗口连接与间隔连接均需为两条输入流设置事件时间与水位线（`assignTimestampsAndWatermarks`），以确保时间语义一致与窗口/区间匹配的正确性。
 
 ### 4.5 实战案例：电商订单实时金额统计
 
@@ -2136,6 +2177,8 @@ public class OrderAnalysisJob {
 }
 ```
 
+> 说明：本示例为按用户滚动聚合，非窗口计算；若需基于时间的统计或处理乱序事件，请在输入流上配置 `WatermarkStrategy` 并定义事件时间窗口。
+
 通过这个案例，我们串联了 `addSource` (自定义)、`filter`、`keyBy`、`reduce` 和 `print` 等核心 API，展示了有状态流处理的基本形态。
 
 ---
@@ -2186,6 +2229,8 @@ DataStream<Event> withTimestamps = stream.assignTimestampsAndWatermarks(
 );
 ```
 
+> 说明：在 Flink 1.12+ 中移除了全局时间特征配置；事件时间的推进依赖于 `WatermarkStrategy`。若未分配水位线，事件时间不会前进，事件时间窗口将无法触发。
+
 ### 5.2 Watermark 机制
 
 Watermark 本质上是一个携带时间戳的特殊信号，用于在乱序数据流中标记"时间的进展"。当算子收到 $W(t)$ 时，意味着所有 $Timestamp \leq t$ 的数据都已到达（概率上），可以触发窗口计算。
@@ -2194,8 +2239,9 @@ Watermark 本质上是一个携带时间戳的特殊信号，用于在乱序数�
 
 Flink 提供了开箱即用的策略：
 
-- **Fixed Amount of Lateness**：允许固定时长的乱序（最常用）。
-- **Monotonously Increasing**：假设时间戳单调递增（无乱序）。
+- `forBoundedOutOfOrderness`：允许固定时长的乱序（最常用）。
+- `forMonotonousTimestamps`：假设时间戳单调递增（无乱序）。
+- `noWatermarks`：不生成水位线（用于处理时间或无需事件时间进度的场景）。
 
 #### 5.2.2 自定义 Watermark 生成器
 
@@ -2215,7 +2261,7 @@ public class CustomWatermarkGenerator implements WatermarkGenerator<Event> {
 
     @Override
     public void onPeriodicEmit(WatermarkOutput output) {
-        // 周期性发射 Watermark (默认 200ms)
+        // 周期性发射 Watermark（周期由 autoWatermarkInterval 决定，默认约 200ms）
         // W = MaxTimestamp - MaxOutOfOrderness
         output.emitWatermark(new Watermark(currentMaxTimestamp - maxOutOfOrderness));
     }
@@ -2285,12 +2331,15 @@ windowedStream.aggregate(new AggregateFunction<Event, Tuple2<Long, Long>, Double
 先缓存所有数据，触发时一次性计算。适用于需要窗口元信息（如开始/结束时间）或无法增量计算（如中位数）的场景。
 
 ```java
-// ProcessWindowFunction: 统计窗口内的 TopN
-windowedStream.process(new ProcessWindowFunction<Event, String, Key, TimeWindow>() {
+// ProcessWindowFunction: 统计窗口元素数量（示例）
+windowedStream.process(new ProcessWindowFunction<Event, String, String, TimeWindow>() {
     @Override
-    public void process(Key key, Context context, Iterable<Event> elements, Collector<String> out) {
+    public void process(String key, Context context, Iterable<Event> elements, Collector<String> out) {
         long windowStart = context.window().getStart();
-        // 遍历 elements 进行全量计算...
+        int count = 0;
+        for (Event e : elements) {
+            count++;
+        }
         out.collect("Window: " + windowStart + " Count: " + count);
     }
 });
@@ -2318,6 +2367,8 @@ SingleOutputStreamOperator<Result> result = stream
 DataStream<Event> lateStream = result.getSideOutput(lateTag);
 ```
 
+> 说明：`allowedLateness` 与 `sideOutputLateData` 适用于事件时间窗口；保留迟到窗口会延长状态存活时间，需评估内存占用与性能影响。
+
 ### 5.6 实战案例：热门商品统计 (TopN)
 
 **场景**：统计每 5 分钟内，最近 1 小时的热门点击商品 TopN。
@@ -2331,6 +2382,8 @@ DataStream<String> topItems = clickStream
     .keyBy(ItemViewCount::getWindowEnd)            // 2. 按窗口结束时间分组
     .process(new TopNFunction(5));                 // 3. 全窗口排序
 ```
+
+> 说明：确保水位线的乱序容忍度与业务数据特性匹配；`CountAgg/WindowResult/TopNFunction` 为示例性占位，需根据实际数据结构实现具体逻辑。
 
 ---
 
@@ -2451,6 +2504,8 @@ config.setExternalizedCheckpointCleanup(
     ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION); // 作业取消时保留快照
 ```
 
+> 说明：`EXACTLY_ONCE` 为默认模式；选择 `RETAIN_ON_CANCELLATION` 会保留外部存储中的快照文件，需规划清理策略以避免长期占用存储。
+
 #### 6.2.2 状态后端 (State Backends)
 
 状态后端决定了状态存储在哪里：
@@ -2464,6 +2519,8 @@ env.setStateBackend(new EmbeddedRocksDBStateBackend());
 // 设置 Checkpoint 存储路径 (HDFS/S3)
 env.getCheckpointConfig().setCheckpointStorage("hdfs:///flink/checkpoints");
 ```
+
+> 说明：`EmbeddedRocksDBStateBackend` 适合大状态与生产场景，支持增量 Checkpoint（结合文件系统存储如 HDFS/S3 可降低快照体积）；小状态与低延迟场景可选择 `HashMapStateBackend`。
 
 ### 6.3 Savepoint 与运维
 
@@ -2479,6 +2536,8 @@ flink savepoint <jobId> hdfs:///flink/savepoints
 # 2. 升级程序并从保存点恢复
 flink run -s hdfs:///flink/savepoints/savepoint-123456 ...
 ```
+
+> 说明：保存点路径应使用稳定的分布式存储（如 HDFS/S3）；跨版本恢复需确保算子 UID 与状态 schema 兼容。
 
 ### 6.4 端到端精确一次 (End-to-End Exactly-Once)
 
@@ -2496,6 +2555,8 @@ KafkaSink<String> sink = KafkaSink.<String>builder()
     ...
     .build();
 ```
+
+> 说明：Kafka 端到端精确一次需启用 Flink 检查点、配置 Kafka 事务，并确保 Source 可重放与 Sink 幂等/事务提交；跨组件的一致性依赖两阶段提交或等效机制。
 
 ### 6.5 实战案例：基于状态的温度异常检测
 
@@ -2635,20 +2696,24 @@ public class TemperatureAlertJob {
 
 [2] Dean, J., & Ghemawat, S. "MapReduce: Simplified Data Processing on Large Clusters." _Proceedings of OSDI '04: Sixth Symposium on Operating Systems Design and Implementation_, San Francisco, CA, pp. 137-150, 2004.
 
-[3] Valiant, L.G. "A Bridging Model for Parallel Computation." _Communications of the ACM_, vol. 33, no. 8, pp. 103-111, 1990.
+[3] Alon, N., Matias, Y., & Szegedy, M. "The Space Complexity of Approximating Frequency Moments." _Proceedings of the 28th Annual ACM Symposium on Theory of Computing (STOC)_, pp. 20–29, 1996. Accessed: Dec. 9, 2025. [Online]. Available: https://dl.acm.org/doi/10.1145/237814.237823
 
-[4] Lamport, L. "Time, Clocks, and the Ordering of Events in a Distributed System." _Communications of the ACM_, vol. 21, no. 7, pp. 558-565, 1978.
+[4] Muthukrishnan, S. "Data Streams: Algorithms and Applications." _Foundations and Trends in Theoretical Computer Science_, vol. 1, no. 2, pp. 117–236, 2005. Accessed: Dec. 9, 2025. [Online]. Available: https://www.nowpublishers.com/article/Details/TCS-002
 
-[5] Gray, J. "The Transaction Concept: Virtues and Limitations." _Proceedings of the 7th International Conference on Very Large Data Bases_, pp. 144-154, 1981.
+[5] Lamport, L. "Time, Clocks, and the Ordering of Events in a Distributed System." _Communications of the ACM_, vol. 21, no. 7, pp. 558-565, 1978.
 
-[6] Chandy, K.M., & Lamport, L. "Distributed Snapshots: Determining Global States of Distributed Systems." _ACM Transactions on Computer Systems_, vol. 3, no. 1, pp. 63-75, 1985.
+[6] Gray, J. "The Transaction Concept: Virtues and Limitations." _Proceedings of the 7th International Conference on Very Large Data Bases_, pp. 144-154, 1981.
 
-[7] Brewer, E.A. "Towards Robust Distributed Systems." _Proceedings of the Nineteenth Annual ACM Symposium on Principles of Distributed Computing_, pp. 7, 2000.
+[7] Chandy, K.M., & Lamport, L. "Distributed Snapshots: Determining Global States of Distributed Systems." _ACM Transactions on Computer Systems_, vol. 3, no. 1, pp. 63-75, 1985.
 
-[8] Inmon, W.H. _Building the Data Warehouse_. 2nd ed. New York: Wiley, 1992.
+[8] Valiant, L.G. "A Bridging Model for Parallel Computation." _Communications of the ACM_, vol. 33, no. 8, pp. 103-111, 1990.
 
-[9] Akidau, T., et al. "MillWheel: Fault-Tolerant Stream Processing at Internet Scale." _Proceedings of the VLDB Endowment_, vol. 6, no. 11, pp. 1033-1044, 2013.
+[9] Brewer, E.A. "Towards Robust Distributed Systems." _Proceedings of the Nineteenth Annual ACM Symposium on Principles of Distributed Computing_, pp. 7, 2000.
 
-[10] Marz, N., & Warren, J. _Big Data: Principles and Best Practices of Scalable Realtime Data Systems_. Manning Publications, 2015.
+[10] Inmon, W.H. _Building the Data Warehouse_. 2nd ed. New York: Wiley, 1992.
 
-[11] Kreps, J. "Questioning the Lambda Architecture." O'Reilly Media. 2014. Accessed: Dec. 9, 2025. [Online]. Available: https://www.oreilly.com/radar/questioning-the-lambda-architecture/
+[11] Akidau, T., et al. "MillWheel: Fault-Tolerant Stream Processing at Internet Scale." _Proceedings of the VLDB Endowment_, vol. 6, no. 11, pp. 1033-1044, 2013.
+
+[12] Marz, N., & Warren, J. _Big Data: Principles and Best Practices of Scalable Realtime Data Systems_. Manning Publications, 2015.
+
+[13] Kreps, J. "Questioning the Lambda Architecture." O'Reilly Media. 2014. Accessed: Dec. 9, 2025. [Online]. Available: https://www.oreilly.com/radar/questioning-the-lambda-architecture/
