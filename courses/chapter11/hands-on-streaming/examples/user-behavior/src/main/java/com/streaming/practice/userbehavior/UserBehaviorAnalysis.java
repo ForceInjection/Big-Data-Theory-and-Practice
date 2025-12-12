@@ -16,11 +16,13 @@ import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -116,16 +118,18 @@ public class UserBehaviorAnalysis {
 
         @Override
         public String toString() {
-            return "UserBehaviorStats{" +
-                    "userId='" + userId + '\'' +
-                    ", eventType='" + eventType + '\'' +
-                    ", count=" + count +
-                    ", windowStart=" + windowStart +
-                    ", windowEnd=" + windowEnd +
-                    ", processTime=" + processTime +
-                    '}';
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            String windowStartStr = LocalDateTime.ofInstant(Instant.ofEpochMilli(windowStart), ZoneId.systemDefault()).format(formatter);
+            String windowEndStr = LocalDateTime.ofInstant(Instant.ofEpochMilli(windowEnd), ZoneId.systemDefault()).format(formatter);
+            
+            return String.format("Window[%s, %s) count=%d, processTime=%s", 
+                    windowStartStr, windowEndStr, count, processTime.format(formatter));
         }
     }
+
+    // 定义侧输出流标签
+    private static final OutputTag<UserBehaviorEvent> LATE_DATA_TAG = new OutputTag<UserBehaviorEvent>("late-data") {
+    };
 
     public static void main(String[] args) throws Exception {
         // 创建执行环境
@@ -147,11 +151,11 @@ public class UserBehaviorAnalysis {
         // 2. 从 Kafka 读取数据流
         DataStream<String> kafkaStream = env.fromSource(
                 kafkaSource,
-                WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofSeconds(5)),
+                WatermarkStrategy.noWatermarks(), // Watermark will be assigned after parsing
                 "Kafka Source");
 
         // 3. 数据转换和处理流水线
-        DataStream<UserBehaviorStats> statsStream = kafkaStream
+        SingleOutputStreamOperator<UserBehaviorStats> statsStream = kafkaStream
                 // 解析 JSON 数据
                 .flatMap(new FlatMapFunction<String, UserBehaviorEvent>() {
                     @Override
@@ -166,15 +170,23 @@ public class UserBehaviorAnalysis {
                         }
                     }
                 })
+                .map(event -> {
+                    System.out.println("Processing event: " + event + " at system time: " + System.currentTimeMillis());
+                    return event;
+                })
                 // 分配时间戳和水位线
+                // 模拟场景：乱序延迟上界 L = 2秒
                 .assignTimestampsAndWatermarks(
-                        WatermarkStrategy.<UserBehaviorEvent>forBoundedOutOfOrderness(Duration.ofSeconds(10))
-                                .withTimestampAssigner((event, timestamp) -> event.timestamp)
-                                .withIdleness(Duration.ofSeconds(5)))
+                        WatermarkStrategy.<UserBehaviorEvent>forBoundedOutOfOrderness(Duration.ofSeconds(2))
+                                .withTimestampAssigner((event, timestamp) -> event.timestamp))
                 // 按用户ID和事件类型分组
                 .keyBy(event -> event.userId + "-" + event.eventType)
-                // 1分钟滚动窗口
-                .window(TumblingEventTimeWindows.of(Duration.ofMinutes(1)))
+                // 5秒滚动窗口: [00, 05)
+                .window(TumblingEventTimeWindows.of(Duration.ofSeconds(5)))
+                // 允许延迟 1秒: AL = 1s
+                .allowedLateness(Duration.ofSeconds(1))
+                // 超迟到数据进入侧输出
+                .sideOutputLateData(LATE_DATA_TAG)
                 // 聚合计算
                 .aggregate(new CountAggregator(), new WindowResultFunction());
 
@@ -194,6 +206,10 @@ public class UserBehaviorAnalysis {
 
         // 同时打印到控制台，方便在日志中查看
         statsStream.print("Console Output").name("Console Sink");
+
+        // 处理侧输出流（迟到数据）
+        DataStream<UserBehaviorEvent> lateStream = statsStream.getSideOutput(LATE_DATA_TAG);
+        lateStream.print("Late Data (Side Output)").name("Late Data Sink");
 
         // 5. 执行作业
         env.execute("Real-time User Behavior Analysis");
