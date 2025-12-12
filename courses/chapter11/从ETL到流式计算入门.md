@@ -1152,12 +1152,12 @@ resultDF.writeStream
 
 **1. 计算模型的数学基础转变**：
 
-- **批处理模型**：基于集合论和关系代数，处理有限数据集 $D = \{d_1, d_2, ..., d_n\}$，其中 $n < \infty$
+- **批处理模型**：基于集合论和关系代数，处理有限数据集 $D = \{d_1, d_2, \dots, d_n\}$，其中 $n < \infty$
 
   - 理论基础：E.F. Codd 的关系模型（1970）[1]，基于一阶谓词逻辑
   - 计算复杂度：多项式时间算法主导，关注数据完整性约束
 
-- **流处理模型**：基于数据流理论和自动机理论，处理无限序列 $S = \{s_1, s_2, s_3, ...\}$，其中序列长度 $|S| = \infty$
+- **流处理模型**：基于数据流理论和自动机理论，处理无限序列 $S = \{s_1, s_2, s_3, \dots\}$，其中序列长度 $|S| = \infty$
   - 理论基础：Alon、Matias、Szegedy（1996）的数据流算法基础工作[3]与 Muthukrishnan（2005）综述[4]，关注亚线性空间复杂度
   - 形式化模型：$\forall t \in \mathbb{T}, process(s_t, state_{t-1}) \rightarrow (output_t, state_t)$
 
@@ -1297,7 +1297,7 @@ ETL（Extract-Transform-Load）概念最早可追溯到 1970 年代的数据集�
 
 从理论角度，ETL 过程可以形式化表示为：
 
-设数据源集合 $S = \{s_1, s_2, ..., s_n\}$，目标数据仓库 $D$，则 ETL 过程可表示为：
+设数据源集合 $S = \{s_1, s_2, \dots, s_n\}$，目标数据仓库 $D$，则 ETL 过程可表示为：
 
 $ETL: S \rightarrow D$
 
@@ -1334,12 +1334,12 @@ $Transform = f_{clean} \circ f_{filter} \circ f_{aggregate} \circ f_{enrich}$
 流式计算的理论基础建立在数据流模型（Data Stream Model）之上，这一模型在理论计算机科学中有着深厚的学术渊源。
 
 **形式化定义**：
-数据流可以形式化定义为无限序列 $S = \langle s_1, s_2, s_3, ... \rangle$，其中每个元素 $s_i$ 来自某个域 $\Sigma$。
+数据流可以形式化定义为无限序列 $S = \langle s_1, s_2, s_3, \dots \rangle$，其中每个元素 $s_i$ 来自某个域 $\Sigma$。
 
 **理论分类**：
 
 - **有界数据**（Bounded Data）：存在某个 $N$，使得 $|S| \leq N$
-- **无界数据**（Unbounded Data）：对于任意 $N$，$|S| > N$
+- **无界数据**（Unbounded Data）：对于任意 $N$，都有 $|S| > N$
 
 **计算复杂性理论视角**：
 
