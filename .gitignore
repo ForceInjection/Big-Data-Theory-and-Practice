@@ -7,6 +7,10 @@
 # -----------------------------------------------------------------------------
 # 忽略练习数据中的 books 目录（包含大量文本文件）
 courses/chapter06/excerise_2/data/books/
+courses/exam/
+courses/exam_dev/
+courses/score/
+env-setup/scripts/
 .trae
 hadoop
 spark
